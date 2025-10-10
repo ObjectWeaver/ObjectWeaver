@@ -1,0 +1,43 @@
+name: Run Codeleft CLI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  run-codeleft-cli:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # 2. Download and Extract codeleft-cli
+      - name: Download & Install codeleft-cli
+        run: |
+          VERSION=v1.0.19  # Update to the desired version
+          OS=Linux
+          ARCH=x86_64
+          ASSET_NAME=codeleft-cli_${OS}_${ARCH}.tar.gz
+          DOWNLOAD_URL="https://github.com/henrylamb/codeleft-cli/releases/download/${VERSION}/${ASSET_NAME}"
+          
+          curl -L -o codeleft-cli.tar.gz "$DOWNLOAD_URL"
+          tar -xzf codeleft-cli.tar.gz
+          chmod +x codeleft-cli
+          sudo mv codeleft-cli /usr/local/bin/
+
+      # 3. Execute codeleft-cli Command
+      - name: Execute codeleft-cli Command
+        run: |
+          cd "${GITHUB_WORKSPACE}"
+
+          # Ensure .codeLeft directory exists
+          if [ ! -d ".codeLeft" ]; then
+            echo "Error: .codeleft directory does not exist in the repository root."
+            exit 1
+          fi
+
+          # Run the codeleft-cli command
+          codeleft-cli -asses-coverage -threshold-percent=80 -threshold-grade="A-" -tools "SOLID,OWASP-TOP-10,Complexity" --create-report
