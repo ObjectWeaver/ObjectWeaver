@@ -1,0 +1,53 @@
+{
+  "threshold": "A-",
+  "security": {
+    "owasp": true,
+    "cweTop25": false
+  },
+  "quality": {
+    "solid": true,
+    "cleanCode": false,
+    "prReady": false,
+    "complexity": true,
+    "complexityPro": false,
+    "testability": false
+  },
+  "safetyCritical": {
+    "misraCpp": false
+  },
+  "testing": {
+    "functionalCoverage": false
+  },
+  "ignore": {
+    "fileEndings": [
+      "_test.go"
+    ],
+    "files": [
+      {
+        "name": "config.json",
+        "path": ".codeLeft/config.json"
+      }
+    ],
+    "folders": [
+      "static",
+      "testInstructions",
+      ".github",
+      ".documentation",
+      "toolCalling",
+      "grpc"
+    ]
+  },
+  "codeReviewType": {
+    "pro": true
+  },
+  "qualitySentry": {
+    "tdd": false
+  },
+  "testGeneration": {
+    "active": false,
+    "override": false,
+    "language": "Golang",
+    "testType": "Unit",
+    "library": "Ginkgo"
+  }
+}

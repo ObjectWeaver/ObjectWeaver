@@ -1,0 +1,39 @@
+services:
+  firechimp:
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "2008:2008"
+    environment:
+      PASSWORD: ${PASSWORD}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ITEMS_MODEL: ${ITEMS_MODEL}
+      VERBOSE_LOGS: ${VERBOSE_LOGS}
+      LOCAL_API_KEY: ${LOCAL_API_KEY}
+      LOCAL_API_URL: ${LOCAL_API_URL}
+
+      LLM_PROVIDER: ${LLM_PROVIDER}
+      LLM_API_URL: ${LLM_API_URL}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MAX_TOKENS_PER_MINUTE: ${LLM_MAX_TOKENS_PER_MINUTE}
+      LLM_MAX_REQUESTS_PER_MINUTE: ${LLM_MAX_REQUESTS_PER_MINUTE}
+      LLM_BACKOFF_STRATEGY: ${LLM_BACKOFF_STRATEGY}
+      LLM_USE_GZIP: ${LLM_USE_GZIP}
+      
+      ENVIRONMENT: ${ENVIRONMENT}
+      GRPC_UNSECURE: ${GRPC_UNSECURE}
+      CERT_FILE: ${CERT_FILE}
+      KEY_FILE: ${KEY_FILE}
+    networks:
+      - monitoring
+      - my-shared-network
+
+networks:
+  monitoring:
+  my-shared-network:
+    external: true
+
+volumes:
+  grafana-storage:
+
