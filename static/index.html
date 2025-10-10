@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firechimp</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/jpg"> <!-- Set the favicon -->
+
+    <style>
+        body {
+            font-family: Roboto, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: stretch;
+            gap: 20px;
+            width: 95%;
+            margin: 0 auto;
+            margin-top: 100px;
+        }
+
+        .box {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            width: 25vw;
+            height: 75vh;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .box h2 {
+            margin-top: 0;
+            font-size: 22px;
+            color: #ffffff;
+        }
+
+        textarea, .json-highlight {
+            width: 100%;
+            height: calc(100% - 40px); /* Adjust height to account for padding and header */
+            border: none;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #2c2c2c;
+            color: #e0e0e0;
+            font-size: 16px;
+            overflow: auto;
+            box-sizing: border-box;
+            font-family: monospace; /* Monospace font for code-like appearance */
+        }
+
+        .json-highlight {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            padding: 10px;
+            background-color: #2c2c2c;
+            border-radius: 4px;
+            font-size: 16px;
+            overflow: auto;
+            height: calc(100% - 40px); /* Adjust height to account for padding and header */
+            box-sizing: border-box;
+            color: #e0e0e0;
+        }
+
+        .json-highlight .string {
+            color: #4caf50; /* Green color for strings */
+        }
+
+        .json-highlight .number {
+            color: #4caf50; /* Red color for numbers */
+        }
+
+        .json-highlight .boolean {
+            color: #4caf50; /* Blue color for booleans */
+        }
+
+        .json-highlight .null {
+            color: #9e9e9e; /* Grey color for null */
+        }
+
+        button {
+            background-color: #3053a8;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0.5%;
+        }
+
+        button:hover {
+            background-color: #80a0f3;
+        }
+
+        .tick {
+            display: none; /* Initially hidden */
+            font-size: 24px;
+            color: #4caf50; /* Green color for success */
+            margin: 0 10px;
+        }
+
+        .copy-success .tick {
+            display: inline; /* Show the tick symbol */
+        }
+
+        .header-link {
+            display: inline-block; /* Ensure it only takes up as much space as needed */
+            text-decoration: none; /* Remove underline from links */
+        }
+
+        .header-link .header {
+            display: flex;
+            align-items: center; /* Center items vertically */
+            gap: 15px; /* Space between icon and heading */
+            cursor: pointer; /* Change cursor to pointer on hover */
+        }
+
+        .header {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            align-items: center; /* Center items vertically */
+            gap: 15px; /* Space between icon and heading */
+        }
+
+        .circular-icon {
+            width: 50px; /* Size of the circular icon */
+            height: 50px;
+            border-radius: 50%; /* Makes the image circular */
+            overflow: hidden;
+            background-color: white;
+            position: relative; /* Position relative for pseudo-element positioning */
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8); /* Blur effect around the border */
+        }
+
+        .circular-icon img {
+            width: 100%;
+            height: 100%; /* Ensure image covers the entire circular area */
+            object-fit: cover; /* Ensure the image covers the circle without distortion */
+        }
+
+        .header p {
+            font-size: 18px; /* Size of the heading text */
+            color: whitesmoke;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            background-color: #2c2c2c; /* Dark background for input */
+            color: #e0e0e0; /* Light text for dark mode */
+            border: 1px solid #444; /* Subtle border for input */
+            border-radius: 4px; /* Rounded corners */
+            padding: 5px; /* Padding inside the input box */
+            margin-left: 10px; /* Slight margin for spacing */
+        }
+
+
+    </style>
+</head>
+<body>
+<a href="https://firechimp.ai" class="header-link">
+    <div class="header">
+        <div class="circular-icon">
+            <img src="/static/logo.jpg" alt="Icon">
+        </div>
+        <p>Firechimp</p>
+    </div>
+</a>
+
+<div class="container">
+    <div class="box" id="prompt-box">
+        <h2>Prompt</h2>
+        <textarea id="prompt"></textarea>
+    </div>
+    <div class="box" id="schema-box">
+        <h2>Schema</h2>
+        <textarea id="schema" placeholder="Enter JSON schema here..."></textarea>
+        <div id="schema-highlight" class="json-highlight"></div>
+    </div>
+    <div class="box" id="result-box">
+        <h2>Result</h2>
+        <div id="result" class="json-highlight"></div>
+        <button id="copy-btn">Copy</button>
+        <div class="tick">✔️</div>
+        <p id="time-taken"></p>
+        <p id="tokens-per-second"></p>
+    </div>
+</div>
+<button id="submit-btn">Submit</button>
+
+<div style="margin-top: 20px; display: flex; align-items: center; gap: 10px;">
+    <label for="volume-test-count" style="color: #e0e0e0; font-size: 16px;">Number of Requests for Volume Testing: </label>
+    <input type="number" id="volume-test-count" min="1" value="1" style="width: 60px; padding: 5px; border-radius: 4px; border: 1px solid #444; background-color: #2c2c2c; color: #e0e0e0;">
+    <button id="volume-test-btn" style="background-color: #3053a8; color: #ffffff; border: none; border-radius: 4px; padding: 10px 20px; cursor: pointer; font-size: 16px;">Volume Test</button>
+</div>
+
+
+
+
+<div id="error-message" style="display: none;"></div>
+<!-- Include gRPC-Web client script -->
+<script src="https://unpkg.com/@improbable-eng/grpc-web"></script>
+
+<!-- Include the generated proto files -->
+<script src="/static/object-generation_pb.js"></script>
+<script src="/static/object-generation_grpc_web_pb.js"></script>
+<script>
+    // Function to highlight JSON content
+    function highlightJson(json) {
+        // Convert JSON to a formatted string
+        const jsonString = JSON.stringify(json, null, 2);
+
+        // Add escaping for JSON strings and handle special characters
+        const escapedJsonString = jsonString
+            .replace(/\\/g, '\\\\') // Escape backslashes
+            .replace(/"/g, '&quot;') // Escape double quotes
+            .replace(/&quot;([^"]+)&quot;/g, (match, p1) => {
+                // Colorize strings in JSON
+                return `<span class="string">&quot;${p1}&quot;</span>`;
+            })
+            .replace(/"([^"]+)"(?=\s*:)/g, '<span class="key">&quot;$1&quot;:</span>')
+            .replace(/\b(true|false)\b/g, '<span class="boolean">$1</span>')
+            .replace(/\b(null)\b/g, '<span class="null">$1</span>')
+            .replace(/(\d+)/g, '<span class="number">$1</span>');
+
+        return escapedJsonString;
+    }
+
+    // Function to format and highlight JSON
+    function formatAndHighlightJson() {
+        const schemaText = document.getElementById('schema').value;
+        try {
+            const json = JSON.parse(schemaText);
+            document.getElementById('schema-highlight').innerHTML = highlightJson(json);
+        } catch (e) {
+            document.getElementById('schema-highlight').innerHTML = '<span class="string">Invalid JSON</span>';
+        }
+    }
+
+    // Initialize the content
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const initialSchema = {
+            "type": "object",
+            "instruction": "Defines the technological landscape of the world, including its level of advancement and notable innovations.",
+            "properties": {
+                "Level": {
+                    "type": "string",
+                    "instruction": "Categorize the overall technological sophistication of the world, such as medieval, industrial, or advanced futuristic."
+                },
+                "Inventions": {
+                    "type": "string",
+                    "instruction": "Describe the most significant technological discoveries and their transformative impact on the society, economy, and daily life."
+                }
+            }
+        };
+
+        const schemaTextArea = document.getElementById('schema');
+        schemaTextArea.value = JSON.stringify(initialSchema, null, 2); // Set formatted JSON
+        formatAndHighlightJson(); // Update the highlighted JSON
+    });
+
+    document.getElementById('schema').addEventListener('input', formatAndHighlightJson);
+    formatAndHighlightJson(); // Format and highlight JSON on load
+
+    // Initialize the result box content
+    document.getElementById('result').innerHTML = highlightJson({
+        "example": "This is an example of highlighted JSON content."
+    });
+
+    // Handle copy button click
+    document.getElementById('copy-btn').addEventListener('click', function() {
+        // Copy the result box content to clipboard
+        const resultText = document.getElementById('result').textContent;
+        navigator.clipboard.writeText(resultText).then(() => {
+            // Indicate success by showing the tick
+            document.getElementById('result-box').classList.add('copy-success');
+            // Hide the success indicator after a short delay
+            setTimeout(() => {
+                document.getElementById('result-box').classList.remove('copy-success');
+            }, 1000);
+        });
+    });
+
+
+
+    // Submit button
+    // Submit button
+    document.getElementById('submit-btn').addEventListener('click', async () => {
+        const prompt = document.getElementById('prompt').value;
+        const schema = document.getElementById('schema').value;
+
+        const requestBody = {
+            prompt,
+            definition: JSON.parse(schema) // Assume schema is a JSON string
+        };
+
+        // Display loading message
+        const resultElement = document.getElementById('result');
+        const timeTakenElement = document.getElementById('time-taken');
+        const tokensPerSecondElement = document.getElementById('tokens-per-second');
+        const errorMessageElement = document.getElementById('error-message');
+
+        resultElement.innerHTML = '<p>Loading...</p>';
+        timeTakenElement.textContent = '';
+        tokensPerSecondElement.textContent = '';
+        errorMessageElement.textContent = '';
+        errorMessageElement.style.display = 'none'; // Hide error message initially
+
+        // Start the timer
+        const startTime = performance.now();
+
+        try {
+            const response = await fetch('/api/objectGen', { // Replace with your server endpoint
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const responseData = await response.json();
+
+            // responseData.data is already an object, so no need to convert to JSON string and back
+            const decodedData = responseData.data;
+            console.log("The decoded data is:", decodedData);
+
+            // End the timer
+            const endTime = performance.now();
+            const timeTaken = ((endTime - startTime) / 1000).toFixed(2); // Time in seconds
+
+            // Extract and download all base64 strings
+            // Ensure extractBase64AndDownload works directly with the parsed object
+            extractBase64AndDownload(decodedData);
+
+            // Calculate the number of tokens based on characters or words in the JSON representation
+            const jsonString = JSON.stringify(decodedData); // Convert back to string for token estimation
+            const charCount = jsonString.length;
+            const wordCount = jsonString.split(/\s+/).length;
+
+            const tokenCountFromChars = charCount / 4; // Estimation based on character length
+            const tokenCountFromWords = wordCount * (4 / 3); // Estimation based on word count
+
+            // Use an average of the two estimates
+            const tokenCount = ((tokenCountFromChars + tokenCountFromWords) / 2).toFixed(2);
+
+            // Calculate tokens per second
+            const tokensPerSecond = (tokenCount / timeTaken).toFixed(2);
+
+            // Display the JSON data with highlighting (highlightJson expects an object, not a string)
+            const highlightedJson = highlightJson(decodedData);
+            resultElement.innerHTML = highlightedJson;
+
+            // Display the time taken and tokens per second
+            timeTakenElement.textContent = `Time taken: ${timeTaken} seconds`;
+            tokensPerSecondElement.textContent = `Estimated tokens per second: ${tokensPerSecond}`;
+        } catch (error) {
+            console.error('Error:', error);
+
+            // Clear loading message
+            resultElement.innerHTML = '';
+
+            // Display error message
+            errorMessageElement.textContent = `An error occurred: ${error.message}`;
+            errorMessageElement.style.display = 'block';
+            errorMessageElement.style.color = 'red';
+            errorMessageElement.style.fontWeight = 'bold';
+        }
+    });
+
+
+    // Function to perform volume testing using Promise.all for concurrency
+    document.getElementById('volume-test-btn').addEventListener('click', async () => {
+        const prompt = document.getElementById('prompt').value;
+        const schema = document.getElementById('schema').value;
+        const numRequests = parseInt(document.getElementById('volume-test-count').value, 10);
+
+        const requestBody = {
+            prompt,
+            definition: JSON.parse(schema) // Assume schema is a JSON string
+        };
+
+        // Reset results display
+        const resultElement = document.getElementById('result');
+        const timeTakenElement = document.getElementById('time-taken');
+        const tokensPerSecondElement = document.getElementById('tokens-per-second');
+        const errorMessageElement = document.getElementById('error-message');
+
+        resultElement.innerHTML = '<p>Loading...</p>';
+        timeTakenElement.textContent = '';
+        tokensPerSecondElement.textContent = '';
+        errorMessageElement.textContent = '';
+        errorMessageElement.style.display = 'none'; // Hide error message initially
+
+        let totalTokens = 0;
+        let totalTime = 0;
+
+        const startTime = performance.now(); // Start timer outside the loop for total duration
+
+        // Create an array of promises for concurrent execution
+        const requests = Array.from({ length: numRequests }, () =>
+            fetch('/api/objectGen', { // Replace with your server endpoint
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            }).then(async (response) => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const responseData = await response.json();
+
+                // `responseData.data` is already an object, no need to encode/decode
+                const decodedData = responseData.data;
+                console.log("The decoded data is:", decodedData);
+
+                // Convert the decodedData to a JSON string for token calculation
+                const jsonString = JSON.stringify(decodedData);
+
+                // Calculate the number of tokens based on the JSON string
+                const charCount = jsonString.length;
+                const wordCount = jsonString.split(/\s+/).length;
+                const tokenCountFromChars = charCount / 4;
+                const tokenCountFromWords = wordCount * (4 / 3);
+
+                // Use an average of the two estimates
+                const tokenCount = (tokenCountFromChars + tokenCountFromWords) / 2;
+
+                // Return token count and response time (relative to the start)
+                return {
+                    tokenCount,
+                    timeTaken: performance.now() - startTime // Measure time relative to the start of all requests
+                };
+            })
+        );
+
+        try {
+            // Wait for all requests to complete
+            const results = await Promise.all(requests);
+
+            // Process results
+            results.forEach(({ tokenCount, timeTaken }) => {
+                totalTokens += tokenCount;
+                totalTime = timeTaken; // Use the last time as the total time for all requests
+            });
+
+            // Calculate averages
+            const avgTime = (totalTime / numRequests / 1000).toFixed(2); // Convert ms to seconds and calculate average
+            const avgTokensPerSecond = ((totalTokens / (totalTime / 1000)) / numRequests).toFixed(2); // Total time in seconds
+
+            // Display the average time taken and tokens per second
+            timeTakenElement.textContent = `Average Time taken: ${avgTime} seconds`;
+            tokensPerSecondElement.textContent = `Average Estimated tokens per second: ${avgTokensPerSecond}`;
+
+            // Reset the result content
+            resultElement.innerHTML = `<p>Volume test completed with ${numRequests} requests.</p>`;
+        } catch (error) {
+            console.error('Error:', error);
+
+            // Display error message
+            errorMessageElement.textContent = `An error occurred: ${error.message}`;
+            errorMessageElement.style.display = 'block';
+            errorMessageElement.style.color = 'red';
+            errorMessageElement.style.fontWeight = 'bold';
+        }
+    });
+
+
+    // Function to download a base64 string as a file
+    function downloadBase64File(base64String, fileName, mimeType = 'application/octet-stream') {
+        const linkSource = `data:${mimeType};base64,${base64String}`;
+        const downloadLink = document.createElement("a");
+        downloadLink.href = linkSource;
+        downloadLink.download = fileName;
+        document.body.appendChild(downloadLink); // Append to body
+        downloadLink.click();
+        document.body.removeChild(downloadLink); // Clean up
+    }
+
+    // Function to extract all base64 strings from a JSON object and download them
+    function extractBase64AndDownload(jsonObject) {
+        // Regex pattern for base64 strings
+        const base64Pattern = /(?:[A-Za-z0-9+/]{4}){2,}(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?/g;
+
+        function traverse(obj, path = '') {
+            for (let key in obj) {
+                if (!obj.hasOwnProperty(key)) continue;
+
+                const value = obj[key];
+                const currentPath = path ? `${path}.${key}` : key;
+
+                if (typeof value === 'object' && value !== null) {
+                    traverse(value, currentPath);
+                } else if (typeof value === 'string') {
+                    const base64Matches = value.match(base64Pattern);
+                    if (base64Matches) {
+                        base64Matches.forEach((base64String, index) => {
+                            if (base64String.length < 16) return; // Skip short matches
+
+                            // Validate base64 string by attempting to decode it
+                            try {
+                                atob(base64String);
+                                const fileName = `file_${currentPath.replace(/\./g, '_')}_${index}`;
+                                downloadBase64File(base64String, fileName);
+                            } catch (e) {
+                                // Invalid base64 string, skip
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        traverse(jsonObject);
+    }
+</script>
+
+
+</body>
+</html>

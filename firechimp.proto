@@ -1,0 +1,118 @@
+syntax = "proto3";
+
+package jsonSchema;
+
+option go_package = "./grpc";
+
+import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
+
+// Definition message
+message Definition {
+  string type = 1; // Corresponds to Go's DataType field (as a string)
+  string instruction = 2; // Corresponds to Go's Instruction field
+  map<string, Definition> properties = 3; // Corresponds to Go's Properties field
+  Definition items = 4; // Corresponds to Go's Items field
+  string model = 5; // Corresponds to Go's ModelType field (as a string)
+  repeated string processingOrder = 6; // Corresponds to Go's ProcessingOrder field
+  string systemPrompt = 7; // Corresponds to Go's SystemPrompt field
+  RequestFormat req = 8; // Corresponds to Go's Req field
+  Focus narrowFocus = 9; // Corresponds to Go's NarrowFocus field
+  bool improvementProcess = 10; // Corresponds to Go's ImprovementProcess field
+  repeated string selectFields = 11; // Corresponds to Go's SelectFields field
+  Choices choices = 12; // Corresponds to Go's Choices field
+  bool voters = 13; // Corresponds to Go's Voters field
+  HashMap hashMap = 14; // Corresponds to Go's HashMap field
+  TextToSpeech textToSpeech = 15; // Corresponds to Go's Audio field
+  SpeechToText speechToText = 16; // Corresponds to Go's Speech field
+  Image image = 17; // Corresponds to Go's Image field
+  SendImage sendImage = 18; // Corresponds to Go's SendImage field
+  bool stream = 19;
+}
+
+// Audio message
+message TextToSpeech {
+  string model = 1; // Corresponds to Go's TextToSpeechModel field
+  string stringToAudio = 2; // Corresponds to Go's StringToAudio field
+  string format = 3; // Corresponds to Go's Format field
+  string voice = 4; // Corresponds to Go's Voice field
+}
+
+// SpeechToText message
+message SpeechToText {
+  string model = 1; // Corresponds to Go's SpeechToTextModel field
+  bytes audioToTranscribe = 2; // Corresponds to Go's AudioToTranscribe field
+  string language = 3; // Corresponds to Go's Language field
+  string format = 4; // Corresponds to Go's Format field
+  bool toString = 5; // Corresponds to Go's ToString field
+  bool toCaptions = 6; // Corresponds to Go's ToCaptions field
+}
+
+
+// Image message
+message Image {
+  string model = 1; // Corresponds to Go's ImageModel field
+  string size = 2; // Corresponds to Go's ImageSize field
+}
+
+// Choices message
+message Choices {
+  int32 number = 1; // Corresponds to Go's Number field
+  repeated string options = 2; // Corresponds to Go's Options field
+}
+
+// HashMap message
+message HashMap {
+  string keyInstruction = 1; // Corresponds to Go's KeyInstruction field
+  Definition fieldDefinition = 2; // Corresponds to Go's FieldDefinition field
+}
+
+// Focus message
+message Focus {
+  string prompt = 1; // Corresponds to Go's Prompt field
+  repeated string fields = 2; // Corresponds to Go's Fields field
+  bool keepOriginal = 3; // Corresponds to Go's KeepOriginal field
+}
+
+//SendImage message
+message SendImage {
+  repeated bytes imagesData = 1;
+}
+
+// RequestFormat message
+message RequestFormat {
+  string url = 1;
+  string method = 2;
+  map<string, string> headers = 3;
+  google.protobuf.Struct body = 4; // This corresponds to Go's Body field as map[string]interface{}
+  string authorization = 5;
+  repeated string requireFields = 6;
+}
+
+// RequestBody message for the GenerateObject RPC
+message RequestBody {
+  string prompt = 1; // Corresponds to Go's Prompt field
+  Definition definition = 2; // Corresponds to Go's Definition field
+}
+
+// Updated Response message for the GenerateObject RPC
+message Response {
+  google.protobuf.Struct data = 1;  // Use Struct to hold a dynamic map<string, any>
+  double usdCost = 2;
+}
+
+// StreamingResponse message for the stream method
+message StreamingResponse {
+  google.protobuf.Struct data = 1;  // Same as above, using Struct for map<string, any>
+  double usdCost = 2;
+  string status = 3;  // A status message for each streamed response
+}
+
+// The JSONSchemaService defines a service for generating JSON objects based on a schema definition.
+service JSONSchemaService {
+  // Standard request-response RPC
+  rpc GenerateObject(RequestBody) returns (Response);
+
+  // New method: Server-side streaming RPC
+  rpc StreamGeneratedObjects(RequestBody) returns (stream StreamingResponse);
+}

@@ -1,0 +1,184 @@
+package jobSubmitter
+
+import (
+	"testing"
+
+	"objectGeneration/llmManagement/LLM"
+
+	"github.com/henrylamb/object-generation-golang/jsonSchema"
+	"github.com/sashabaranov/go-openai"
+)
+
+func TestDefaultJobEntryPoint_SubmitJob(t *testing.T) {
+	t.Setenv("LLM_PROVIDER", "local")
+	t.Setenv("LLM_API_URL", "http://localhost:8080")
+	entryPoint := NewDefaultJobEntryPoint()
+	model := jsonSchema.ModelType("gpt-3.5-turbo")
+	def := &jsonSchema.Definition{
+		Model: model,
+	}
+	newPrompt := "Test prompt"
+	systemPrompt := "System prompt"
+	outStream := make(chan interface{}, 1)
+
+	// Temporarily replace the global WorkerChannel to avoid interference from the real system
+	originalChannel := LLM.WorkerChannel
+	LLM.WorkerChannel = make(chan *LLM.Job)
+	defer func() { LLM.WorkerChannel = originalChannel }()
+
+	// Start a goroutine to simulate the worker on the new channel
+	go func() {
+		job := <-LLM.WorkerChannel
+		response := &openai.ChatCompletionResponse{
+			Choices: []openai.ChatCompletionChoice{
+				{
+					Message: openai.ChatCompletionMessage{
+						Content: "Test response",
+					},
+				},
+			},
+			Usage: openai.Usage{
+				PromptTokens:     10,
+				CompletionTokens: 20,
+				TotalTokens:      30,
+			},
+		}
+		job.Result <- response
+	}()
+
+	response, usage, err := entryPoint.SubmitJob(model, def, newPrompt, systemPrompt, outStream)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if response != "Test response" {
+		t.Errorf("Expected 'Test response', got %s", response)
+	}
+	if usage.TotalTokens != 30 {
+		t.Errorf("Expected 30 total tokens, got %d", usage.TotalTokens)
+	}
+}
+
+func TestDefaultJobEntryPoint_SubmitJob_DefNil(t *testing.T) {
+	t.Setenv("LLM_PROVIDER", "local")
+	t.Setenv("LLM_API_URL", "http://localhost:8080")
+	entryPoint := NewDefaultJobEntryPoint()
+	model := jsonSchema.ModelType("gpt-3.5-turbo")
+	var def *jsonSchema.Definition = nil
+	newPrompt := "Test prompt"
+	systemPrompt := "System prompt"
+	outStream := make(chan interface{}, 1)
+
+	// Temporarily replace the global WorkerChannel to avoid interference from the real system
+	originalChannel := LLM.WorkerChannel
+	LLM.WorkerChannel = make(chan *LLM.Job)
+	defer func() { LLM.WorkerChannel = originalChannel }()
+
+	// Start a goroutine to simulate the worker on the new channel
+	go func() {
+		job := <-LLM.WorkerChannel
+		response := &openai.ChatCompletionResponse{
+			Choices: []openai.ChatCompletionChoice{
+				{
+					Message: openai.ChatCompletionMessage{
+						Content: "Response",
+					},
+				},
+			},
+			Usage: openai.Usage{},
+		}
+		job.Result <- response
+	}()
+
+	response, _, err := entryPoint.SubmitJob(model, def, newPrompt, systemPrompt, outStream)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if response != "Response" {
+		t.Errorf("Expected 'Response', got %s", response)
+	}
+}
+
+func TestDefaultJobEntryPoint_SubmitJob_SetsModel(t *testing.T) {
+	t.Setenv("LLM_PROVIDER", "local")
+	t.Setenv("LLM_API_URL", "http://localhost:8080")
+	entryPoint := NewDefaultJobEntryPoint()
+	model := jsonSchema.ModelType("gpt-4")
+	def := &jsonSchema.Definition{
+		// Model not set initially
+	}
+	newPrompt := "Prompt"
+	systemPrompt := "Sys"
+	outStream := make(chan interface{}, 1)
+
+	// Temporarily replace the global WorkerChannel to avoid interference from the real system
+	originalChannel := LLM.WorkerChannel
+	LLM.WorkerChannel = make(chan *LLM.Job)
+	defer func() { LLM.WorkerChannel = originalChannel }()
+
+	// Start a goroutine to simulate the worker on the new channel
+	go func() {
+		job := <-LLM.WorkerChannel
+		response := &openai.ChatCompletionResponse{
+			Choices: []openai.ChatCompletionChoice{
+				{
+					Message: openai.ChatCompletionMessage{
+						Content: "Ok",
+					},
+				},
+			},
+			Usage: openai.Usage{},
+		}
+		job.Result <- response
+	}()
+
+	_, _, err := entryPoint.SubmitJob(model, def, newPrompt, systemPrompt, outStream)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
+	if def.Model != model {
+		t.Errorf("Expected model %s, got %s", model, def.Model)
+	}
+}
+
+func TestDefaultJobEntryPoint_SubmitJob_InitializesSendImage(t *testing.T) {
+	t.Setenv("LLM_PROVIDER", "local")
+	t.Setenv("LLM_API_URL", "http://localhost:8080")
+	entryPoint := NewDefaultJobEntryPoint()
+	model := jsonSchema.ModelType("gpt-3.5-turbo")
+	def := &jsonSchema.Definition{
+		Model: model,
+		// SendImage nil
+	}
+	newPrompt := "Test prompt"
+	systemPrompt := "System prompt"
+	outStream := make(chan interface{}, 1)
+
+	// Temporarily replace the global WorkerChannel to avoid interference from the real system
+	originalChannel := LLM.WorkerChannel
+	LLM.WorkerChannel = make(chan *LLM.Job)
+	defer func() { LLM.WorkerChannel = originalChannel }()
+
+	// Start a goroutine to simulate the worker on the new channel
+	go func() {
+		job := <-LLM.WorkerChannel
+		response := &openai.ChatCompletionResponse{
+			Choices: []openai.ChatCompletionChoice{
+				{
+					Message: openai.ChatCompletionMessage{
+						Content: "Response",
+					},
+				},
+			},
+			Usage: openai.Usage{},
+		}
+		job.Result <- response
+	}()
+
+	_, _, err := entryPoint.SubmitJob(model, def, newPrompt, systemPrompt, outStream)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if def.SendImage == nil {
+		t.Error("Expected SendImage to be initialized")
+	}
+}

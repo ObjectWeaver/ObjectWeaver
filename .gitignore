@@ -1,0 +1,12 @@
+# Ignore environment files
+.env
+/.env.local
+/.env
+dist/
+prod/
+dist/windows-arm64/codeleft-objectGeneration.exe
+dist/windows-amd64/codeleft-objectGeneration.exe
+dist/linux-arm64/codeleft-objectGeneration
+dist/linux-amd64/codeleft-objectGeneration
+dist/darwin-arm64/codeleft-objectGeneration
+dist/darwin-amd64/codeleft-objectGeneration

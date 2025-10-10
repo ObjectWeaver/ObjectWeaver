@@ -1,0 +1,7 @@
+# Ignore environment files
+.env
+docker-compose.yaml
+firechimp.proto
+prometheus.yml
+Readme.md
+testInstructions
