@@ -34,6 +34,7 @@ func AuthInterceptor(
 
 	// Validate the API key (implement your validation logic here)
 	if err := validateToken(apiKey[0]); err != nil {
+		fmt.Printf("Invalid API key: %v\n", err)
 		return nil, err
 	}
 

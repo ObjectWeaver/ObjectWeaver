@@ -1,8 +1,8 @@
 package application
 
 import (
-	"objectweaver/orchestration/jos/domain"
 	"fmt"
+	"objectweaver/orchestration/jos/domain"
 )
 
 // StreamingGenerator - Generator with field-level streaming support
@@ -81,6 +81,8 @@ func (g *StreamingGenerator) GenerateStream(request *domain.GenerationRequest) (
 
 		// Execute tasks
 		context := domain.NewExecutionContext(processedRequest)
+		// Add user's prompt to context for proper field generation
+		context.PromptContext().AddPrompt(processedRequest.Prompt())
 		results, err := g.strategy.Execute(plan, g.executor, context)
 		if err != nil {
 			return

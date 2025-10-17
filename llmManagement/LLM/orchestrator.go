@@ -3,9 +3,9 @@ package LLM
 import (
 	"context"
 	"errors"
+	"log"
 	"objectweaver/llmManagement/backoff"
 	"objectweaver/llmManagement/clientManager"
-	"log"
 	"sync"
 	"time"
 
@@ -16,7 +16,8 @@ import (
 type Orchestrator struct {
 	config          OrchestratorConfig
 	clientAdapter   clientManager.ClientAdapter
-	jobQueue        *JobQueue
+	jobQueue        IJobQueueManager
+	batchManager    IBatchReqManager
 	backoffManager  BackoffManager
 	retryHandler    *RetryHandler
 	errorClassifier *backoff.ErrorClassifier
@@ -27,18 +28,20 @@ type Orchestrator struct {
 
 // OrchestratorConfig holds the configuration for the Orchestrator.
 type OrchestratorConfig struct {
-	Concurrency          int
-	MaxTokensPerMinute   int
-	MaxRequestsPerMinute int
-	MaxQueueSize         int
-	Verbose              bool
+	Concurrency            int
+	MaxTokensPerMinute     int
+	MaxRequestsPerMinute   int
+	MaxQueueSize           int
+	Verbose                bool
+	EnableBatchProcessing  bool // Enable batch processing for low-priority jobs
+	BatchPriorityThreshold int32  // Jobs with priority below this go to batch (default: 0)
 }
 
 // NewOrchestrator creates and wires up a new Orchestrator instance.
 func NewOrchestrator(
 	config OrchestratorConfig,
 	handler clientManager.ClientAdapter,
-	queue *JobQueue,
+	queue IJobQueueManager,
 	backoffManager BackoffManager,
 	retryHandler *RetryHandler,
 	classifier *backoff.ErrorClassifier,
@@ -58,6 +61,7 @@ func NewOrchestrator(
 		config:          config,
 		clientAdapter:   handler,
 		jobQueue:        queue,
+		batchManager:    nil, // Will be set via SetBatchManager if batch processing is enabled
 		backoffManager:  backoffManager,
 		retryHandler:    retryHandler,
 		errorClassifier: classifier,
@@ -67,10 +71,22 @@ func NewOrchestrator(
 	}
 }
 
+// SetBatchManager sets the batch manager for handling low-priority jobs.
+// This should be called after creating the orchestrator if batch processing is enabled.
+func (o *Orchestrator) SetBatchManager(batchManager IBatchReqManager) {
+	o.batchManager = batchManager
+}
+
 // StartProcessing begins the worker pool and the queue manager.
 func (o *Orchestrator) StartProcessing() {
 	o.wg.Add(1)
 	go o.jobQueue.StartManager(o.wg)
+
+	// Start batch manager if enabled
+	if o.config.EnableBatchProcessing && o.batchManager != nil {
+		ctx := context.Background()
+		o.batchManager.Start(ctx)
+	}
 
 	for i := 0; i < o.config.Concurrency; i++ {
 		o.wg.Add(1)
@@ -78,7 +94,6 @@ func (o *Orchestrator) StartProcessing() {
 			defer o.wg.Done()
 			for job := range o.jobQueue.Jobs() {
 				o.orchestrationJob(job, workerID)
-
 			}
 		}(i)
 	}
@@ -93,7 +108,7 @@ func (o *Orchestrator) orchestrationJob(job *Job, workerID int) {
 	// 2. Wait for token-bucket limiters.
 	ctx := context.Background()
 	if err := o.requestLimiter.Wait(ctx); err != nil {
-		o.jobQueue.Prepend(job)
+		o.jobQueue.Enqueue(job)
 		return
 	}
 	if err := o.tokenLimiter.WaitN(ctx, job.Tokens); err != nil {
@@ -116,7 +131,7 @@ func (o *Orchestrator) orchestrationJob(job *Job, workerID int) {
 				retryAfter = rateLimitErr.RetryAfter
 			}
 			o.backoffManager.ActivateBackoff(workerID, retryAfter)
-			o.jobQueue.Prepend(job)
+			o.jobQueue.Enqueue(job)
 
 		case backoff.ErrorTypeTransient:
 			o.retryHandler.HandleTransientError(job, o.jobQueue, workerID, err)
@@ -132,13 +147,53 @@ func (o *Orchestrator) orchestrationJob(job *Job, workerID int) {
 	job.Result <- resp
 }
 
-// Enqueue adds a job for processing.
-func (o *Orchestrator) Enqueue(job *Job) {
-	o.jobQueue.Enqueue(job)
-}
-
 // Stop gracefully shuts down the orchestrator and waits for workers to finish.
 func (o *Orchestrator) Stop() {
+	// Stop batch manager first if enabled
+	if o.config.EnableBatchProcessing && o.batchManager != nil {
+		ctx := context.Background()
+		o.batchManager.Stop(ctx)
+	}
+
 	o.jobQueue.StopManager()
 	o.wg.Wait()
+}
+
+func (o *Orchestrator) GetJobQueueManager() IJobQueueManager {
+	return o.jobQueue
+}
+
+// SubmitJobWithRouting routes jobs to either batch processing or real-time processing
+// based on the job's priority and configuration.
+func (o *Orchestrator) SubmitJobWithRouting(job *Job) error {
+	// Check if batch processing is enabled and job qualifies for batching
+	job.Inputs.Priority = job.Inputs.Def.Priority
+	
+	// DEBUG: Always log routing decision
+	log.Printf("[SubmitJobWithRouting] Job priority: %d, Threshold: %d, BatchEnabled: %v, BatchManager: %v",
+		job.Inputs.Priority, o.config.BatchPriorityThreshold, o.config.EnableBatchProcessing, o.batchManager != nil)
+	
+	if o.config.EnableBatchProcessing &&
+		o.batchManager != nil &&
+		job.Inputs.Priority < o.config.BatchPriorityThreshold {
+		// Route to batch manager for eventual/batch processing
+		log.Printf("[BATCH ROUTE] Routing job to batch processing (priority: %d, threshold: %d)",
+			job.Inputs.Priority, o.config.BatchPriorityThreshold)
+		return o.batchManager.AddJob(job)
+	}
+
+	// Route to orchestrator for real-time processing
+	log.Printf("[REALTIME ROUTE] Routing job to real-time processing (priority: %d)", job.Inputs.Priority)
+	o.GetJobQueueManager().Enqueue(job)
+	return nil
+}
+
+// GetBatchManager returns the batch manager if configured
+func (o *Orchestrator) GetBatchManager() IBatchReqManager {
+	return o.batchManager
+}
+
+// IsBatchProcessingEnabled returns whether batch processing is enabled
+func (o *Orchestrator) IsBatchProcessingEnabled() bool {
+	return o.config.EnableBatchProcessing && o.batchManager != nil
 }

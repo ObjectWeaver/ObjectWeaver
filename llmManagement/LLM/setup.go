@@ -1,9 +1,9 @@
 package LLM
 
 import (
+	"log"
 	"objectweaver/llmManagement/backoff"
 	"objectweaver/llmManagement/clientManager"
-	"log"
 	"os"
 	"strconv"
 	"sync"
@@ -91,13 +91,25 @@ func getEnvInt(key string, defaultValue int) int {
 
 // createChannelBridge correctly links a legacy worker channel to a modern
 // orchestration service. It passes the job without interfering with the result channel.
+// It uses SubmitJobWithRouting to enable batch processing based on job priority.
 func createChannelBridge(channel <-chan *Job, limiter OrchestrationService) {
 	go func() {
 		for job := range channel {
-			// Pass the job to the orchestrator. The orchestrator is now
-			// responsible for the entire job lifecycle, including writing
-			// the final result to job.Result.
-			limiter.Enqueue(job)
+			log.Printf("[ChannelBridge] Received job, attempting routing...")
+			
+			// Try to use SubmitJobWithRouting if available (for batch processing support)
+			// Fall back to direct Enqueue if the method is not available
+			if orchestrator, ok := limiter.(*Orchestrator); ok {
+				log.Printf("[ChannelBridge] Type assertion successful, calling SubmitJobWithRouting")
+				if err := orchestrator.SubmitJobWithRouting(job); err != nil {
+					log.Printf("[ChannelBridge ERROR] Failed to route job: %v, falling back to direct enqueue", err)
+					limiter.GetJobQueueManager().Enqueue(job)
+				}
+			} else {
+				// Legacy path: direct enqueue
+				log.Printf("[ChannelBridge] Type assertion failed, using legacy direct enqueue")
+				limiter.GetJobQueueManager().Enqueue(job)
+			}
 		}
 	}()
 }

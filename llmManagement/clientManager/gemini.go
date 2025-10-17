@@ -3,13 +3,14 @@ package clientManager
 import (
 	"bytes"
 	"encoding/json"
-	"objectweaver/llmManagement"
-	"objectweaver/llmManagement/modelConverter"
-	"objectweaver/llmManagement/requestManagement"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"objectweaver/llmManagement"
+	"objectweaver/llmManagement/modelConverter"
+	"objectweaver/llmManagement/requestManagement"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -273,4 +274,8 @@ func (a *GeminiClientAdapter) convertFromGeminiFormat(resp *http.Response) (*ope
 	}
 
 	return openaiResp, nil
+}
+
+func (a *GeminiClientAdapter) ProcessBatch(jobs []any) (*openai.ChatCompletionResponse, error) {
+	return nil, errors.New("Doesn't exist")
 }

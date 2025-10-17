@@ -8,4 +8,6 @@ import (
 
 type ClientAdapter interface {
 	Process(inputs *llmManagement.Inputs) (*openai.ChatCompletionResponse, error)
+	//will need some proper structure etc 
+	ProcessBatch(jobs []any) (*openai.ChatCompletionResponse, error)
 }

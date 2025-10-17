@@ -1,6 +1,7 @@
 package grpcService
 
 import (
+	"context"
 	"crypto/tls"
 	"log"
 	"os"
@@ -14,6 +15,16 @@ import (
 // server is used to implement the gRPC service.
 type Server struct {
 	pb.UnimplementedJSONSchemaServiceServer
+}
+
+// GenerateObject implements the gRPC interface by calling GenerateObjectV2
+func (s *Server) GenerateObject(ctx context.Context, req *pb.RequestBody) (*pb.Response, error) {
+	return s.GenerateObjectV2(ctx, req)
+}
+
+// StreamGeneratedObjects implements the gRPC interface by calling StreamGeneratedObjectsV2
+func (s *Server) StreamGeneratedObjects(req *pb.RequestBody, stream pb.JSONSchemaService_StreamGeneratedObjectsServer) error {
+	return s.StreamGeneratedObjectsV2(req, stream)
 }
 
 // NewGRPCServer creates a new gRPC server with authentication interceptor.

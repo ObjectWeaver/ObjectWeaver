@@ -3,10 +3,11 @@ package clientManager
 import (
 	"bytes"
 	"encoding/json"
-	"objectweaver/llmManagement"
-	"objectweaver/llmManagement/requestManagement"
+	"errors"
 	"fmt"
 	"net/http"
+	"objectweaver/llmManagement"
+	"objectweaver/llmManagement/requestManagement"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -80,4 +81,8 @@ func (h *LocalClientAdapter) Process(inputs *llmManagement.Inputs) (*openai.Chat
 	}
 
 	return &chatResponse, nil
+}
+
+func (a *LocalClientAdapter) ProcessBatch(jobs []any) (*openai.ChatCompletionResponse, error) {
+	return nil, errors.New("Doesn't exist")
 }

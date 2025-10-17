@@ -29,6 +29,7 @@ func min(a, b int) int {
 type RequestBuilder interface {
 	// BuildRequest constructs a ChatCompletionRequest from the given inputs.
 	BuildRequest(inputs *llmManagement.Inputs) (gogpt.ChatCompletionRequest, error)
+	//BuildBatchRequest(inputs []*llmManagement.Inputs) (gogpt.ChatCompletionRequest, error)
 }
 
 // defaultOpenAIReqBuilder is the concrete implementation of RequestBuilder
@@ -163,6 +164,7 @@ func (b *defaultOpenAIReqBuilder) BuildRequest(inputs *llmManagement.Inputs) (go
 
 	return req, nil
 }
+
 
 // --- Private Helper Functions ---
 // (These are the original functions from your prompt, kept as private helpers)

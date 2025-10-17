@@ -8,6 +8,8 @@ import (
 )
 
 // DefaultSchemaAnalyzer analyzes JSON schemas
+// Implements: domain.SchemaAnalyzer interface
+// Used by: application generators to break down schemas into processable fields
 type DefaultSchemaAnalyzer struct{}
 
 func NewDefaultSchemaAnalyzer() *DefaultSchemaAnalyzer {

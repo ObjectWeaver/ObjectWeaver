@@ -27,11 +27,10 @@ func (b *DefaultPromptBuilder) Build(task *domain.FieldTask, context *domain.Pro
 		return *def.OverridePrompt, nil
 	}
 
-	// Get base prompt
+	// Get base prompt from context (the user's overarching prompt)
 	basePrompt := context.FirstPrompt()
-	if basePrompt == "" {
-		basePrompt = def.Instruction
-	}
+	// Note: We don't fall back to def.Instruction here because that's the field-specific
+	// instruction, not the overarching context. The field instruction is used separately below.
 
 	// Build contextual information
 	currentGen := ""

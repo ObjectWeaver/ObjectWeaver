@@ -2,11 +2,48 @@ package LLM
 
 import (
 	"objectweaver/llmManagement"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/sashabaranov/go-openai"
 )
+
+// Mock implementation of IJobQueueManager for testing
+type mockJobQueueManager struct {
+	jobs []*Job
+	mu   sync.Mutex
+}
+
+func (m *mockJobQueueManager) StartManager(wg *sync.WaitGroup) {
+	// Not needed for these tests
+}
+
+func (m *mockJobQueueManager) Jobs() <-chan *Job {
+	// Not needed for these tests
+	return nil
+}
+
+func (m *mockJobQueueManager) StopManager() {
+	// Not needed for these tests
+}
+
+func (m *mockJobQueueManager) Enqueue(request *Job) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.jobs = append(m.jobs, request)
+}
+
+func (m *mockJobQueueManager) Dequeue() *Job {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if len(m.jobs) == 0 {
+		return nil
+	}
+	job := m.jobs[0]
+	m.jobs = m.jobs[1:]
+	return job
+}
 
 func TestNewRetryHandler(t *testing.T) {
 	maxRetries := 5
@@ -23,7 +60,9 @@ func TestNewRetryHandler(t *testing.T) {
 
 func TestHandleTransientError_Retry(t *testing.T) {
 	rh := NewRetryHandler(3, true)
-	queue := NewJobQueue(1, 10)
+	queue := &mockJobQueueManager{
+		jobs: make([]*Job, 0),
+	}
 	job := &Job{
 		Result:  make(chan *openai.ChatCompletionResponse, 1),
 		Inputs:  &llmManagement.Inputs{},
@@ -45,7 +84,7 @@ func TestHandleTransientError_Retry(t *testing.T) {
 	}
 
 	// Check if job is prepended (dequeue should get it)
-	dequeued := queue.dequeue()
+	dequeued := queue.Dequeue()
 	if dequeued != job {
 		t.Error("Job not prepended to queue")
 	}
@@ -53,7 +92,9 @@ func TestHandleTransientError_Retry(t *testing.T) {
 
 func TestHandleTransientError_MaxRetries(t *testing.T) {
 	rh := NewRetryHandler(1, true)
-	queue := NewJobQueue(1, 10)
+	queue := &mockJobQueueManager{
+		jobs: make([]*Job, 0),
+	}
 	job := &Job{
 		Result:  make(chan *openai.ChatCompletionResponse, 1),
 		Inputs:  &llmManagement.Inputs{},

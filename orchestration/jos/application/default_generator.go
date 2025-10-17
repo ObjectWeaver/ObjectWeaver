@@ -1,8 +1,8 @@
 package application
 
 import (
-	"objectweaver/orchestration/jos/domain"
 	"fmt"
+	"objectweaver/orchestration/jos/domain"
 	"sync"
 )
 
@@ -63,6 +63,8 @@ func (g *DefaultGenerator) Generate(request *domain.GenerationRequest) (*domain.
 
 	// Phase 5: Execute tasks
 	context := domain.NewExecutionContext(processedRequest)
+	// Add user's prompt to context for proper field generation
+	context.PromptContext().AddPrompt(processedRequest.Prompt())
 	results, err := g.strategy.Execute(plan, g.executor, context)
 	if err != nil {
 		return nil, fmt.Errorf("execution failed: %w", err)

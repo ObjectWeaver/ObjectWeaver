@@ -17,7 +17,7 @@
 
 ## 📖 Overview
 
-objectweaver is a high-performance, production-ready object generation engine that leverages Large Language Models (LLMs) to transform natural language prompts into structured, validated data objects. Built with Go for speed and reliability, objectweaver provides both HTTP and gRPC interfaces for seamless integration into any application architecture.
+ObjectWeaver is a high-performance, production-ready object generation engine that leverages Large Language Models (LLMs) to transform natural language prompts into structured, validated data objects. Built with Go for speed and reliability, objectweaver provides both HTTP and gRPC interfaces for seamless integration into any application architecture.
 
 ### Key Features
 

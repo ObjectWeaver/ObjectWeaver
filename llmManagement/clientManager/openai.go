@@ -2,9 +2,10 @@ package clientManager
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"objectweaver/llmManagement"
 	"objectweaver/llmManagement/requestManagement"
-	"fmt"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -44,4 +45,8 @@ func (a *OpenAIClientAdapter) Process(inputs *llmManagement.Inputs) (*openai.Cha
 	}
 
 	return &resp, nil
+}
+
+func (a *OpenAIClientAdapter) ProcessBatch(jobs []any) (*openai.ChatCompletionResponse, error) {
+	return nil, errors.New("Doesn't exist")
 }

@@ -104,6 +104,8 @@ func (g *ProgressiveGenerator) GenerateStreamProgressive(request *domain.Generat
 		// Execute tasks - need to get token stream
 		// This requires special handling for progressive execution
 		context := domain.NewExecutionContext(processedRequest)
+		// Add user's prompt to context for proper field generation
+		context.PromptContext().AddPrompt(processedRequest.Prompt())
 
 		// Create token stream channel
 		tokenStream := make(chan *domain.TokenStreamChunk, 100)
