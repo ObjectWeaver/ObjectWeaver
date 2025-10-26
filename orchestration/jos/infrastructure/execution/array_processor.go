@@ -184,7 +184,7 @@ func (p *ArrayProcessor) executeLLMRequest(task *domain.FieldTask, context *doma
 	var numItems int
 	fmt.Sscanf(numResponse, "%d", &numItems)
 	if numItems < 1 {
-		numItems = 3 // Default
+		numItems = 3 // Default number of items to be in the list. This was chosen as LLMs like to do things in three's like people
 	}
 
 	// Return the results
@@ -221,7 +221,7 @@ func (p *ArrayProcessor) extractListInfo(result map[string]interface{}) (int, st
 		}
 	}
 
-	// Ensure reasonable bounds
+	// Ensure reasonable bounds - to ensure that the LLMs don't go crazy. The weaker ones do this. If you want to have a long list of items This is probably better to break it down
 	if numItems < 1 {
 		numItems = 1
 	}

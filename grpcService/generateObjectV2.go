@@ -44,6 +44,8 @@ func (s *Server) GenerateObjectV2(ctx context.Context, req *pb.RequestBody) (*pb
 	}
 
 	// Create generation request
+	print, _ := json.Marshal(body.Definition)
+	service.PrettyPrintJSON(print)
 	request := domain.NewGenerationRequest(body.Prompt, body.Definition).
 		WithContext(ctx)
 
@@ -100,8 +102,8 @@ func (s *Server) createGeneratorConfig(schema *jsonSchema.Definition) *factory.G
 		// Streaming is handled by StreamGeneratedObjectsV2
 		config.Mode = factory.ModeSync
 	} else {
-		// Use dependency-aware mode for optimal execution
-		config.Mode = factory.ModeDependencyAware
+		// Use decision-aware mode for optimal execution with decision point support
+		config.Mode = factory.ModeParallel
 	}
 
 	// Configure based on schema properties

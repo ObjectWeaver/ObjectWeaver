@@ -11,24 +11,24 @@ import (
 
 // Mock implementations for testing
 type mockTaskExecutor struct {
-	executeFunc func(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error)
+	executeFunc func(task *domain.FieldTask, context *domain.ExecutionContext) ([]*domain.TaskResult, error)
 }
 
-func (m *mockTaskExecutor) Execute(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
+func (m *mockTaskExecutor) Execute(task *domain.FieldTask, context *domain.ExecutionContext) ([]*domain.TaskResult, error) {
 	if m.executeFunc != nil {
 		return m.executeFunc(task, context)
 	}
-	return domain.NewTaskResult(task.ID(), task.Key(), "mock_value", nil), nil
+	return []*domain.TaskResult{domain.NewTaskResult(task.ID(), task.Key(), "mock_value", nil)}, nil
 }
 
 func (m *mockTaskExecutor) ExecuteBatch(tasks []*domain.FieldTask, context *domain.ExecutionContext) ([]*domain.TaskResult, error) {
-	results := make([]*domain.TaskResult, len(tasks))
-	for i, task := range tasks {
-		result, err := m.Execute(task, context)
+	results := make([]*domain.TaskResult, 0)
+	for _, task := range tasks {
+		taskResults, err := m.Execute(task, context)
 		if err != nil {
 			return nil, err
 		}
-		results[i] = result
+		results = append(results, taskResults...)
 	}
 	return results, nil
 }
@@ -105,11 +105,11 @@ func TestSequentialStrategy_Execute(t *testing.T) {
 func TestSequentialStrategy_Execute_WithError(t *testing.T) {
 	strategy := NewSequentialStrategy()
 	executor := &mockTaskExecutor{
-		executeFunc: func(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
+		executeFunc: func(task *domain.FieldTask, context *domain.ExecutionContext) ([]*domain.TaskResult, error) {
 			if task.Key() == "task1" {
 				return nil, errors.New("execution error")
 			}
-			return domain.NewTaskResult(task.ID(), task.Key(), "value", nil), nil
+			return []*domain.TaskResult{domain.NewTaskResult(task.ID(), task.Key(), "value", nil)}, nil
 		},
 	}
 	context := createMockExecutionContext()
@@ -197,11 +197,11 @@ func TestParallelStrategy_Execute(t *testing.T) {
 func TestParallelStrategy_Execute_WithError(t *testing.T) {
 	strategy := NewParallelStrategy(5)
 	executor := &mockTaskExecutor{
-		executeFunc: func(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
+		executeFunc: func(task *domain.FieldTask, context *domain.ExecutionContext) ([]*domain.TaskResult, error) {
 			if task.Key() == "task2" {
 				return nil, errors.New("parallel execution error")
 			}
-			return domain.NewTaskResult(task.ID(), task.Key(), "value", nil), nil
+			return []*domain.TaskResult{domain.NewTaskResult(task.ID(), task.Key(), "value", nil)}, nil
 		},
 	}
 	context := createMockExecutionContext()

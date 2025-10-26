@@ -95,19 +95,15 @@ func getEnvInt(key string, defaultValue int) int {
 func createChannelBridge(channel <-chan *Job, limiter OrchestrationService) {
 	go func() {
 		for job := range channel {
-			log.Printf("[ChannelBridge] Received job, attempting routing...")
-			
 			// Try to use SubmitJobWithRouting if available (for batch processing support)
 			// Fall back to direct Enqueue if the method is not available
 			if orchestrator, ok := limiter.(*Orchestrator); ok {
-				log.Printf("[ChannelBridge] Type assertion successful, calling SubmitJobWithRouting")
 				if err := orchestrator.SubmitJobWithRouting(job); err != nil {
 					log.Printf("[ChannelBridge ERROR] Failed to route job: %v, falling back to direct enqueue", err)
 					limiter.GetJobQueueManager().Enqueue(job)
 				}
 			} else {
 				// Legacy path: direct enqueue
-				log.Printf("[ChannelBridge] Type assertion failed, using legacy direct enqueue")
 				limiter.GetJobQueueManager().Enqueue(job)
 			}
 		}

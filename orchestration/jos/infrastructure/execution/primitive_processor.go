@@ -18,6 +18,7 @@ type PrimitiveProcessor struct {
 	systemPromptProvider SystemPromptProvider
 	maxRetries           int
 	numberExtractor      extractor.PrimitiveExtractor[int]
+	generator            domain.Generator
 }
 
 func NewPrimitiveProcessor(llmProvider domain.LLMProvider, promptBuilder domain.PromptBuilder) *PrimitiveProcessor {

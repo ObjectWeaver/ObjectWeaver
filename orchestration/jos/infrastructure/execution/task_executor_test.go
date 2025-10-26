@@ -75,8 +75,11 @@ func TestCompositeTaskExecutor_Execute_WithMatchingProcessor(t *testing.T) {
 		t.Fatalf("Execute failed: %v", err)
 	}
 
-	if result.Value() != "processed_by_mock" {
-		t.Errorf("Expected 'processed_by_mock', got %v", result.Value())
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 result, got %d", len(result))
+	}
+	if result[0].Value() != "processed_by_mock" {
+		t.Errorf("Expected 'processed_by_mock', got %v", result[0].Value())
 	}
 }
 
@@ -102,8 +105,11 @@ func TestCompositeTaskExecutor_Execute_FallbackToDefault(t *testing.T) {
 	}
 
 	// Should use default PrimitiveProcessor
-	if result.Key() != "test" {
-		t.Errorf("Expected key 'test', got %v", result.Key())
+	if len(result) != 1 {
+		t.Fatalf("Expected 1 result, got %d", len(result))
+	}
+	if result[0].Key() != "test" {
+		t.Errorf("Expected key 'test', got %v", result[0].Key())
 	}
 }
 

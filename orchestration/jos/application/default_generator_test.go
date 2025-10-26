@@ -36,14 +36,14 @@ func (m *mockSchemaAnalyzer) DetermineProcessingOrder(fields []*domain.FieldDefi
 
 type mockTaskExecutor struct{}
 
-func (m *mockTaskExecutor) Execute(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
-	return domain.NewTaskResult(task.ID(), task.Key(), "mock_value", domain.NewResultMetadata()), nil
+func (m *mockTaskExecutor) Execute(task *domain.FieldTask, context *domain.ExecutionContext) ([]*domain.TaskResult, error) {
+	return []*domain.TaskResult{domain.NewTaskResult(task.ID(), task.Key(), "mock_value", domain.NewResultMetadata())}, nil
 }
 
 func (m *mockTaskExecutor) ExecuteBatch(tasks []*domain.FieldTask, context *domain.ExecutionContext) ([]*domain.TaskResult, error) {
-	results := make([]*domain.TaskResult, len(tasks))
-	for i, task := range tasks {
-		results[i] = domain.NewTaskResult(task.ID(), task.Key(), "mock_value", domain.NewResultMetadata())
+	results := make([]*domain.TaskResult, 0)
+	for _, task := range tasks {
+		results = append(results, domain.NewTaskResult(task.ID(), task.Key(), "mock_value", domain.NewResultMetadata()))
 	}
 	return results, nil
 }
@@ -87,11 +87,11 @@ func (m *mockExecutionStrategy) Execute(plan *domain.ExecutionPlan, executor dom
 	var results []*domain.TaskResult
 	for _, stage := range plan.Stages {
 		for _, task := range stage.Tasks {
-			result, err := executor.Execute(task, context)
+			taskResults, err := executor.Execute(task, context)
 			if err != nil {
 				return nil, err
 			}
-			results = append(results, result)
+			results = append(results, taskResults...)
 		}
 	}
 	return results, nil

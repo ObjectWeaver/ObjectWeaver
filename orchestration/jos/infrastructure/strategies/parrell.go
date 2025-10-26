@@ -25,7 +25,7 @@ func (s *ParallelStrategy) Schedule(tasks []*domain.FieldTask) (*domain.Executio
 	}, nil
 }
 
-//Execute uses the collected tasks and then sends it through to the executor (typically the TaskComposite class) so that the data can be generated using the processors.
+// Execute uses the collected tasks and then sends it through to the executor (typically the TaskComposite class) so that the data can be generated using the processors.
 func (s *ParallelStrategy) Execute(plan *domain.ExecutionPlan, executor domain.TaskExecutor, context *domain.ExecutionContext) ([]*domain.TaskResult, error) {
 	results := make([]*domain.TaskResult, 0)
 
@@ -38,11 +38,17 @@ func (s *ParallelStrategy) Execute(plan *domain.ExecutionPlan, executor domain.T
 			results = append(results, stageResults...)
 		} else {
 			for _, task := range stage.Tasks {
-				result, err := executor.Execute(task, context)
+				taskResults, err := executor.Execute(task, context)
 				if err != nil {
 					return nil, err
 				}
-				results = append(results, result)
+				// Flatten results - executor may return multiple results from decision points
+				results = append(results, taskResults...)
+
+				// Update context with all results
+				for _, res := range taskResults {
+					context.SetGeneratedValue(res.Key(), res.Value())
+				}
 			}
 		}
 	}
@@ -58,7 +64,7 @@ func (s *ParallelStrategy) executeParallel(tasks []*domain.FieldTask, executor d
 	}
 
 	sem := make(chan struct{}, s.maxConcurrency)
-	resultChan := make(chan *domain.TaskResult, len(tasks))
+	resultChan := make(chan []*domain.TaskResult, len(tasks))
 	errChan := make(chan error, len(tasks))
 
 	var wg sync.WaitGroup
@@ -75,12 +81,12 @@ func (s *ParallelStrategy) executeParallel(tasks []*domain.FieldTask, executor d
 				log.Printf("[ParallelStrategy] Starting task: %s", t.Key())
 			}
 
-			result, err := executor.Execute(t, context)
+			taskResults, err := executor.Execute(t, context)
 			if err != nil {
 				errChan <- err
 				return
 			}
-			resultChan <- result
+			resultChan <- taskResults
 
 			if verboseLogs {
 				log.Printf("[ParallelStrategy] Completed task: %s", t.Key())
@@ -96,13 +102,14 @@ func (s *ParallelStrategy) executeParallel(tasks []*domain.FieldTask, executor d
 		return nil, <-errChan
 	}
 
-	results := make([]*domain.TaskResult, 0, len(resultChan))
-	for result := range resultChan {
-		results = append(results, result)
+	results := make([]*domain.TaskResult, 0)
+	for taskResults := range resultChan {
+		// Flatten results - executor may return multiple results from decision points
+		results = append(results, taskResults...)
 	}
 
 	if verboseLogs {
-		log.Printf("[ParallelStrategy] All %d tasks completed", len(results))
+		log.Printf("[ParallelStrategy] All tasks completed, total results: %d", len(results))
 	}
 
 	return results, nil

@@ -43,6 +43,14 @@ github.com/objectweaver/go-sdk v0.0.0-20251013172824-a2f3431c10f9 h1:dQU4pifCvhj
 github.com/objectweaver/go-sdk v0.0.0-20251013172824-a2f3431c10f9/go.mod h1:jV044gC7MglGHiua+94ivXSYYyPMSiRWzX5mlOVfElU=
 github.com/objectweaver/go-sdk v0.0.0-20251021180105-c9edd9f30657 h1:hF+VJoeVuZRZh2WByLCZpcKkBWAww3VT1B5E6NTSNZw=
 github.com/objectweaver/go-sdk v0.0.0-20251021180105-c9edd9f30657/go.mod h1:jV044gC7MglGHiua+94ivXSYYyPMSiRWzX5mlOVfElU=
+github.com/objectweaver/go-sdk v0.0.0-20251023161021-69e6f97344c0 h1:QhWWNSEL0I1sBqfm8Z7hD7g+lZM/0PhkBreVoZbWf6M=
+github.com/objectweaver/go-sdk v0.0.0-20251023161021-69e6f97344c0/go.mod h1:jV044gC7MglGHiua+94ivXSYYyPMSiRWzX5mlOVfElU=
+github.com/objectweaver/go-sdk v0.0.0-20251023184935-21fbb4419e1f h1:UISIuyD3NLUT6GhcW8tqaugPuBZPOfXSW+6LIDVatL4=
+github.com/objectweaver/go-sdk v0.0.0-20251023184935-21fbb4419e1f/go.mod h1:jV044gC7MglGHiua+94ivXSYYyPMSiRWzX5mlOVfElU=
+github.com/objectweaver/go-sdk v0.0.0-20251026182555-6e43aa54be9a h1:BLFyvpANwFiZvBSxoHhgqSsvYpE+IctgjaG9Xtrf2pc=
+github.com/objectweaver/go-sdk v0.0.0-20251026182555-6e43aa54be9a/go.mod h1:jV044gC7MglGHiua+94ivXSYYyPMSiRWzX5mlOVfElU=
+github.com/objectweaver/go-sdk v0.0.0-20251026195252-113cf1c9c7b1 h1:xloZiazX306sjgJNKQVNSlw3LbJFj3Z3DVe4zSRealI=
+github.com/objectweaver/go-sdk v0.0.0-20251026195252-113cf1c9c7b1/go.mod h1:jV044gC7MglGHiua+94ivXSYYyPMSiRWzX5mlOVfElU=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/client_golang v1.20.2 h1:5ctymQzZlyOON1666svgwn3s6IKWgfbjsejTMiXIyjg=

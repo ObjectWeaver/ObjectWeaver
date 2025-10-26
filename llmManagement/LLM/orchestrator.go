@@ -168,22 +168,23 @@ func (o *Orchestrator) GetJobQueueManager() IJobQueueManager {
 func (o *Orchestrator) SubmitJobWithRouting(job *Job) error {
 	// Check if batch processing is enabled and job qualifies for batching
 	job.Inputs.Priority = job.Inputs.Def.Priority
-	
-	// DEBUG: Always log routing decision
-	log.Printf("[SubmitJobWithRouting] Job priority: %d, Threshold: %d, BatchEnabled: %v, BatchManager: %v",
-		job.Inputs.Priority, o.config.BatchPriorityThreshold, o.config.EnableBatchProcessing, o.batchManager != nil)
-	
 	if o.config.EnableBatchProcessing &&
 		o.batchManager != nil &&
 		job.Inputs.Priority < o.config.BatchPriorityThreshold {
 		// Route to batch manager for eventual/batch processing
-		log.Printf("[BATCH ROUTE] Routing job to batch processing (priority: %d, threshold: %d)",
-			job.Inputs.Priority, o.config.BatchPriorityThreshold)
+		if o.config.Verbose {
+			log.Printf("Routing job to batch processing (priority: %d, threshold: %d)",
+				job.Inputs.Priority, o.config.BatchPriorityThreshold)
+		}
+		log.Printf("Routing job to batch processing (priority: %d, threshold: %d)",
+	job.Inputs.Priority, o.config.BatchPriorityThreshold)
 		return o.batchManager.AddJob(job)
 	}
 
 	// Route to orchestrator for real-time processing
-	log.Printf("[REALTIME ROUTE] Routing job to real-time processing (priority: %d)", job.Inputs.Priority)
+	if o.config.Verbose {
+		log.Printf("Routing job to real-time processing (priority: %d)", job.Inputs.Priority)
+	}
 	o.GetJobQueueManager().Enqueue(job)
 	return nil
 }

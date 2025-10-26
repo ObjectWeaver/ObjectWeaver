@@ -28,6 +28,12 @@ message Definition {
   Image image = 17; // Corresponds to Go's Image field
   SendImage sendImage = 18; // Corresponds to Go's SendImage field
   bool stream = 19;
+  float temp = 20;
+  int32 priority = 21;
+  string overridePrompt = 22; // Corresponds to Go's OverridePrompt field
+  DecisionPoint decisionPoint = 23; // Corresponds to Go's DecisionPoint field
+  ScoringCriteria scoringCriteria = 24; // Corresponds to Go's ScoringCriteria field
+  RecursiveLoop recursiveLoop = 25; // Corresponds to Go's RecursiveLoop field
 }
 
 // Audio message
@@ -87,6 +93,65 @@ message RequestFormat {
   google.protobuf.Struct body = 4; // This corresponds to Go's Body field as map[string]interface{}
   string authorization = 5;
   repeated string requireFields = 6;
+}
+
+// DecisionPoint message
+message DecisionPoint {
+  string name = 1;
+  string evaluationPrompt = 2;
+  repeated ConditionalBranch branches = 3;
+  string strategy = 4; // RoutingStrategy as string
+}
+
+// ConditionalBranch message
+message ConditionalBranch {
+  string name = 1;
+  repeated Condition conditions = 2;
+  Definition logic = 3;
+  Definition then = 4;
+  int32 priority = 5;
+}
+
+// Condition message
+message Condition {
+  string field = 1;
+  string operator = 2; // ComparisonOperator as string
+  oneof value {
+    double number_value = 3;
+    string string_value = 4;
+    bool bool_value = 5;
+  }
+  string fieldPath = 6;
+}
+
+// ScoringCriteria message
+message ScoringCriteria {
+  map<string, ScoringDimension> dimensions = 1;
+  string evaluationModel = 2;
+  string aggregationMethod = 3; // AggregationMethod as string
+}
+
+// ScoringDimension message
+message ScoringDimension {
+  string description = 1;
+  ScoreScale scale = 2;
+  string type = 3; // ScoreType as string
+  double weight = 4;
+}
+
+// ScoreScale message
+message ScoreScale {
+  int32 min = 1;
+  int32 max = 2;
+}
+
+// RecursiveLoop message
+message RecursiveLoop {
+  int32 maxIterations = 1;
+  string selection = 2; // SelectionStrategy as string
+  DecisionPoint terminationPoint = 3;
+  string feedbackPrompt = 4;
+  bool includePreviousAttempts = 5;
 }
 
 // RequestBody message for the GenerateObject RPC

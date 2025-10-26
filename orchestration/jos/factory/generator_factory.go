@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"log"
 	"objectweaver/orchestration/jos/application"
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/infrastructure/analysis"
@@ -23,7 +24,7 @@ func NewGeneratorFactory(config *GeneratorConfig) *GeneratorFactory {
 	return &GeneratorFactory{config: config}
 }
 
-//Create builds a fully configured generator. Returns the execute system within the generator can accessed and intialised. The primary initialisation point. 
+// Create builds a fully configured generator. Returns the execute system within the generator can accessed and intialised. The primary initialisation point.
 func (f *GeneratorFactory) Create() (domain.Generator, error) {
 	// Create core components
 	analyzer := f.createAnalyzer()
@@ -43,6 +44,13 @@ func (f *GeneratorFactory) Create() (domain.Generator, error) {
 		generator = application.NewDefaultGenerator(analyzer, executor, assembler, strategy)
 	}
 
+	// Set the generator reference in the executor to enable recursive loop processing
+	// This resolves the circular dependency between executor and generator
+	if compositeExecutor, ok := executor.(*execution.CompositeTaskExecutor); ok {
+		log.Printf("[GeneratorFactory] Setting generator in CompositeTaskExecutor")
+		compositeExecutor.SetGenerator(generator)
+	}
+
 	// Register plugins if needed
 	if pluggable, ok := generator.(PluginRegistry); ok {
 		f.registerPlugins(pluggable)
@@ -55,7 +63,7 @@ func (f *GeneratorFactory) createAnalyzer() domain.SchemaAnalyzer {
 	return analysis.NewDefaultSchemaAnalyzer()
 }
 
-//createExecutor creates the class with the neccessary injections so that the the individual peice of content is generated. The TaskExecutor returned from this will be used along with the stratgies for the generation process.
+// createExecutor creates the class with the neccessary injections so that the the individual peice of content is generated. The TaskExecutor returned from this will be used along with the stratgies for the generation process.
 func (f *GeneratorFactory) createExecutor() domain.TaskExecutor {
 	llmProvider := f.createLLMProvider()
 	promptBuilder := f.createPromptBuilder()
@@ -66,7 +74,7 @@ func (f *GeneratorFactory) createExecutor() domain.TaskExecutor {
 	return execution.NewCompositeTaskExecutor(llmProvider, promptBuilder, processors)
 }
 
-//createTypeProcessors intialisers of the different types of processors along with the streaming counter part if that is the approach that the request takes. Through the JSON structure and through the usage of grpc server.
+// createTypeProcessors intialisers of the different types of processors along with the streaming counter part if that is the approach that the request takes. Through the JSON structure and through the usage of grpc server.
 func (f *GeneratorFactory) createTypeProcessors(llmProvider domain.LLMProvider, promptBuilder domain.PromptBuilder) []domain.TypeProcessor {
 	processors := make([]domain.TypeProcessor, 0)
 
@@ -92,7 +100,7 @@ func (f *GeneratorFactory) createTypeProcessors(llmProvider domain.LLMProvider, 
 	return processors
 }
 
-//createAssembler the factory for how the data is being sent to the final server. Either waiting until all the generation is created. Or streaming the content back out. 
+// createAssembler the factory for how the data is being sent to the final server. Either waiting until all the generation is created. Or streaming the content back out.
 func (f *GeneratorFactory) createAssembler() domain.ResultAssembler {
 	switch f.config.Mode {
 	case ModeStreamingProgressive:
@@ -106,7 +114,7 @@ func (f *GeneratorFactory) createAssembler() domain.ResultAssembler {
 	}
 }
 
-//createStrategy factory for how the generation process will occur. ie sequentially or in parrell for faster performance. 
+// createStrategy factory for how the generation process will occur. ie sequentially or in parrell for faster performance.
 func (f *GeneratorFactory) createStrategy() domain.ExecutionStrategy {
 	switch f.config.Mode {
 	case ModeSync:
@@ -120,7 +128,7 @@ func (f *GeneratorFactory) createStrategy() domain.ExecutionStrategy {
 	}
 }
 
-//createLLMProvider currently just returns the openAi provider so that the requests are sent out in the openAI format. Which is the main standard for API requests.
+// createLLMProvider currently just returns the openAi provider so that the requests are sent out in the openAI format. Which is the main standard for API requests.
 func (f *GeneratorFactory) createLLMProvider() domain.LLMProvider {
 	switch f.config.LLMProvider {
 	case "openai":
@@ -135,7 +143,7 @@ func (f *GeneratorFactory) createPromptBuilder() domain.PromptBuilder {
 	return prompt.NewDefaultPromptBuilder()
 }
 
-//registerPlugins plugins for pre and post processing so that additional functionality can be clicked in depending on the configuration of the service.
+// registerPlugins plugins for pre and post processing so that additional functionality can be clicked in depending on the configuration of the service.
 func (f *GeneratorFactory) registerPlugins(registry PluginRegistry) {
 	if f.config.EnableCache {
 		// Register cache plugin when available

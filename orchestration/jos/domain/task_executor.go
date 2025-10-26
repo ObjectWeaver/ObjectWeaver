@@ -11,8 +11,13 @@ package domain
 //   - Handle special cases (byte operations: TTS, Image, STT)
 //   - Coordinate with LLMProvider and PromptBuilder
 //   - Execute batches of tasks
+//   - Process decision points and return additional results from branches
+//
+// Execute returns a slice of TaskResults to support decision points generating
+// multiple sibling fields. The first result is the primary field, subsequent
+// results are additional fields from decision point branches.
 type TaskExecutor interface {
-	Execute(task *FieldTask, context *ExecutionContext) (*TaskResult, error)
+	Execute(task *FieldTask, context *ExecutionContext) ([]*TaskResult, error)
 	ExecuteBatch(tasks []*FieldTask, context *ExecutionContext) ([]*TaskResult, error)
 }
 

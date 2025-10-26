@@ -13,7 +13,7 @@ func NewDependencyAwareStrategy(maxConcurrency int) *DependencyAwareStrategy {
 	return &DependencyAwareStrategy{maxConcurrency: maxConcurrency}
 }
 
-//Schedule sets up and sorts the tasks which are going to be executed later down the line.
+// Schedule sets up and sorts the tasks which are going to be executed later down the line.
 func (s *DependencyAwareStrategy) Schedule(tasks []*domain.FieldTask) (*domain.ExecutionPlan, error) {
 	// Build dependency graph and create stages
 	graph := NewDependencyGraph(tasks)
@@ -25,8 +25,7 @@ func (s *DependencyAwareStrategy) Schedule(tasks []*domain.FieldTask) (*domain.E
 	}, nil
 }
 
-
-//Execute uses the collected tasks and then sends it through to the executor (typically the TaskComposite class) so that the data can be generated using the processors.
+// Execute uses the collected tasks and then sends it through to the executor (typically the TaskComposite class) so that the data can be generated using the processors.
 func (s *DependencyAwareStrategy) Execute(plan *domain.ExecutionPlan, executor domain.TaskExecutor, context *domain.ExecutionContext) ([]*domain.TaskResult, error) {
 	results := make([]*domain.TaskResult, 0)
 
@@ -42,12 +41,17 @@ func (s *DependencyAwareStrategy) Execute(plan *domain.ExecutionPlan, executor d
 		} else {
 			// Execute sequentially
 			for _, task := range stage.Tasks {
-				result, err := executor.Execute(task, context)
+				taskResults, err := executor.Execute(task, context)
 				if err != nil {
 					return nil, err
 				}
-				results = append(results, result)
-				context.SetGeneratedValue(task.Key(), result.Value())
+				// Flatten results - executor may return multiple results from decision points
+				results = append(results, taskResults...)
+
+				// Update context with all results
+				for _, res := range taskResults {
+					context.SetGeneratedValue(res.Key(), res.Value())
+				}
 			}
 		}
 	}
@@ -75,7 +79,7 @@ func NewDependencyGraph(tasks []*domain.FieldTask) *DependencyGraph {
 	return g
 }
 
-//TopoSort Simple topological sort - returns stages that can be executed in parallel
+// TopoSort Simple topological sort - returns stages that can be executed in parallel
 func (g *DependencyGraph) TopoSort() []domain.ExecutionStage {
 	stages := make([]domain.ExecutionStage, 0)
 
