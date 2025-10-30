@@ -32,5 +32,4 @@ type FieldDefinition struct {
 	Key        string
 	Definition *jsonSchema.Definition
 	Parent     *FieldDefinition
-	Required   bool
 }

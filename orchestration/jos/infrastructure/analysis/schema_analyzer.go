@@ -48,7 +48,6 @@ func (a *DefaultSchemaAnalyzer) ExtractFields(schema *jsonSchema.Definition) ([]
 			Key:        key,
 			Definition: &childDef,
 			Parent:     nil,
-			Required:   a.isRequired(key, schema),
 		}
 		fields = append(fields, field)
 	}
@@ -143,11 +142,5 @@ func (a *DefaultSchemaAnalyzer) hasNestedObjects(fields []*domain.FieldDefinitio
 			return true
 		}
 	}
-	return false
-}
-
-func (a *DefaultSchemaAnalyzer) isRequired(key string, schema *jsonSchema.Definition) bool {
-	// Note: jsonSchema.Definition doesn't have a Required field
-	// This could be added in the future or derived from other fields
 	return false
 }

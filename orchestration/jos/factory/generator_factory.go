@@ -130,13 +130,7 @@ func (f *GeneratorFactory) createStrategy() domain.ExecutionStrategy {
 
 // createLLMProvider currently just returns the openAi provider so that the requests are sent out in the openAI format. Which is the main standard for API requests.
 func (f *GeneratorFactory) createLLMProvider() domain.LLMProvider {
-	switch f.config.LLMProvider {
-	case "openai":
-		// Return adapter that wraps existing job submitter
-		return llm.NewOpenAIProvider()
-	default:
-		return llm.NewOpenAIProvider()
-	}
+	return llm.NewOpenAIProvider()
 }
 
 func (f *GeneratorFactory) createPromptBuilder() domain.PromptBuilder {
