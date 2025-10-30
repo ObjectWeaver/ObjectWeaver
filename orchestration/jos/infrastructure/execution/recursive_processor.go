@@ -35,6 +35,11 @@ func NewRecursiveLoopProcessor(
 	}
 }
 
+func (r *RecursiveLoopProcessor) CanProcess(schemaType jsonSchema.DataType) bool {
+	// Delegate to base processor
+	return r.baseProcessor.CanProcess(schemaType)
+}
+
 func (r *RecursiveLoopProcessor) Process(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
 	loop := task.Definition().RecursiveLoop
 	verboseLogs := os.Getenv("VERBOSE") == "true"

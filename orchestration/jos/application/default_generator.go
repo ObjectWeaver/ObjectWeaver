@@ -3,35 +3,39 @@ package application
 import (
 	"fmt"
 	"objectweaver/orchestration/jos/domain"
-	"sync"
+	"objectweaver/orchestration/jos/infrastructure/execution"
 )
 
 // DefaultGenerator - Main orchestrator for synchronous generation
+// Now uses the simpler recursive GenerateObject approach
 type DefaultGenerator struct {
-	analyzer  domain.SchemaAnalyzer
-	executor  domain.TaskExecutor
-	assembler domain.ResultAssembler
-	strategy  domain.ExecutionStrategy
-	plugins   *PluginRegistry
-	mu        sync.RWMutex
+	llmProvider    domain.LLMProvider
+	promptBuilder  domain.PromptBuilder
+	fieldProcessor *execution.FieldProcessor
+	plugins        *PluginRegistry
 }
 
 func NewDefaultGenerator(
-	analyzer domain.SchemaAnalyzer,
-	executor domain.TaskExecutor,
-	assembler domain.ResultAssembler,
-	strategy domain.ExecutionStrategy,
+	llmProvider domain.LLMProvider,
+	promptBuilder domain.PromptBuilder,
 ) *DefaultGenerator {
-	return &DefaultGenerator{
-		analyzer:  analyzer,
-		executor:  executor,
-		assembler: assembler,
-		strategy:  strategy,
-		plugins:   NewPluginRegistry(),
+	// Create field processor for recursive generation
+	fieldProcessor := execution.NewFieldProcessor(llmProvider, promptBuilder)
+
+	generator := &DefaultGenerator{
+		llmProvider:    llmProvider,
+		promptBuilder:  promptBuilder,
+		fieldProcessor: fieldProcessor,
+		plugins:        NewPluginRegistry(),
 	}
+
+	// Set generator reference for recursive loops and decision points
+	fieldProcessor.SetGenerator(generator)
+
+	return generator
 }
 
-// Generate - Main generation workflow
+// Generate - Main generation workflow using recursive field processing
 func (g *DefaultGenerator) Generate(request *domain.GenerationRequest) (*domain.GenerationResult, error) {
 	// Phase 1: Pre-processing plugins
 	processedRequest, err := g.plugins.ApplyPreProcessors(request)
@@ -44,50 +48,44 @@ func (g *DefaultGenerator) Generate(request *domain.GenerationRequest) (*domain.
 		return cached, nil
 	}
 
-	// Phase 3: Analyze schema
-	analysis, err := g.analyzer.Analyze(processedRequest.Schema())
-	if err != nil {
-		return nil, fmt.Errorf("schema analysis failed: %w", err)
-	}
-
-	// Phase 4: Create execution plan
-	tasks, err := g.analyzer.DetermineProcessingOrder(analysis.Fields)
-	if err != nil {
-		return nil, fmt.Errorf("task planning failed: %w", err)
-	}
-
-	plan, err := g.strategy.Schedule(tasks)
-	if err != nil {
-		return nil, fmt.Errorf("scheduling failed: %w", err)
-	}
-
-	// Phase 5: Execute tasks
+	// Phase 3: Generate using recursive field processor
+	// Create execution context
 	context := domain.NewExecutionContext(processedRequest)
-	// Add user's prompt to context for proper field generation
 	context.PromptContext().AddPrompt(processedRequest.Prompt())
-	results, err := g.strategy.Execute(plan, g.executor, context)
-	if err != nil {
-		return nil, fmt.Errorf("execution failed: %w", err)
+
+	// Process all fields recursively
+	resultsCh := g.fieldProcessor.ProcessFields(processedRequest.Schema(), nil, context)
+
+	// Collect results into map
+	data := make(map[string]interface{})
+	totalCost := 0.0
+
+	for result := range resultsCh {
+		if result != nil {
+			data[result.Key()] = result.Value()
+			totalCost += result.Metadata().Cost
+		}
 	}
 
-	// Phase 6: Assemble results
-	finalResult, err := g.assembler.Assemble(results)
-	if err != nil {
-		return nil, fmt.Errorf("assembly failed: %w", err)
-	}
+	// Create result metadata
+	metadata := domain.NewResultMetadata()
+	metadata.Cost = totalCost
 
-	// Phase 7: Post-processing plugins
-	processedResult, err := g.plugins.ApplyPostProcessors(finalResult)
+	// Create generation result
+	result := domain.NewGenerationResult(data, metadata)
+
+	// Phase 4: Post-processing plugins
+	processedResult, err := g.plugins.ApplyPostProcessors(result)
 	if err != nil {
 		return nil, fmt.Errorf("post-processing failed: %w", err)
 	}
 
-	// Phase 8: Validation
+	// Phase 5: Validation
 	if err := g.plugins.ApplyValidation(processedResult, processedRequest.Schema()); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
-	// Phase 9: Cache result
+	// Phase 6: Cache result
 	g.plugins.CacheResult(generateCacheKey(processedRequest), processedResult)
 
 	return processedResult, nil

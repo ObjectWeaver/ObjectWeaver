@@ -71,7 +71,7 @@ func ObjectGen(w http.ResponseWriter, r *http.Request) {
 
 	// Create factory
 	factory := factory.NewGeneratorFactory(&factory.GeneratorConfig{
-		Mode:           factory.ModeParallel,
+		Mode:           factory.ModeParallel, // Uses new recursive architecture by default
 		MaxConcurrency: 10,
 	})
 

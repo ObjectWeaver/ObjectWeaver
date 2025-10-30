@@ -1,15 +1,11 @@
 package factory
 
 import (
-	"log"
+	"fmt"
 	"objectweaver/orchestration/jos/application"
 	"objectweaver/orchestration/jos/domain"
-	"objectweaver/orchestration/jos/infrastructure/analysis"
-	"objectweaver/orchestration/jos/infrastructure/assembly"
-	"objectweaver/orchestration/jos/infrastructure/execution"
 	"objectweaver/orchestration/jos/infrastructure/llm"
 	"objectweaver/orchestration/jos/infrastructure/prompt"
-	"objectweaver/orchestration/jos/infrastructure/strategies"
 )
 
 // GeneratorFactory creates configured generators
@@ -26,29 +22,27 @@ func NewGeneratorFactory(config *GeneratorConfig) *GeneratorFactory {
 
 // Create builds a fully configured generator. Returns the execute system within the generator can accessed and intialised. The primary initialisation point.
 func (f *GeneratorFactory) Create() (domain.Generator, error) {
-	// Create core components
-	analyzer := f.createAnalyzer()
-	executor := f.createExecutor()
-	assembler := f.createAssembler()
-	strategy := f.createStrategy()
+	// Create LLM provider and prompt builder
+	llmProvider := f.createLLMProvider()
+	promptBuilder := f.createPromptBuilder()
 
 	// Create generator based on mode
 	var generator domain.Generator
 
 	switch f.config.Mode {
 	case ModeStreamingProgressive:
-		generator = application.NewProgressiveGenerator(analyzer, executor, assembler.(domain.ProgressiveAssembler), strategy)
-	case ModeStreaming, ModeStreamingComplete:
-		generator = application.NewStreamingGenerator(analyzer, executor, assembler.(domain.StreamingAssembler), strategy)
-	default:
-		generator = application.NewDefaultGenerator(analyzer, executor, assembler, strategy)
-	}
+		// TODO: ProgressiveGenerator not yet refactored to use FieldProcessor
+		// This mode is temporarily unsupported until refactoring is complete
+		return nil, fmt.Errorf("progressive streaming mode not yet supported with new architecture")
 
-	// Set the generator reference in the executor to enable recursive loop processing
-	// This resolves the circular dependency between executor and generator
-	if compositeExecutor, ok := executor.(*execution.CompositeTaskExecutor); ok {
-		log.Printf("[GeneratorFactory] Setting generator in CompositeTaskExecutor")
-		compositeExecutor.SetGenerator(generator)
+	case ModeStreaming, ModeStreamingComplete:
+		// Streaming now uses the same FieldProcessor as default mode!
+		generator = application.NewStreamingGenerator(llmProvider, promptBuilder)
+
+	default:
+		// All non-streaming modes use the new recursive architecture
+		// This completely bypasses TaskExecutor, Analyzer, Strategy, and Assembler
+		generator = application.NewDefaultGenerator(llmProvider, promptBuilder)
 	}
 
 	// Register plugins if needed
@@ -59,6 +53,11 @@ func (f *GeneratorFactory) Create() (domain.Generator, error) {
 	return generator, nil
 }
 
+// The following methods are deprecated and only kept for reference
+// They were used by the old TaskExecutor architecture
+// TODO: Remove once ProgressiveGenerator is refactored
+
+/*
 func (f *GeneratorFactory) createAnalyzer() domain.SchemaAnalyzer {
 	return analysis.NewDefaultSchemaAnalyzer()
 }
@@ -127,6 +126,7 @@ func (f *GeneratorFactory) createStrategy() domain.ExecutionStrategy {
 		return strategies.NewSequentialStrategy()
 	}
 }
+*/
 
 // createLLMProvider currently just returns the openAi provider so that the requests are sent out in the openAI format. Which is the main standard for API requests.
 func (f *GeneratorFactory) createLLMProvider() domain.LLMProvider {

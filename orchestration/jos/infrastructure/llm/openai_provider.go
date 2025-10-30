@@ -86,12 +86,8 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 
 	log.Printf("[LLM] Response received, length: %d chars, tokens used: %d", len(response), usage.TotalTokens)
 
-	// Calculate cost
-	cost := calculateCost(model, usage)
-
 	metadata := &domain.ProviderMetadata{
 		TokensUsed: usage.TotalTokens,
-		Cost:       cost,
 		Model:      string(model),
 	}
 

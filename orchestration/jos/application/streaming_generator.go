@@ -3,30 +3,36 @@ package application
 import (
 	"fmt"
 	"objectweaver/orchestration/jos/domain"
+	"objectweaver/orchestration/jos/infrastructure/execution"
 )
 
 // StreamingGenerator - Generator with field-level streaming support
+// Now uses the same FieldProcessor as DefaultGenerator but streams results
 type StreamingGenerator struct {
-	analyzer  domain.SchemaAnalyzer
-	executor  domain.TaskExecutor
-	assembler domain.StreamingAssembler
-	strategy  domain.ExecutionStrategy
-	plugins   *PluginRegistry
+	llmProvider    domain.LLMProvider
+	promptBuilder  domain.PromptBuilder
+	fieldProcessor *execution.FieldProcessor
+	plugins        *PluginRegistry
 }
 
 func NewStreamingGenerator(
-	analyzer domain.SchemaAnalyzer,
-	executor domain.TaskExecutor,
-	assembler domain.StreamingAssembler,
-	strategy domain.ExecutionStrategy,
+	llmProvider domain.LLMProvider,
+	promptBuilder domain.PromptBuilder,
 ) *StreamingGenerator {
-	return &StreamingGenerator{
-		analyzer:  analyzer,
-		executor:  executor,
-		assembler: assembler,
-		strategy:  strategy,
-		plugins:   NewPluginRegistry(),
+	// Create field processor for recursive generation
+	fieldProcessor := execution.NewFieldProcessor(llmProvider, promptBuilder)
+
+	generator := &StreamingGenerator{
+		llmProvider:    llmProvider,
+		promptBuilder:  promptBuilder,
+		fieldProcessor: fieldProcessor,
+		plugins:        NewPluginRegistry(),
 	}
+
+	// Set generator reference for recursive loops and decision points
+	fieldProcessor.SetGenerator(generator)
+
+	return generator
 }
 
 // Generate - Synchronous generation (falls back to collecting stream)
@@ -38,13 +44,14 @@ func (g *StreamingGenerator) Generate(request *domain.GenerationRequest) (*domai
 
 	// Collect all chunks
 	finalData := make(map[string]interface{})
-	metadata := domain.NewResultMetadata()
 
 	for chunk := range stream {
 		if !chunk.IsFinal {
 			finalData[chunk.Key] = chunk.Value
 		}
 	}
+
+	metadata := domain.NewResultMetadata()
 
 	return domain.NewGenerationResult(finalData, metadata), nil
 }
@@ -62,49 +69,30 @@ func (g *StreamingGenerator) GenerateStream(request *domain.GenerationRequest) (
 			return
 		}
 
-		// Analyze schema
-		analysis, err := g.analyzer.Analyze(processedRequest.Schema())
-		if err != nil {
-			return
-		}
-
-		// Create execution plan
-		tasks, err := g.analyzer.DetermineProcessingOrder(analysis.Fields)
-		if err != nil {
-			return
-		}
-
-		plan, err := g.strategy.Schedule(tasks)
-		if err != nil {
-			return
-		}
-
-		// Execute tasks
+		// Create execution context
 		context := domain.NewExecutionContext(processedRequest)
-		// Add user's prompt to context for proper field generation
 		context.PromptContext().AddPrompt(processedRequest.Prompt())
-		results, err := g.strategy.Execute(plan, g.executor, context)
-		if err != nil {
-			return
-		}
 
-		// Stream results through assembler
-		resultChan := make(chan *domain.TaskResult, len(results))
-		go func() {
-			for _, result := range results {
-				resultChan <- result
+		// Process all fields recursively using FieldProcessor
+		resultsCh := g.fieldProcessor.ProcessFields(processedRequest.Schema(), nil, context)
+
+		// Stream results as they come in
+		for result := range resultsCh {
+			if result != nil {
+				// Convert TaskResult to StreamChunk
+				chunk := &domain.StreamChunk{
+					Key:     result.Key(),
+					Value:   result.Value(),
+					Path:    result.Path(),
+					IsFinal: false,
+				}
+				out <- chunk
 			}
-			close(resultChan)
-		}()
-
-		chunks, err := g.assembler.AssembleStreaming(resultChan)
-		if err != nil {
-			return
 		}
 
-		// Forward chunks
-		for chunk := range chunks {
-			out <- chunk
+		// Send final chunk
+		out <- &domain.StreamChunk{
+			IsFinal: true,
 		}
 	}()
 

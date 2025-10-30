@@ -9,14 +9,23 @@ import (
 
 // ArrayProcessor handles array-type fields
 type ArrayProcessor struct {
-	llmProvider   domain.LLMProvider
-	promptBuilder domain.PromptBuilder
+	llmProvider    domain.LLMProvider
+	promptBuilder  domain.PromptBuilder
+	fieldProcessor *FieldProcessor
 }
 
 func NewArrayProcessor(llmProvider domain.LLMProvider, promptBuilder domain.PromptBuilder) *ArrayProcessor {
 	return &ArrayProcessor{
 		llmProvider:   llmProvider,
 		promptBuilder: promptBuilder,
+	}
+}
+
+func NewArrayProcessorWithFieldProcessor(llmProvider domain.LLMProvider, promptBuilder domain.PromptBuilder, fieldProcessor *FieldProcessor) *ArrayProcessor {
+	return &ArrayProcessor{
+		llmProvider:    llmProvider,
+		promptBuilder:  promptBuilder,
+		fieldProcessor: fieldProcessor,
 	}
 }
 
@@ -51,10 +60,25 @@ func (p *ArrayProcessor) Process(task *domain.FieldTask, context *domain.Executi
 	for i := 0; i < arraySize; i++ {
 		itemTask := domain.NewFieldTask(fmt.Sprintf("%s[%d]", task.Key(), i), itemDef, task)
 
-		processor := p.createProcessorForType(itemDef.Type)
-		result, err := processor.Process(itemTask, enhancedContext)
-		if err != nil {
-			return nil, fmt.Errorf("array item %d failed: %w", i, err)
+		// Handle object items specially - they need recursive field processing
+		var result *domain.TaskResult
+		var err error
+
+		if itemDef.Type == jsonSchema.Object && p.fieldProcessor != nil {
+			// Object items use FieldProcessor for recursive processing
+			results := p.fieldProcessor.processObjectField(itemTask, enhancedContext)
+			if len(results) > 0 {
+				result = results[0] // Object fields return single result
+			} else {
+				return nil, fmt.Errorf("array item %d (object) failed: no result", i)
+			}
+		} else {
+			// Non-object items use type processors
+			processor := p.createProcessorForType(itemDef.Type)
+			result, err = processor.Process(itemTask, enhancedContext)
+			if err != nil {
+				return nil, fmt.Errorf("array item %d failed: %w", i, err)
+			}
 		}
 
 		items = append(items, result.Value())
@@ -233,9 +257,14 @@ func (p *ArrayProcessor) extractListInfo(result map[string]interface{}) (int, st
 }
 
 func (p *ArrayProcessor) createProcessorForType(schemaType jsonSchema.DataType) domain.TypeProcessor {
+	// If we have a field processor, use it for recursive processing
+	if p.fieldProcessor != nil {
+		return p.fieldProcessor.getBaseProcessorForType(schemaType)
+	}
+
+	// Fallback: We should always have a field processor now, but just in case
+	// Note: Objects should never reach this point as they're handled specially in Process()
 	switch schemaType {
-	case jsonSchema.Object:
-		return NewObjectProcessor(p.llmProvider, p.promptBuilder)
 	case jsonSchema.Array:
 		return p // Recursive
 	default:

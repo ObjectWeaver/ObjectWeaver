@@ -8,14 +8,23 @@ import (
 
 // MapProcessor handles map-type fields
 type MapProcessor struct {
-	llmProvider   domain.LLMProvider
-	promptBuilder domain.PromptBuilder
+	llmProvider    domain.LLMProvider
+	promptBuilder  domain.PromptBuilder
+	fieldProcessor *FieldProcessor
 }
 
 func NewMapProcessor(llmProvider domain.LLMProvider, promptBuilder domain.PromptBuilder) *MapProcessor {
 	return &MapProcessor{
 		llmProvider:   llmProvider,
 		promptBuilder: promptBuilder,
+	}
+}
+
+func NewMapProcessorWithFieldProcessor(llmProvider domain.LLMProvider, promptBuilder domain.PromptBuilder, fieldProcessor *FieldProcessor) *MapProcessor {
+	return &MapProcessor{
+		llmProvider:    llmProvider,
+		promptBuilder:  promptBuilder,
+		fieldProcessor: fieldProcessor,
 	}
 }
 

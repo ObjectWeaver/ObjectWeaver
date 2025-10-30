@@ -13,6 +13,7 @@ const (
 	ModeStreaming
 	ModeStreamingComplete
 	ModeStreamingProgressive
+	// ModeRecursive removed - now the default behavior
 )
 
 // GeneratorConfig configures generator creation

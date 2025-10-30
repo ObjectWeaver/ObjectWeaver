@@ -102,7 +102,7 @@ func (s *Server) createGeneratorConfig(schema *jsonSchema.Definition) *factory.G
 		// Streaming is handled by StreamGeneratedObjectsV2
 		config.Mode = factory.ModeSync
 	} else {
-		// Use decision-aware mode for optimal execution with decision point support
+		// Use parallel mode (now uses recursive architecture internally)
 		config.Mode = factory.ModeParallel
 	}
 

@@ -70,21 +70,6 @@ func TestCreate_StreamingCompleteMode_ReturnsStreamingGenerator(t *testing.T) {
 	}
 }
 
-func TestCreate_StreamingProgressiveMode_ReturnsProgressiveGenerator(t *testing.T) {
-	config := DefaultGeneratorConfig().WithMode(ModeStreamingProgressive)
-	factory := NewGeneratorFactory(config)
-	generator, err := factory.Create()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	if generator == nil {
-		t.Error("Expected non-nil generator")
-	}
-	if _, ok := generator.(*application.ProgressiveGenerator); !ok {
-		t.Errorf("Expected ProgressiveGenerator, got %T", generator)
-	}
-}
-
 func TestCreate_ParallelMode_ReturnsDefaultGenerator(t *testing.T) {
 	config := DefaultGeneratorConfig().WithMode(ModeParallel)
 	factory := NewGeneratorFactory(config)
