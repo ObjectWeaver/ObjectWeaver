@@ -265,15 +265,3 @@ func getOrderedKeys(schema *jsonSchema.Definition) ([]string, []string) {
 	return schema.ProcessingOrder, remainingKeys
 }
 
-// convertResultsToMap converts a channel of results to a map
-func convertResultsToMap(results <-chan *domain.TaskResult) map[string]interface{} {
-	data := make(map[string]interface{})
-
-	for result := range results {
-		if result != nil {
-			data[result.Key()] = result.Value()
-		}
-	}
-
-	return data
-}

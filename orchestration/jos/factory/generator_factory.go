@@ -31,7 +31,6 @@ func (f *GeneratorFactory) Create() (domain.Generator, error) {
 
 	switch f.config.Mode {
 	case ModeStreamingProgressive:
-		// TODO: ProgressiveGenerator not yet refactored to use FieldProcessor
 		// This mode is temporarily unsupported until refactoring is complete
 		return nil, fmt.Errorf("progressive streaming mode not yet supported with new architecture")
 
