@@ -58,18 +58,18 @@ func (g *DefaultGenerator) Generate(request *domain.GenerationRequest) (*domain.
 
 	// Collect results into map
 	data := make(map[string]interface{})
-	totalCost := 0.0
 
 	for result := range resultsCh {
 		if result != nil {
 			data[result.Key()] = result.Value()
-			totalCost += result.Metadata().Cost
+			//here another object needs to be created which is essentially a verbose version of the results data 
+			//the aim is to provide all the related metadata and choices and embeddings etc for the fields generating in a format which makes sense 
+			//and means that the end developer can consume it in their own way.
 		}
 	}
 
 	// Create result metadata
 	metadata := domain.NewResultMetadata()
-	metadata.Cost = totalCost
 
 	// Create generation result
 	result := domain.NewGenerationResult(data, metadata)

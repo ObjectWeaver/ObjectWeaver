@@ -125,8 +125,6 @@ type ResultMetadata struct {
 
 func NewResultMetadata() *ResultMetadata {
 	return &ResultMetadata{
-		TokensUsed: 0,
-		Cost:       0.0,
 		Duration:   0,
 		ModelUsed:  "",
 		FieldCount: 0,
@@ -231,6 +229,16 @@ type TaskResult struct {
 	metadata *ResultMetadata
 	path     []string
 	err      error
+
+	//beginging of the confidence and choices introduction - aim is to provide multiple options for a field using varying levels of temp etc 
+	choices  []TaskChoice
+}
+
+type TaskChoice struct {
+	Value     interface{}
+	Embedding []float64
+	Score     float64
+	Confidence float64
 }
 
 func NewTaskResult(taskID, key string, value interface{}, metadata *ResultMetadata) *TaskResult {
