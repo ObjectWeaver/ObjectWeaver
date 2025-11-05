@@ -10,10 +10,16 @@ import (
 // FieldProcessor handles processing of object properties (fields)
 // This is the main orchestrator for recursive field generation
 type FieldProcessor struct {
-	llmProvider       domain.LLMProvider
-	promptBuilder     domain.PromptBuilder
-	generator         domain.Generator // For recursive loops and decision points
-	decisionProcessor *DecisionProcessor
+	llmProvider          domain.LLMProvider
+	promptBuilder        domain.PromptBuilder
+	generator            domain.Generator // For recursive loops and decision points
+	decisionProcessor    *DecisionProcessor
+	epstimicOrchestrator EpstimicOrchestrator
+}
+
+// EpstimicOrchestrator is an interface to avoid import cycle
+type EpstimicOrchestrator interface {
+	EpstimicValidation(task *domain.FieldTask, context *domain.ExecutionContext, generateFn func(*domain.FieldTask, *domain.ExecutionContext) (any, *domain.ProviderMetadata, error)) (*domain.TaskResult, *domain.ProviderMetadata, error)
 }
 
 func NewFieldProcessor(llmProvider domain.LLMProvider, promptBuilder domain.PromptBuilder) *FieldProcessor {
@@ -28,6 +34,11 @@ func (fp *FieldProcessor) SetGenerator(generator domain.Generator) {
 	fp.generator = generator
 	// Create decision processor now that we have the generator
 	fp.decisionProcessor = NewDecisionProcessor(generator)
+}
+
+// SetEpstimicOrchestrator sets the epstimic orchestrator for validation
+func (fp *FieldProcessor) SetEpstimicOrchestrator(orchestrator EpstimicOrchestrator) {
+	fp.epstimicOrchestrator = orchestrator
 }
 
 // ProcessFields processes all properties of an object definition
@@ -236,11 +247,26 @@ func (fp *FieldProcessor) getBaseProcessorForType(schemaType jsonSchema.DataType
 	case jsonSchema.Map:
 		return NewMapProcessorWithFieldProcessor(fp.llmProvider, fp.promptBuilder, fp)
 	case jsonSchema.Boolean:
-		return NewBooleanProcessor(fp.llmProvider, fp.promptBuilder)
+		processor := NewBooleanProcessor(fp.llmProvider, fp.promptBuilder)
+		// Propagate epstimic orchestrator if set
+		if fp.epstimicOrchestrator != nil {
+			processor.SetEpstimicOrchestrator(fp.epstimicOrchestrator)
+		}
+		return processor
 	case jsonSchema.Number, jsonSchema.Integer:
-		return NewNumberProcessor(fp.llmProvider, fp.promptBuilder)
+		processor := NewNumberProcessor(fp.llmProvider, fp.promptBuilder)
+		// Propagate epstimic orchestrator if set
+		if fp.epstimicOrchestrator != nil {
+			processor.SetEpstimicOrchestrator(fp.epstimicOrchestrator)
+		}
+		return processor
 	default:
-		return NewPrimitiveProcessor(fp.llmProvider, fp.promptBuilder)
+		processor := NewPrimitiveProcessor(fp.llmProvider, fp.promptBuilder)
+		// Propagate epstimic orchestrator if set
+		if fp.epstimicOrchestrator != nil {
+			processor.SetEpstimicOrchestrator(fp.epstimicOrchestrator)
+		}
+		return processor
 	}
 }
 
@@ -264,4 +290,3 @@ func getOrderedKeys(schema *jsonSchema.Definition) ([]string, []string) {
 
 	return schema.ProcessingOrder, remainingKeys
 }
-

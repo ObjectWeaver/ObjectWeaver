@@ -2,11 +2,13 @@ package requestManagement
 
 import (
 	"encoding/base64"
-	"objectweaver/llmManagement"
-	"objectweaver/llmManagement/modelConverter"
 	"fmt"
 	"log"
 	"net/http"
+	"objectweaver/llmManagement"
+	"objectweaver/llmManagement/modelConverter"
+	"os"
+	"strconv"
 	"strings"
 
 	gogpt "github.com/sashabaranov/go-openai"
@@ -144,22 +146,28 @@ func (b *defaultOpenAIReqBuilder) BuildRequest(inputs *llmManagement.Inputs) (go
 	}
 
 	// 5. Handle Standard Models logic
-	var seed int = 51635473
+	var seed *int
+	if inputs.Def.Seed != nil  {
+		seed = inputs.Def.Seed
+	} else {
+		seedEnv := os.Getenv("LLM_SEED")
+
+		strconvSeed, err := strconv.Atoi(seedEnv)
+		if err == nil {
+			seed = &strconvSeed
+		} else {
+			defaultSeed := 51635473
+			seed = &defaultSeed			
+		}
+	}
+
 	req := gogpt.ChatCompletionRequest{
 		Messages: messages,
 		Model:    model,
 		Stream:   isStream, // Set stream flag
-	}
-
-	if isStream {
-		// Stream settings
-		req.Temperature = 0.0
-		// Note: original stream func didn't set TopP or Seed for non-reasoning
-	} else {
-		// Non-stream settings
-		req.Temperature = temp
-		req.TopP = 0.0
-		req.Seed = &seed
+		Temperature: temp,
+		TopP:       0.0,
+		Seed:      seed,
 	}
 
 	return req, nil

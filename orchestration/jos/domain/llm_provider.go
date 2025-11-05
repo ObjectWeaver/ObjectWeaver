@@ -73,6 +73,17 @@ type ProviderMetadata struct {
 	Cost         float64
 	Model        string
 	FinishReason string
+	Prompt string
+	Choices []Choice
+}
+
+type Choice struct {
+	Prompt string
+	Completion any
+	FieldTask FieldTask
+	Score int
+	Confidence float64
+	Model string
 }
 
 // GenerationConfig configures LLM generation

@@ -11,6 +11,7 @@ type BooleanProcessor struct {
 	llmProvider          domain.LLMProvider
 	promptBuilder        domain.PromptBuilder
 	systemPromptProvider SystemPromptProvider
+	epstimicOrchestrator EpstimicOrchestrator
 }
 
 func NewBooleanProcessor(llmProvider domain.LLMProvider, promptBuilder domain.PromptBuilder) *BooleanProcessor {
@@ -29,6 +30,11 @@ func NewBooleanProcessorWithPromptProvider(llmProvider domain.LLMProvider, promp
 	}
 }
 
+// SetEpstimicOrchestrator sets the epstimic orchestrator for validation
+func (p *BooleanProcessor) SetEpstimicOrchestrator(orchestrator EpstimicOrchestrator) {
+	p.epstimicOrchestrator = orchestrator
+}
+
 func (p *BooleanProcessor) CanProcess(schemaType jsonSchema.DataType) bool {
 	return schemaType == jsonSchema.Boolean
 }
@@ -36,6 +42,10 @@ func (p *BooleanProcessor) CanProcess(schemaType jsonSchema.DataType) bool {
 func (p *BooleanProcessor) Process(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
 	// Use primitive processor with the same prompt provider
 	primitiveProc := NewPrimitiveProcessorWithPromptProvider(p.llmProvider, p.promptBuilder, p.systemPromptProvider)
+	// Propagate epstimic orchestrator if set
+	if p.epstimicOrchestrator != nil {
+		primitiveProc.SetEpstimicOrchestrator(p.epstimicOrchestrator)
+	}
 	return primitiveProc.Process(task, context)
 }
 
@@ -44,6 +54,7 @@ type NumberProcessor struct {
 	llmProvider          domain.LLMProvider
 	promptBuilder        domain.PromptBuilder
 	systemPromptProvider SystemPromptProvider
+	epstimicOrchestrator EpstimicOrchestrator
 }
 
 func NewNumberProcessor(llmProvider domain.LLMProvider, promptBuilder domain.PromptBuilder) *NumberProcessor {
@@ -62,6 +73,11 @@ func NewNumberProcessorWithPromptProvider(llmProvider domain.LLMProvider, prompt
 	}
 }
 
+// SetEpstimicOrchestrator sets the epstimic orchestrator for validation
+func (p *NumberProcessor) SetEpstimicOrchestrator(orchestrator EpstimicOrchestrator) {
+	p.epstimicOrchestrator = orchestrator
+}
+
 func (p *NumberProcessor) CanProcess(schemaType jsonSchema.DataType) bool {
 	return schemaType == jsonSchema.Number || schemaType == jsonSchema.Integer
 }
@@ -69,5 +85,9 @@ func (p *NumberProcessor) CanProcess(schemaType jsonSchema.DataType) bool {
 func (p *NumberProcessor) Process(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
 	// Use primitive processor with the same prompt provider
 	primitiveProc := NewPrimitiveProcessorWithPromptProvider(p.llmProvider, p.promptBuilder, p.systemPromptProvider)
+	// Propagate epstimic orchestrator if set
+	if p.epstimicOrchestrator != nil {
+		primitiveProc.SetEpstimicOrchestrator(p.epstimicOrchestrator)
+	}
 	return primitiveProc.Process(task, context)
 }

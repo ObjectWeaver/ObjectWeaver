@@ -3,6 +3,7 @@ package application
 import (
 	"fmt"
 	"objectweaver/orchestration/jos/domain"
+	"objectweaver/orchestration/jos/infrastructure/epstimic"
 	"objectweaver/orchestration/jos/infrastructure/execution"
 )
 
@@ -31,6 +32,12 @@ func NewDefaultGenerator(
 
 	// Set generator reference for recursive loops and decision points
 	fieldProcessor.SetGenerator(generator)
+
+	// Set up epstimic orchestrator if enabled
+	epstimicOrch := epstimic.GetEpstimicOrchestrator(generator)
+	if epstimicOrch != nil {
+		fieldProcessor.SetEpstimicOrchestrator(epstimicOrch)
+	}
 
 	return generator
 }
@@ -62,8 +69,8 @@ func (g *DefaultGenerator) Generate(request *domain.GenerationRequest) (*domain.
 	for result := range resultsCh {
 		if result != nil {
 			data[result.Key()] = result.Value()
-			//here another object needs to be created which is essentially a verbose version of the results data 
-			//the aim is to provide all the related metadata and choices and embeddings etc for the fields generating in a format which makes sense 
+			//here another object needs to be created which is essentially a verbose version of the results data
+			//the aim is to provide all the related metadata and choices and embeddings etc for the fields generating in a format which makes sense
 			//and means that the end developer can consume it in their own way.
 		}
 	}

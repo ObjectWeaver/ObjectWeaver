@@ -53,7 +53,7 @@ func init() {
 
 	// Rate limiting configuration from environment
 	maxTokensPerMinute := getEnvInt("LLM_MAX_TOKENS_PER_MINUTE", 150000000)
-	maxRequestsPerMinute := getEnvInt("LLM_MAX_REQUESTS_PER_MINUTE", 500)
+	maxRequestsPerMinute := getEnvInt("LLM_MAX_REQUESTS_PER_MINUTE", 100)
 
 	// Backoff strategy from environment
 	backoffType := os.Getenv("LLM_BACKOFF_STRATEGY")

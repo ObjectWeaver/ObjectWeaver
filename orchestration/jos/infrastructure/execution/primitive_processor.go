@@ -19,6 +19,7 @@ type PrimitiveProcessor struct {
 	maxRetries           int
 	numberExtractor      extractor.PrimitiveExtractor[int]
 	generator            domain.Generator
+	epstimicOrchestrator EpstimicOrchestrator
 }
 
 func NewPrimitiveProcessor(llmProvider domain.LLMProvider, promptBuilder domain.PromptBuilder) *PrimitiveProcessor {
@@ -41,6 +42,11 @@ func NewPrimitiveProcessorWithPromptProvider(llmProvider domain.LLMProvider, pro
 	}
 }
 
+// SetEpstimicOrchestrator sets the epstimic orchestrator for validation
+func (p *PrimitiveProcessor) SetEpstimicOrchestrator(orchestrator EpstimicOrchestrator) {
+	p.epstimicOrchestrator = orchestrator
+}
+
 func (p *PrimitiveProcessor) CanProcess(schemaType jsonSchema.DataType) bool {
 	return schemaType == jsonSchema.String ||
 		schemaType == jsonSchema.Number ||
@@ -50,10 +56,39 @@ func (p *PrimitiveProcessor) CanProcess(schemaType jsonSchema.DataType) bool {
 }
 
 func (p *PrimitiveProcessor) Process(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
+
+	// Check if Epstimic engine is being used
+	//if TRUE - then go into the Epstimic flow
+	if os.Getenv("USE_EPSTIMIC_ENGINE") == "true" && task.Definition().Epistemic.Active && p.epstimicOrchestrator != nil {
+		result, _, err := p.epstimicOrchestrator.EpstimicValidation(task, context, p.generateValue)
+		if err != nil {
+			return nil, fmt.Errorf("failed to validate with Epstimic: %w", err)
+		}
+		return result.WithPath(task.Path()), nil
+	}
+
+	// else - go into the normal flow - below:
+	value, metadata, err := p.generateValue(task, context)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate value: %w", err)
+	}
+
+	// Create result
+	resultMetadata := domain.NewResultMetadata()
+	resultMetadata.Cost = metadata.Cost
+	resultMetadata.TokensUsed = metadata.TokensUsed
+	resultMetadata.ModelUsed = metadata.Model
+
+	result := domain.NewTaskResult(task.ID(), task.Key(), value, resultMetadata)
+	return result.WithPath(task.Path()), nil
+
+}
+
+func (p *PrimitiveProcessor) buildRequestPieces(task *domain.FieldTask, context *domain.ExecutionContext) (string, *domain.GenerationConfig, error) {
 	// Build prompt
 	prompt, err := p.promptBuilder.Build(task, context.PromptContext())
 	if err != nil {
-		return nil, fmt.Errorf("prompt building failed: %w", err)
+		return "", nil, err
 	}
 
 	// Generate with LLM
@@ -72,14 +107,20 @@ func (p *PrimitiveProcessor) Process(task *domain.FieldTask, context *domain.Exe
 		}
 	}
 
-	// Log task processing details
-	log.Printf("[TaskExecutor] Processing %s property '%s' with model %s",
-		task.Definition().Type, task.Key(), config.Model)
+	return prompt, config, nil
+}
+
+func (p *PrimitiveProcessor) generateValue(task *domain.FieldTask, context *domain.ExecutionContext) (any, *domain.ProviderMetadata, error) {
+	prompt, config, err := p.buildRequestPieces(task, context)
+	if err != nil {
+		log.Printf("[TaskExecutor ERROR] Failed to build request pieces for property '%s': %v", task.Key(), err)
+		return nil, nil, fmt.Errorf("failed to build request pieces: %w", err)
+	}
 
 	response, metadata, err := p.llmProvider.Generate(prompt, config)
 	if err != nil {
 		log.Printf("[TaskExecutor ERROR] Generation failed for property '%s': %v", task.Key(), err)
-		return nil, fmt.Errorf("LLM generation failed: %w", err)
+		return nil, nil, fmt.Errorf("LLM generation failed: %w", err)
 	}
 
 	log.Printf("[TaskExecutor] Received response for property '%s', parsing as %s",
@@ -87,17 +128,10 @@ func (p *PrimitiveProcessor) Process(task *domain.FieldTask, context *domain.Exe
 
 	// Parse response based on type
 	value := p.parseValue(response, task.Definition().Type)
+	metadata.Prompt = prompt
 
 	log.Printf("[TaskExecutor] Parsed value for property '%s': %+v", task.Key(), value)
-
-	// Create result
-	resultMetadata := domain.NewResultMetadata()
-	resultMetadata.Cost = metadata.Cost
-	resultMetadata.TokensUsed = metadata.TokensUsed
-	resultMetadata.ModelUsed = metadata.Model
-
-	result := domain.NewTaskResult(task.ID(), task.Key(), value, resultMetadata)
-	return result.WithPath(task.Path()), nil
+	return value, metadata, nil
 }
 
 func (p *PrimitiveProcessor) parseValue(response string, fieldType jsonSchema.DataType) interface{} {

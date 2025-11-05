@@ -108,14 +108,6 @@ func validateDefinition(def *jsonSchema.Definition, tier UserTier, depth int) er
 			log.Printf("Validation Error: Free tier users are not allowed to use the 'SystemPrompt' field.")
 			return errors.New("free users cannot use SystemPrompt field")
 		}
-		if def.Voters {
-			log.Printf("Validation Error: Free tier users are not allowed to use the 'Voters' field.")
-			return errors.New("free users cannot use Voters field")
-		}
-		if def.ImprovementProcess {
-			log.Printf("Validation Error: Free tier users are not allowed to use the 'ImprovementProcess' field.")
-			return errors.New("free users cannot use ImprovementProcess field")
-		}
 		if def.Choices != nil {
 			log.Printf("Validation Error: Free tier users are not allowed to use the 'Choices' field.")
 			return errors.New("free users cannot use Choices field")
@@ -126,10 +118,6 @@ func validateDefinition(def *jsonSchema.Definition, tier UserTier, depth int) er
 		}
 
 	case Pro:
-		if def.ImprovementProcess {
-			log.Printf("Validation Error: Pro tier users are not allowed to use the 'ImprovementProcess' field.")
-			return errors.New("Pro users cannot use ImprovementProcess field")
-		}
 		if def.Choices != nil {
 			log.Printf("Validation Error: Pro tier users are not allowed to use the 'Choices' field.")
 			return errors.New("Pro users cannot use Choices field")

@@ -9,7 +9,6 @@ package grpc
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	_ "google.golang.org/protobuf/types/known/anypb"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	reflect "reflect"
 	sync "sync"
@@ -25,34 +24,33 @@ const (
 
 // Definition message
 type Definition struct {
-	state              protoimpl.MessageState `protogen:"open.v1"`
-	Type               string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`                                                                                       // Corresponds to Go's DataType field (as a string)
-	Instruction        string                 `protobuf:"bytes,2,opt,name=instruction,proto3" json:"instruction,omitempty"`                                                                         // Corresponds to Go's Instruction field
-	Properties         map[string]*Definition `protobuf:"bytes,3,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Corresponds to Go's Properties field
-	Items              *Definition            `protobuf:"bytes,4,opt,name=items,proto3" json:"items,omitempty"`                                                                                     // Corresponds to Go's Items field
-	Model              string                 `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`                                                                                     // Corresponds to Go's ModelType field (as a string)
-	ProcessingOrder    []string               `protobuf:"bytes,6,rep,name=processingOrder,proto3" json:"processingOrder,omitempty"`                                                                 // Corresponds to Go's ProcessingOrder field
-	SystemPrompt       string                 `protobuf:"bytes,7,opt,name=systemPrompt,proto3" json:"systemPrompt,omitempty"`                                                                       // Corresponds to Go's SystemPrompt field
-	Req                *RequestFormat         `protobuf:"bytes,8,opt,name=req,proto3" json:"req,omitempty"`                                                                                         // Corresponds to Go's Req field
-	NarrowFocus        *Focus                 `protobuf:"bytes,9,opt,name=narrowFocus,proto3" json:"narrowFocus,omitempty"`                                                                         // Corresponds to Go's NarrowFocus field
-	ImprovementProcess bool                   `protobuf:"varint,10,opt,name=improvementProcess,proto3" json:"improvementProcess,omitempty"`                                                         // Corresponds to Go's ImprovementProcess field
-	SelectFields       []string               `protobuf:"bytes,11,rep,name=selectFields,proto3" json:"selectFields,omitempty"`                                                                      // Corresponds to Go's SelectFields field
-	Choices            *Choices               `protobuf:"bytes,12,opt,name=choices,proto3" json:"choices,omitempty"`                                                                                // Corresponds to Go's Choices field
-	Voters             bool                   `protobuf:"varint,13,opt,name=voters,proto3" json:"voters,omitempty"`                                                                                 // Corresponds to Go's Voters field
-	HashMap            *HashMap               `protobuf:"bytes,14,opt,name=hashMap,proto3" json:"hashMap,omitempty"`                                                                                // Corresponds to Go's HashMap field
-	TextToSpeech       *TextToSpeech          `protobuf:"bytes,15,opt,name=textToSpeech,proto3" json:"textToSpeech,omitempty"`                                                                      // Corresponds to Go's Audio field
-	SpeechToText       *SpeechToText          `protobuf:"bytes,16,opt,name=speechToText,proto3" json:"speechToText,omitempty"`                                                                      // Corresponds to Go's Speech field
-	Image              *Image                 `protobuf:"bytes,17,opt,name=image,proto3" json:"image,omitempty"`                                                                                    // Corresponds to Go's Image field
-	SendImage          *SendImage             `protobuf:"bytes,18,opt,name=sendImage,proto3" json:"sendImage,omitempty"`                                                                            // Corresponds to Go's SendImage field
-	Stream             bool                   `protobuf:"varint,19,opt,name=stream,proto3" json:"stream,omitempty"`
-	Temp               float32                `protobuf:"fixed32,20,opt,name=temp,proto3" json:"temp,omitempty"`
-	Priority           int32                  `protobuf:"varint,21,opt,name=priority,proto3" json:"priority,omitempty"`
-	OverridePrompt     string                 `protobuf:"bytes,22,opt,name=overridePrompt,proto3" json:"overridePrompt,omitempty"`   // Corresponds to Go's OverridePrompt field
-	DecisionPoint      *DecisionPoint         `protobuf:"bytes,23,opt,name=decisionPoint,proto3" json:"decisionPoint,omitempty"`     // Corresponds to Go's DecisionPoint field
-	ScoringCriteria    *ScoringCriteria       `protobuf:"bytes,24,opt,name=scoringCriteria,proto3" json:"scoringCriteria,omitempty"` // Corresponds to Go's ScoringCriteria field
-	RecursiveLoop      *RecursiveLoop         `protobuf:"bytes,25,opt,name=recursiveLoop,proto3" json:"recursiveLoop,omitempty"`     // Corresponds to Go's RecursiveLoop field
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Type            string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`                                                                                       // Corresponds to Go's DataType field (as a string)
+	Instruction     string                 `protobuf:"bytes,2,opt,name=instruction,proto3" json:"instruction,omitempty"`                                                                         // Corresponds to Go's Instruction field
+	Properties      map[string]*Definition `protobuf:"bytes,3,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Corresponds to Go's Properties field
+	Items           *Definition            `protobuf:"bytes,4,opt,name=items,proto3" json:"items,omitempty"`                                                                                     // Corresponds to Go's Items field
+	Model           string                 `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`                                                                                     // Corresponds to Go's ModelType field (as a string)
+	ProcessingOrder []string               `protobuf:"bytes,6,rep,name=processingOrder,proto3" json:"processingOrder,omitempty"`                                                                 // Corresponds to Go's ProcessingOrder field
+	SystemPrompt    string                 `protobuf:"bytes,7,opt,name=systemPrompt,proto3" json:"systemPrompt,omitempty"`                                                                       // Corresponds to Go's SystemPrompt field
+	Req             *RequestFormat         `protobuf:"bytes,8,opt,name=req,proto3" json:"req,omitempty"`                                                                                         // Corresponds to Go's Req field
+	NarrowFocus     *Focus                 `protobuf:"bytes,9,opt,name=narrowFocus,proto3" json:"narrowFocus,omitempty"`                                                                         // Corresponds to Go's NarrowFocus field
+	SelectFields    []string               `protobuf:"bytes,10,rep,name=selectFields,proto3" json:"selectFields,omitempty"`                                                                      // Corresponds to Go's SelectFields field
+	Choices         *Choices               `protobuf:"bytes,11,opt,name=choices,proto3" json:"choices,omitempty"`                                                                                // Corresponds to Go's Choices field
+	HashMap         *HashMap               `protobuf:"bytes,12,opt,name=hashMap,proto3" json:"hashMap,omitempty"`                                                                                // Corresponds to Go's HashMap field
+	TextToSpeech    *TextToSpeech          `protobuf:"bytes,13,opt,name=textToSpeech,proto3" json:"textToSpeech,omitempty"`                                                                      // Corresponds to Go's Audio field
+	SpeechToText    *SpeechToText          `protobuf:"bytes,14,opt,name=speechToText,proto3" json:"speechToText,omitempty"`                                                                      // Corresponds to Go's Speech field
+	Image           *Image                 `protobuf:"bytes,15,opt,name=image,proto3" json:"image,omitempty"`                                                                                    // Corresponds to Go's Image field
+	SendImage       *SendImage             `protobuf:"bytes,16,opt,name=sendImage,proto3" json:"sendImage,omitempty"`                                                                            // Corresponds to Go's SendImage field
+	Stream          bool                   `protobuf:"varint,17,opt,name=stream,proto3" json:"stream,omitempty"`
+	Temp            float32                `protobuf:"fixed32,18,opt,name=temp,proto3" json:"temp,omitempty"`
+	Priority        int32                  `protobuf:"varint,19,opt,name=priority,proto3" json:"priority,omitempty"`
+	OverridePrompt  string                 `protobuf:"bytes,20,opt,name=overridePrompt,proto3" json:"overridePrompt,omitempty"`   // Corresponds to Go's OverridePrompt field
+	DecisionPoint   *DecisionPoint         `protobuf:"bytes,21,opt,name=decisionPoint,proto3" json:"decisionPoint,omitempty"`     // Corresponds to Go's DecisionPoint field
+	ScoringCriteria *ScoringCriteria       `protobuf:"bytes,22,opt,name=scoringCriteria,proto3" json:"scoringCriteria,omitempty"` // Corresponds to Go's ScoringCriteria field
+	RecursiveLoop   *RecursiveLoop         `protobuf:"bytes,23,opt,name=recursiveLoop,proto3" json:"recursiveLoop,omitempty"`     // Corresponds to Go's RecursiveLoop field
+	Epistemic       *EpistemicValidation   `protobuf:"bytes,24,opt,name=epistemic,proto3" json:"epistemic,omitempty"`             // Corresponds to Go's Epistemic field
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Definition) Reset() {
@@ -148,13 +146,6 @@ func (x *Definition) GetNarrowFocus() *Focus {
 	return nil
 }
 
-func (x *Definition) GetImprovementProcess() bool {
-	if x != nil {
-		return x.ImprovementProcess
-	}
-	return false
-}
-
 func (x *Definition) GetSelectFields() []string {
 	if x != nil {
 		return x.SelectFields
@@ -167,13 +158,6 @@ func (x *Definition) GetChoices() *Choices {
 		return x.Choices
 	}
 	return nil
-}
-
-func (x *Definition) GetVoters() bool {
-	if x != nil {
-		return x.Voters
-	}
-	return false
 }
 
 func (x *Definition) GetHashMap() *HashMap {
@@ -256,6 +240,13 @@ func (x *Definition) GetScoringCriteria() *ScoringCriteria {
 func (x *Definition) GetRecursiveLoop() *RecursiveLoop {
 	if x != nil {
 		return x.RecursiveLoop
+	}
+	return nil
+}
+
+func (x *Definition) GetEpistemic() *EpistemicValidation {
+	if x != nil {
+		return x.Epistemic
 	}
 	return nil
 }
@@ -1293,6 +1284,59 @@ func (x *RecursiveLoop) GetIncludePreviousAttempts() bool {
 	return false
 }
 
+// EpistemicValidation message
+type EpistemicValidation struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Active        bool                   `protobuf:"varint,1,opt,name=active,proto3" json:"active,omitempty"`
+	Judges        int32                  `protobuf:"varint,2,opt,name=judges,proto3" json:"judges,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EpistemicValidation) Reset() {
+	*x = EpistemicValidation{}
+	mi := &file_objectweaver_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EpistemicValidation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EpistemicValidation) ProtoMessage() {}
+
+func (x *EpistemicValidation) ProtoReflect() protoreflect.Message {
+	mi := &file_objectweaver_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EpistemicValidation.ProtoReflect.Descriptor instead.
+func (*EpistemicValidation) Descriptor() ([]byte, []int) {
+	return file_objectweaver_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *EpistemicValidation) GetActive() bool {
+	if x != nil {
+		return x.Active
+	}
+	return false
+}
+
+func (x *EpistemicValidation) GetJudges() int32 {
+	if x != nil {
+		return x.Judges
+	}
+	return 0
+}
+
 // RequestBody message for the GenerateObject RPC
 type RequestBody struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1304,7 +1348,7 @@ type RequestBody struct {
 
 func (x *RequestBody) Reset() {
 	*x = RequestBody{}
-	mi := &file_objectweaver_proto_msgTypes[16]
+	mi := &file_objectweaver_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1316,7 +1360,7 @@ func (x *RequestBody) String() string {
 func (*RequestBody) ProtoMessage() {}
 
 func (x *RequestBody) ProtoReflect() protoreflect.Message {
-	mi := &file_objectweaver_proto_msgTypes[16]
+	mi := &file_objectweaver_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1329,7 +1373,7 @@ func (x *RequestBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestBody.ProtoReflect.Descriptor instead.
 func (*RequestBody) Descriptor() ([]byte, []int) {
-	return file_objectweaver_proto_rawDescGZIP(), []int{16}
+	return file_objectweaver_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *RequestBody) GetPrompt() string {
@@ -1357,7 +1401,7 @@ type Response struct {
 
 func (x *Response) Reset() {
 	*x = Response{}
-	mi := &file_objectweaver_proto_msgTypes[17]
+	mi := &file_objectweaver_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1369,7 +1413,7 @@ func (x *Response) String() string {
 func (*Response) ProtoMessage() {}
 
 func (x *Response) ProtoReflect() protoreflect.Message {
-	mi := &file_objectweaver_proto_msgTypes[17]
+	mi := &file_objectweaver_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1382,7 +1426,7 @@ func (x *Response) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Response.ProtoReflect.Descriptor instead.
 func (*Response) Descriptor() ([]byte, []int) {
-	return file_objectweaver_proto_rawDescGZIP(), []int{17}
+	return file_objectweaver_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *Response) GetData() *structpb.Struct {
@@ -1411,7 +1455,7 @@ type StreamingResponse struct {
 
 func (x *StreamingResponse) Reset() {
 	*x = StreamingResponse{}
-	mi := &file_objectweaver_proto_msgTypes[18]
+	mi := &file_objectweaver_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1423,7 +1467,7 @@ func (x *StreamingResponse) String() string {
 func (*StreamingResponse) ProtoMessage() {}
 
 func (x *StreamingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_objectweaver_proto_msgTypes[18]
+	mi := &file_objectweaver_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1436,7 +1480,7 @@ func (x *StreamingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamingResponse.ProtoReflect.Descriptor instead.
 func (*StreamingResponse) Descriptor() ([]byte, []int) {
-	return file_objectweaver_proto_rawDescGZIP(), []int{18}
+	return file_objectweaver_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *StreamingResponse) GetData() *structpb.Struct {
@@ -1465,7 +1509,7 @@ var File_objectweaver_proto protoreflect.FileDescriptor
 const file_objectweaver_proto_rawDesc = "" +
 	"\n" +
 	"\x12objectweaver.proto\x12\n" +
-	"jsonSchema\x1a\x19google/protobuf/any.proto\x1a\x1cgoogle/protobuf/struct.proto\"\xb2\t\n" +
+	"jsonSchema\x1a\x1cgoogle/protobuf/struct.proto\"\xa9\t\n" +
 	"\n" +
 	"Definition\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12 \n" +
@@ -1478,24 +1522,23 @@ const file_objectweaver_proto_rawDesc = "" +
 	"\x0fprocessingOrder\x18\x06 \x03(\tR\x0fprocessingOrder\x12\"\n" +
 	"\fsystemPrompt\x18\a \x01(\tR\fsystemPrompt\x12+\n" +
 	"\x03req\x18\b \x01(\v2\x19.jsonSchema.RequestFormatR\x03req\x123\n" +
-	"\vnarrowFocus\x18\t \x01(\v2\x11.jsonSchema.FocusR\vnarrowFocus\x12.\n" +
-	"\x12improvementProcess\x18\n" +
-	" \x01(\bR\x12improvementProcess\x12\"\n" +
-	"\fselectFields\x18\v \x03(\tR\fselectFields\x12-\n" +
-	"\achoices\x18\f \x01(\v2\x13.jsonSchema.ChoicesR\achoices\x12\x16\n" +
-	"\x06voters\x18\r \x01(\bR\x06voters\x12-\n" +
-	"\ahashMap\x18\x0e \x01(\v2\x13.jsonSchema.HashMapR\ahashMap\x12<\n" +
-	"\ftextToSpeech\x18\x0f \x01(\v2\x18.jsonSchema.TextToSpeechR\ftextToSpeech\x12<\n" +
-	"\fspeechToText\x18\x10 \x01(\v2\x18.jsonSchema.SpeechToTextR\fspeechToText\x12'\n" +
-	"\x05image\x18\x11 \x01(\v2\x11.jsonSchema.ImageR\x05image\x123\n" +
-	"\tsendImage\x18\x12 \x01(\v2\x15.jsonSchema.SendImageR\tsendImage\x12\x16\n" +
-	"\x06stream\x18\x13 \x01(\bR\x06stream\x12\x12\n" +
-	"\x04temp\x18\x14 \x01(\x02R\x04temp\x12\x1a\n" +
-	"\bpriority\x18\x15 \x01(\x05R\bpriority\x12&\n" +
-	"\x0eoverridePrompt\x18\x16 \x01(\tR\x0eoverridePrompt\x12?\n" +
-	"\rdecisionPoint\x18\x17 \x01(\v2\x19.jsonSchema.DecisionPointR\rdecisionPoint\x12E\n" +
-	"\x0fscoringCriteria\x18\x18 \x01(\v2\x1b.jsonSchema.ScoringCriteriaR\x0fscoringCriteria\x12?\n" +
-	"\rrecursiveLoop\x18\x19 \x01(\v2\x19.jsonSchema.RecursiveLoopR\rrecursiveLoop\x1aU\n" +
+	"\vnarrowFocus\x18\t \x01(\v2\x11.jsonSchema.FocusR\vnarrowFocus\x12\"\n" +
+	"\fselectFields\x18\n" +
+	" \x03(\tR\fselectFields\x12-\n" +
+	"\achoices\x18\v \x01(\v2\x13.jsonSchema.ChoicesR\achoices\x12-\n" +
+	"\ahashMap\x18\f \x01(\v2\x13.jsonSchema.HashMapR\ahashMap\x12<\n" +
+	"\ftextToSpeech\x18\r \x01(\v2\x18.jsonSchema.TextToSpeechR\ftextToSpeech\x12<\n" +
+	"\fspeechToText\x18\x0e \x01(\v2\x18.jsonSchema.SpeechToTextR\fspeechToText\x12'\n" +
+	"\x05image\x18\x0f \x01(\v2\x11.jsonSchema.ImageR\x05image\x123\n" +
+	"\tsendImage\x18\x10 \x01(\v2\x15.jsonSchema.SendImageR\tsendImage\x12\x16\n" +
+	"\x06stream\x18\x11 \x01(\bR\x06stream\x12\x12\n" +
+	"\x04temp\x18\x12 \x01(\x02R\x04temp\x12\x1a\n" +
+	"\bpriority\x18\x13 \x01(\x05R\bpriority\x12&\n" +
+	"\x0eoverridePrompt\x18\x14 \x01(\tR\x0eoverridePrompt\x12?\n" +
+	"\rdecisionPoint\x18\x15 \x01(\v2\x19.jsonSchema.DecisionPointR\rdecisionPoint\x12E\n" +
+	"\x0fscoringCriteria\x18\x16 \x01(\v2\x1b.jsonSchema.ScoringCriteriaR\x0fscoringCriteria\x12?\n" +
+	"\rrecursiveLoop\x18\x17 \x01(\v2\x19.jsonSchema.RecursiveLoopR\rrecursiveLoop\x12=\n" +
+	"\tepistemic\x18\x18 \x01(\v2\x1f.jsonSchema.EpistemicValidationR\tepistemic\x1aU\n" +
 	"\x0fPropertiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
 	"\x05value\x18\x02 \x01(\v2\x16.jsonSchema.DefinitionR\x05value:\x028\x01\"x\n" +
@@ -1585,7 +1628,10 @@ const file_objectweaver_proto_rawDesc = "" +
 	"\tselection\x18\x02 \x01(\tR\tselection\x12E\n" +
 	"\x10terminationPoint\x18\x03 \x01(\v2\x19.jsonSchema.DecisionPointR\x10terminationPoint\x12&\n" +
 	"\x0efeedbackPrompt\x18\x04 \x01(\tR\x0efeedbackPrompt\x128\n" +
-	"\x17includePreviousAttempts\x18\x05 \x01(\bR\x17includePreviousAttempts\"]\n" +
+	"\x17includePreviousAttempts\x18\x05 \x01(\bR\x17includePreviousAttempts\"E\n" +
+	"\x13EpistemicValidation\x12\x16\n" +
+	"\x06active\x18\x01 \x01(\bR\x06active\x12\x16\n" +
+	"\x06judges\x18\x02 \x01(\x05R\x06judges\"]\n" +
 	"\vRequestBody\x12\x16\n" +
 	"\x06prompt\x18\x01 \x01(\tR\x06prompt\x126\n" +
 	"\n" +
@@ -1614,34 +1660,35 @@ func file_objectweaver_proto_rawDescGZIP() []byte {
 	return file_objectweaver_proto_rawDescData
 }
 
-var file_objectweaver_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_objectweaver_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_objectweaver_proto_goTypes = []any{
-	(*Definition)(nil),        // 0: jsonSchema.Definition
-	(*TextToSpeech)(nil),      // 1: jsonSchema.TextToSpeech
-	(*SpeechToText)(nil),      // 2: jsonSchema.SpeechToText
-	(*Image)(nil),             // 3: jsonSchema.Image
-	(*Choices)(nil),           // 4: jsonSchema.Choices
-	(*HashMap)(nil),           // 5: jsonSchema.HashMap
-	(*Focus)(nil),             // 6: jsonSchema.Focus
-	(*SendImage)(nil),         // 7: jsonSchema.SendImage
-	(*RequestFormat)(nil),     // 8: jsonSchema.RequestFormat
-	(*DecisionPoint)(nil),     // 9: jsonSchema.DecisionPoint
-	(*ConditionalBranch)(nil), // 10: jsonSchema.ConditionalBranch
-	(*Condition)(nil),         // 11: jsonSchema.Condition
-	(*ScoringCriteria)(nil),   // 12: jsonSchema.ScoringCriteria
-	(*ScoringDimension)(nil),  // 13: jsonSchema.ScoringDimension
-	(*ScoreScale)(nil),        // 14: jsonSchema.ScoreScale
-	(*RecursiveLoop)(nil),     // 15: jsonSchema.RecursiveLoop
-	(*RequestBody)(nil),       // 16: jsonSchema.RequestBody
-	(*Response)(nil),          // 17: jsonSchema.Response
-	(*StreamingResponse)(nil), // 18: jsonSchema.StreamingResponse
-	nil,                       // 19: jsonSchema.Definition.PropertiesEntry
-	nil,                       // 20: jsonSchema.RequestFormat.HeadersEntry
-	nil,                       // 21: jsonSchema.ScoringCriteria.DimensionsEntry
-	(*structpb.Struct)(nil),   // 22: google.protobuf.Struct
+	(*Definition)(nil),          // 0: jsonSchema.Definition
+	(*TextToSpeech)(nil),        // 1: jsonSchema.TextToSpeech
+	(*SpeechToText)(nil),        // 2: jsonSchema.SpeechToText
+	(*Image)(nil),               // 3: jsonSchema.Image
+	(*Choices)(nil),             // 4: jsonSchema.Choices
+	(*HashMap)(nil),             // 5: jsonSchema.HashMap
+	(*Focus)(nil),               // 6: jsonSchema.Focus
+	(*SendImage)(nil),           // 7: jsonSchema.SendImage
+	(*RequestFormat)(nil),       // 8: jsonSchema.RequestFormat
+	(*DecisionPoint)(nil),       // 9: jsonSchema.DecisionPoint
+	(*ConditionalBranch)(nil),   // 10: jsonSchema.ConditionalBranch
+	(*Condition)(nil),           // 11: jsonSchema.Condition
+	(*ScoringCriteria)(nil),     // 12: jsonSchema.ScoringCriteria
+	(*ScoringDimension)(nil),    // 13: jsonSchema.ScoringDimension
+	(*ScoreScale)(nil),          // 14: jsonSchema.ScoreScale
+	(*RecursiveLoop)(nil),       // 15: jsonSchema.RecursiveLoop
+	(*EpistemicValidation)(nil), // 16: jsonSchema.EpistemicValidation
+	(*RequestBody)(nil),         // 17: jsonSchema.RequestBody
+	(*Response)(nil),            // 18: jsonSchema.Response
+	(*StreamingResponse)(nil),   // 19: jsonSchema.StreamingResponse
+	nil,                         // 20: jsonSchema.Definition.PropertiesEntry
+	nil,                         // 21: jsonSchema.RequestFormat.HeadersEntry
+	nil,                         // 22: jsonSchema.ScoringCriteria.DimensionsEntry
+	(*structpb.Struct)(nil),     // 23: google.protobuf.Struct
 }
 var file_objectweaver_proto_depIdxs = []int32{
-	19, // 0: jsonSchema.Definition.properties:type_name -> jsonSchema.Definition.PropertiesEntry
+	20, // 0: jsonSchema.Definition.properties:type_name -> jsonSchema.Definition.PropertiesEntry
 	0,  // 1: jsonSchema.Definition.items:type_name -> jsonSchema.Definition
 	8,  // 2: jsonSchema.Definition.req:type_name -> jsonSchema.RequestFormat
 	6,  // 3: jsonSchema.Definition.narrowFocus:type_name -> jsonSchema.Focus
@@ -1654,30 +1701,31 @@ var file_objectweaver_proto_depIdxs = []int32{
 	9,  // 10: jsonSchema.Definition.decisionPoint:type_name -> jsonSchema.DecisionPoint
 	12, // 11: jsonSchema.Definition.scoringCriteria:type_name -> jsonSchema.ScoringCriteria
 	15, // 12: jsonSchema.Definition.recursiveLoop:type_name -> jsonSchema.RecursiveLoop
-	0,  // 13: jsonSchema.HashMap.fieldDefinition:type_name -> jsonSchema.Definition
-	20, // 14: jsonSchema.RequestFormat.headers:type_name -> jsonSchema.RequestFormat.HeadersEntry
-	22, // 15: jsonSchema.RequestFormat.body:type_name -> google.protobuf.Struct
-	10, // 16: jsonSchema.DecisionPoint.branches:type_name -> jsonSchema.ConditionalBranch
-	11, // 17: jsonSchema.ConditionalBranch.conditions:type_name -> jsonSchema.Condition
-	0,  // 18: jsonSchema.ConditionalBranch.logic:type_name -> jsonSchema.Definition
-	0,  // 19: jsonSchema.ConditionalBranch.then:type_name -> jsonSchema.Definition
-	21, // 20: jsonSchema.ScoringCriteria.dimensions:type_name -> jsonSchema.ScoringCriteria.DimensionsEntry
-	14, // 21: jsonSchema.ScoringDimension.scale:type_name -> jsonSchema.ScoreScale
-	9,  // 22: jsonSchema.RecursiveLoop.terminationPoint:type_name -> jsonSchema.DecisionPoint
-	0,  // 23: jsonSchema.RequestBody.definition:type_name -> jsonSchema.Definition
-	22, // 24: jsonSchema.Response.data:type_name -> google.protobuf.Struct
-	22, // 25: jsonSchema.StreamingResponse.data:type_name -> google.protobuf.Struct
-	0,  // 26: jsonSchema.Definition.PropertiesEntry.value:type_name -> jsonSchema.Definition
-	13, // 27: jsonSchema.ScoringCriteria.DimensionsEntry.value:type_name -> jsonSchema.ScoringDimension
-	16, // 28: jsonSchema.JSONSchemaService.GenerateObject:input_type -> jsonSchema.RequestBody
-	16, // 29: jsonSchema.JSONSchemaService.StreamGeneratedObjects:input_type -> jsonSchema.RequestBody
-	17, // 30: jsonSchema.JSONSchemaService.GenerateObject:output_type -> jsonSchema.Response
-	18, // 31: jsonSchema.JSONSchemaService.StreamGeneratedObjects:output_type -> jsonSchema.StreamingResponse
-	30, // [30:32] is the sub-list for method output_type
-	28, // [28:30] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	16, // 13: jsonSchema.Definition.epistemic:type_name -> jsonSchema.EpistemicValidation
+	0,  // 14: jsonSchema.HashMap.fieldDefinition:type_name -> jsonSchema.Definition
+	21, // 15: jsonSchema.RequestFormat.headers:type_name -> jsonSchema.RequestFormat.HeadersEntry
+	23, // 16: jsonSchema.RequestFormat.body:type_name -> google.protobuf.Struct
+	10, // 17: jsonSchema.DecisionPoint.branches:type_name -> jsonSchema.ConditionalBranch
+	11, // 18: jsonSchema.ConditionalBranch.conditions:type_name -> jsonSchema.Condition
+	0,  // 19: jsonSchema.ConditionalBranch.logic:type_name -> jsonSchema.Definition
+	0,  // 20: jsonSchema.ConditionalBranch.then:type_name -> jsonSchema.Definition
+	22, // 21: jsonSchema.ScoringCriteria.dimensions:type_name -> jsonSchema.ScoringCriteria.DimensionsEntry
+	14, // 22: jsonSchema.ScoringDimension.scale:type_name -> jsonSchema.ScoreScale
+	9,  // 23: jsonSchema.RecursiveLoop.terminationPoint:type_name -> jsonSchema.DecisionPoint
+	0,  // 24: jsonSchema.RequestBody.definition:type_name -> jsonSchema.Definition
+	23, // 25: jsonSchema.Response.data:type_name -> google.protobuf.Struct
+	23, // 26: jsonSchema.StreamingResponse.data:type_name -> google.protobuf.Struct
+	0,  // 27: jsonSchema.Definition.PropertiesEntry.value:type_name -> jsonSchema.Definition
+	13, // 28: jsonSchema.ScoringCriteria.DimensionsEntry.value:type_name -> jsonSchema.ScoringDimension
+	17, // 29: jsonSchema.JSONSchemaService.GenerateObject:input_type -> jsonSchema.RequestBody
+	17, // 30: jsonSchema.JSONSchemaService.StreamGeneratedObjects:input_type -> jsonSchema.RequestBody
+	18, // 31: jsonSchema.JSONSchemaService.GenerateObject:output_type -> jsonSchema.Response
+	19, // 32: jsonSchema.JSONSchemaService.StreamGeneratedObjects:output_type -> jsonSchema.StreamingResponse
+	31, // [31:33] is the sub-list for method output_type
+	29, // [29:31] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_objectweaver_proto_init() }
@@ -1696,7 +1744,7 @@ func file_objectweaver_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_objectweaver_proto_rawDesc), len(file_objectweaver_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   22,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

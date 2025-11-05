@@ -121,6 +121,7 @@ type ResultMetadata struct {
 	Duration   time.Duration
 	ModelUsed  string
 	FieldCount int
+	Choices    []Choice
 }
 
 func NewResultMetadata() *ResultMetadata {

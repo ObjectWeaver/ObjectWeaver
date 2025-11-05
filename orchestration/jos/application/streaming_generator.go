@@ -3,6 +3,7 @@ package application
 import (
 	"fmt"
 	"objectweaver/orchestration/jos/domain"
+	"objectweaver/orchestration/jos/infrastructure/epstimic"
 	"objectweaver/orchestration/jos/infrastructure/execution"
 )
 
@@ -31,6 +32,12 @@ func NewStreamingGenerator(
 
 	// Set generator reference for recursive loops and decision points
 	fieldProcessor.SetGenerator(generator)
+
+	// Set up epstimic orchestrator if enabled
+	epstimicOrch := epstimic.GetEpstimicOrchestrator(generator)
+	if epstimicOrch != nil {
+		fieldProcessor.SetEpstimicOrchestrator(epstimicOrch)
+	}
 
 	return generator
 }

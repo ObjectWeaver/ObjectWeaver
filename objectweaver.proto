@@ -4,7 +4,6 @@ package jsonSchema;
 
 option go_package = "./grpc";
 
-import "google/protobuf/any.proto";
 import "google/protobuf/struct.proto";
 
 // Definition message
@@ -18,22 +17,21 @@ message Definition {
   string systemPrompt = 7; // Corresponds to Go's SystemPrompt field
   RequestFormat req = 8; // Corresponds to Go's Req field
   Focus narrowFocus = 9; // Corresponds to Go's NarrowFocus field
-  bool improvementProcess = 10; // Corresponds to Go's ImprovementProcess field
-  repeated string selectFields = 11; // Corresponds to Go's SelectFields field
-  Choices choices = 12; // Corresponds to Go's Choices field
-  bool voters = 13; // Corresponds to Go's Voters field
-  HashMap hashMap = 14; // Corresponds to Go's HashMap field
-  TextToSpeech textToSpeech = 15; // Corresponds to Go's Audio field
-  SpeechToText speechToText = 16; // Corresponds to Go's Speech field
-  Image image = 17; // Corresponds to Go's Image field
-  SendImage sendImage = 18; // Corresponds to Go's SendImage field
-  bool stream = 19;
-  float temp = 20;
-  int32 priority = 21;
-  string overridePrompt = 22; // Corresponds to Go's OverridePrompt field
-  DecisionPoint decisionPoint = 23; // Corresponds to Go's DecisionPoint field
-  ScoringCriteria scoringCriteria = 24; // Corresponds to Go's ScoringCriteria field
-  RecursiveLoop recursiveLoop = 25; // Corresponds to Go's RecursiveLoop field
+  repeated string selectFields = 10; // Corresponds to Go's SelectFields field
+  Choices choices = 11; // Corresponds to Go's Choices field
+  HashMap hashMap = 12; // Corresponds to Go's HashMap field
+  TextToSpeech textToSpeech = 13; // Corresponds to Go's Audio field
+  SpeechToText speechToText = 14; // Corresponds to Go's Speech field
+  Image image = 15; // Corresponds to Go's Image field
+  SendImage sendImage = 16; // Corresponds to Go's SendImage field
+  bool stream = 17;
+  float temp = 18;
+  int32 priority = 19;
+  string overridePrompt = 20; // Corresponds to Go's OverridePrompt field
+  DecisionPoint decisionPoint = 21; // Corresponds to Go's DecisionPoint field
+  ScoringCriteria scoringCriteria = 22; // Corresponds to Go's ScoringCriteria field
+  RecursiveLoop recursiveLoop = 23; // Corresponds to Go's RecursiveLoop field
+  EpistemicValidation epistemic = 24; // Corresponds to Go's Epistemic field
 }
 
 // Audio message
@@ -152,6 +150,12 @@ message RecursiveLoop {
   DecisionPoint terminationPoint = 3;
   string feedbackPrompt = 4;
   bool includePreviousAttempts = 5;
+}
+
+// EpistemicValidation message
+message EpistemicValidation {
+  bool active = 1;
+  int32 judges = 2;
 }
 
 // RequestBody message for the GenerateObject RPC
