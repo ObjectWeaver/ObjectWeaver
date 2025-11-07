@@ -35,11 +35,39 @@ import (
 
 // GenerateObjectV2 - Uses V2 architecture for synchronous object generation
 func (s *Server) GenerateObjectV2(ctx context.Context, req *pb.RequestBody) (*pb.Response, error) {
+	// Debug: Log the incoming protobuf to see if fields are present
+	log.Printf("[GenerateObjectV2] Received request")
+	if req.Definition != nil {
+		log.Printf("[GenerateObjectV2] Definition has ScoringCriteria: %v", req.Definition.ScoringCriteria != nil)
+		log.Printf("[GenerateObjectV2] Definition has DecisionPoint: %v", req.Definition.DecisionPoint != nil)
+
+		// Check nested properties
+		if req.Definition.Properties != nil {
+			for key, prop := range req.Definition.Properties {
+				log.Printf("[GenerateObjectV2] Property '%s' has ScoringCriteria: %v, DecisionPoint: %v",
+					key, prop.ScoringCriteria != nil, prop.DecisionPoint != nil)
+			}
+		}
+	}
+
 	// Convert protobuf request to internal format
 	body := client.RequestBody{
 		Prompt:     req.Prompt,
 		Definition: converison.ConvertProtoToModel(req.Definition),
 	}
+
+	// Debug: Check if conversion preserved the fields
+	log.Printf("[GenerateObjectV2] After conversion - Definition has ScoringCriteria: %v, DecisionPoint: %v",
+		body.Definition.ScoringCriteria != nil, body.Definition.DecisionPoint != nil)
+	if body.Definition.Properties != nil {
+		for key, prop := range body.Definition.Properties {
+			log.Printf("[GenerateObjectV2] After conversion - Property '%s' has ScoringCriteria: %v, DecisionPoint: %v",
+				key, prop.ScoringCriteria != nil, prop.DecisionPoint != nil)
+		}
+	}
+
+	// TODO: Post-process to add missing fields if SDK conversion is incomplete
+	// enrichDefinitionWithMissingFields(body.Definition, req.Definition)
 
 	// Check for circular definitions
 	if checks.CheckCircularDefinitions(body.Definition) {

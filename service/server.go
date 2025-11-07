@@ -16,8 +16,8 @@ package service
 
 import (
 	"compress/gzip"
-	"objectweaver/cors"
 	"net/http"
+	"objectweaver/cors"
 	"os"
 	"time"
 

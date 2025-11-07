@@ -15,6 +15,7 @@
 package execution
 
 import (
+	"fmt"
 	"log"
 	"objectweaver/orchestration/jos/domain"
 
@@ -143,8 +144,23 @@ func (fp *FieldProcessor) processField(task *domain.FieldTask, context *domain.E
 	context.SetGeneratedValue(result.Key(), result.Value())
 	log.Printf("[FieldProcessor] Generated field '%s', value: %v", result.Key(), result.Value())
 
+	// Score if criteria exist
+	log.Printf("[FieldProcessor] Checking scoring criteria for field '%s': %v", task.Key(), task.Definition().ScoringCriteria != nil)
+	if task.Definition().ScoringCriteria != nil {
+		log.Printf("[FieldProcessor] Evaluating scores for field '%s'", task.Key())
+		scores, err := fp.evaluateScores(result, task.Definition().ScoringCriteria, context)
+		if err != nil {
+			log.Printf("[FieldProcessor] Warning: scoring failed for field %s: %v", task.Key(), err)
+		} else {
+			// Attach scores to result metadata
+			fp.attachScoresToResult(result, scores)
+			log.Printf("[FieldProcessor] Field '%s' scores: %v", result.Key(), scores)
+		}
+	}
+
 	// Check for decision point
-	if task.Definition().DecisionPoint != nil && fp.decisionProcessor != nil {
+	log.Printf("[FieldProcessor] Checking decision point for field '%s': %v", task.Key(), task.Definition().DecisionPoint != nil)
+	if task.Definition().DecisionPoint != nil {
 		log.Printf("[FieldProcessor] Processing decision point for field %s", task.Key())
 
 		results, err := fp.decisionProcessor.ProcessDecisionPoint(task, result, context)
@@ -303,4 +319,143 @@ func getOrderedKeys(schema *jsonSchema.Definition) ([]string, []string) {
 	}
 
 	return schema.ProcessingOrder, remainingKeys
+}
+
+// evaluateScores uses the generator to score the generated content
+func (fp *FieldProcessor) evaluateScores(
+	result *domain.TaskResult,
+	criteria *jsonSchema.ScoringCriteria,
+	context *domain.ExecutionContext,
+) (map[string]float64, error) {
+	if fp.generator == nil {
+		return nil, fmt.Errorf("generator not set, cannot evaluate scores")
+	}
+
+	// Build scoring schema
+	properties := make(map[string]jsonSchema.Definition)
+	for dimensionName, dimension := range criteria.Dimensions {
+		var fieldType jsonSchema.DataType
+		switch dimension.Type {
+		case jsonSchema.ScoreNumeric:
+			fieldType = jsonSchema.Number
+		case jsonSchema.ScoreBoolean:
+			fieldType = jsonSchema.Boolean
+		default:
+			fieldType = jsonSchema.String
+		}
+
+		instruction := dimension.Description
+		if dimension.Scale != nil {
+			instruction += fmt.Sprintf(" (Range: %d-%d)", dimension.Scale.Min, dimension.Scale.Max)
+		}
+
+		properties[dimensionName] = jsonSchema.Definition{
+			Type:        fieldType,
+			Instruction: instruction,
+		}
+	}
+
+	scoringSchema := &jsonSchema.Definition{
+		Type:        jsonSchema.Object,
+		Properties:  properties,
+		Instruction: "Evaluate the content according to the specified dimensions",
+	}
+
+	// Build evaluation prompt
+	prompt := "Evaluate the following content:\n\n"
+	prompt += fmt.Sprintf("%v\n\n", result.Value())
+	prompt += "Provide scores for each dimension as requested."
+
+	// Override model if specified
+	if criteria.EvaluationModel != "" {
+		scoringSchema.Model = criteria.EvaluationModel
+	}
+
+	// Generate scores
+	request := domain.NewGenerationRequest(prompt, scoringSchema)
+	scoreResult, err := fp.generator.Generate(request)
+	if err != nil {
+		return nil, fmt.Errorf("score generation failed: %w", err)
+	}
+
+	// Extract scores
+	scoreData := scoreResult.Data()
+	scores := make(map[string]float64)
+	for key, value := range scoreData {
+		if numValue, ok := toFloat64(value); ok {
+			scores[key] = numValue
+		}
+	}
+
+	// Calculate aggregate if needed
+	if criteria.AggregationMethod != "" {
+		aggregate := fp.calculateAggregate(scores, criteria)
+		scores["_aggregate"] = aggregate
+	}
+
+	return scores, nil
+}
+
+// calculateAggregate computes the aggregate score
+func (fp *FieldProcessor) calculateAggregate(scores map[string]float64, criteria *jsonSchema.ScoringCriteria) float64 {
+	switch criteria.AggregationMethod {
+	case jsonSchema.AggregateWeightedAverage:
+		var sum, totalWeight float64
+		for dimension, score := range scores {
+			if dimDef, exists := criteria.Dimensions[dimension]; exists {
+				weight := dimDef.Weight
+				if weight == 0 {
+					weight = 1.0 / float64(len(criteria.Dimensions))
+				}
+				sum += score * weight
+				totalWeight += weight
+			}
+		}
+		if totalWeight > 0 {
+			return sum / totalWeight
+		}
+		return 0
+
+	case jsonSchema.AggregateMinimum:
+		min := float64(100)
+		for _, score := range scores {
+			if score < min {
+				min = score
+			}
+		}
+		return min
+
+	case jsonSchema.AggregateMaximum:
+		max := float64(0)
+		for _, score := range scores {
+			if score > max {
+				max = score
+			}
+		}
+		return max
+
+	default:
+		// Default to average
+		var sum float64
+		for _, score := range scores {
+			sum += score
+		}
+		return sum / float64(len(scores))
+	}
+}
+
+// attachScoresToResult attaches scores to the result's metadata
+func (fp *FieldProcessor) attachScoresToResult(result *domain.TaskResult, scores map[string]float64) {
+	if result == nil || result.Metadata() == nil {
+		return
+	}
+
+	// Convert scores to Choice format for storage in metadata
+	// We use a single Choice with the aggregate score
+	if aggregateScore, hasAggregate := scores["_aggregate"]; hasAggregate {
+		choice := domain.Choice{
+			Score: int(aggregateScore),
+		}
+		result.Metadata().Choices = append(result.Metadata().Choices, choice)
+	}
 }
