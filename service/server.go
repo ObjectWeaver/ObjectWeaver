@@ -62,6 +62,9 @@ func (s *Server) MountHandlers() {
 	s.Router.Use(middleware.Timeout(300 * time.Second))
 	s.Router.Use(middleware.URLFormat)
 
+	// Health check endpoint (no authentication required)
+	s.Router.Get("/health", HealthCheck)
+
 	// Define API routes
 	s.Router.Group(func(r chi.Router) {
 		r.Use(PrometheusMiddleware) //this can always be moved into more speficic areas
