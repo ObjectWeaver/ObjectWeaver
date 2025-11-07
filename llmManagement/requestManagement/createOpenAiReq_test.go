@@ -35,25 +35,6 @@ func TestMin(t *testing.T) {
 	}
 }
 
-func TestIsReasoningModel(t *testing.T) {
-	tests := []struct {
-		model string
-		want  bool
-	}{
-		{"o3-mini-2025-01-31", true},
-		{"o3-min", true},
-		{"o4-mini-2025-04-16", true},
-		{"gpt-4", false},
-		{"claude-3", false},
-		{"unknown", false},
-	}
-	for _, tt := range tests {
-		if got := isReasoningModel(tt.model); got != tt.want {
-			t.Errorf("isReasoningModel(%s) = %v, want %v", tt.model, got, tt.want)
-		}
-	}
-}
-
 func TestDetectMimeType(t *testing.T) {
 	jpegData := []byte{0xFF, 0xD8, 0xFF, 0xE0}
 	if got := detectMimeType(jpegData); got != "image/jpeg" {

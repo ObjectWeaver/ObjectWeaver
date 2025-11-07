@@ -163,31 +163,6 @@ func (b *defaultOpenAIReqBuilder) BuildRequest(inputs *llmManagement.Inputs) (go
 	}
 
 	// 4. Handle Reasoning Models logic
-	if isReasoningModel(model) {
-		req := gogpt.ChatCompletionRequest{
-			Messages:        messages,
-			ReasoningEffort: "medium",
-			Model:           model,
-			Stream:          isStream, // Set stream flag
-		}
-
-		if isStream {
-			// Stream settings from original stream function
-			req.Temperature = 0.0
-			req.TopP = 0.0
-			var streamSeed int = 0
-			req.Seed = &streamSeed
-		} else {
-			// Non-stream settings from original non-stream function
-			// Note: Original reasoning request had Temp, TopP, and Seed commented out.
-			// Re-enable them here if needed.
-			// req.Temperature = temp
-			// req.TopP = 0.0
-			// var seed int = 51635473
-			// req.Seed = &seed
-		}
-		return req, nil
-	}
 
 	// 5. Handle Standard Models logic
 	var seed *int
@@ -258,16 +233,3 @@ func promptWriter(prompt string) gogpt.ChatCompletionMessage {
 	}
 }
 
-// isReasoningModel checks if the model string matches known reasoning model identifiers
-func isReasoningModel(model string) bool {
-	switch model {
-	case "o3-mini-2025-01-31":
-		return true
-	case "o3-min":
-		return true
-	case "o4-mini-2025-04-16":
-		return true
-	default:
-		return false
-	}
-}
