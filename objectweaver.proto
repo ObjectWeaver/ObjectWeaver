@@ -18,20 +18,19 @@ message Definition {
   RequestFormat req = 8; // Corresponds to Go's Req field
   Focus narrowFocus = 9; // Corresponds to Go's NarrowFocus field
   repeated string selectFields = 10; // Corresponds to Go's SelectFields field
-  Choices choices = 11; // Corresponds to Go's Choices field
-  HashMap hashMap = 12; // Corresponds to Go's HashMap field
-  TextToSpeech textToSpeech = 13; // Corresponds to Go's Audio field
-  SpeechToText speechToText = 14; // Corresponds to Go's Speech field
-  Image image = 15; // Corresponds to Go's Image field
-  SendImage sendImage = 16; // Corresponds to Go's SendImage field
-  bool stream = 17;
-  float temp = 18;
-  int32 priority = 19;
-  string overridePrompt = 20; // Corresponds to Go's OverridePrompt field
-  DecisionPoint decisionPoint = 21; // Corresponds to Go's DecisionPoint field
-  ScoringCriteria scoringCriteria = 22; // Corresponds to Go's ScoringCriteria field
-  RecursiveLoop recursiveLoop = 23; // Corresponds to Go's RecursiveLoop field
-  EpistemicValidation epistemic = 24; // Corresponds to Go's Epistemic field
+  HashMap hashMap = 11; // Corresponds to Go's HashMap field
+  TextToSpeech textToSpeech = 12; // Corresponds to Go's Audio field
+  SpeechToText speechToText = 13; // Corresponds to Go's Speech field
+  Image image = 14; // Corresponds to Go's Image field
+  SendImage sendImage = 15; // Corresponds to Go's SendImage field
+  bool stream = 16;
+  string overridePrompt = 17; // Corresponds to Go's OverridePrompt field
+  int32 priority = 18;
+  DecisionPoint decisionPoint = 19; // Corresponds to Go's DecisionPoint field
+  ScoringCriteria scoringCriteria = 20; // Corresponds to Go's ScoringCriteria field
+  RecursiveLoop recursiveLoop = 21; // Corresponds to Go's RecursiveLoop field
+  EpistemicValidation epistemic = 22; // Corresponds to Go's Epistemic field
+  ModelConfig modelConfig = 23; // Corresponds to Go's ModelConfig field
 }
 
 // Audio message
@@ -156,6 +155,27 @@ message RecursiveLoop {
 message EpistemicValidation {
   bool active = 1;
   int32 judges = 2;
+}
+
+// ModelConfig message
+message ModelConfig {
+  int32 maxCompletionTokens = 1;
+  float temperature = 2;
+  float topP = 3;
+  int32 n = 4;
+  bool stream = 5;
+  repeated string stop = 6;
+  float presencePenalty = 7;
+  int32 seed = 8;
+  float frequencyPenalty = 9;
+  map<string, int32> logitBias = 10;
+  bool logProbs = 11;
+  int32 topLogProbs = 12;
+  string user = 13;
+  bool store = 14;
+  string reasoningEffort = 15;
+  map<string, string> metadata = 16;
+  google.protobuf.Struct chatTemplateKwargs = 17;
 }
 
 // RequestBody message for the GenerateObject RPC
