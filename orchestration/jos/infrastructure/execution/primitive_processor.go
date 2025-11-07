@@ -105,6 +105,23 @@ func (p *PrimitiveProcessor) buildRequestPieces(task *domain.FieldTask, context 
 		return "", nil, err
 	}
 
+	//TODO - for the vector type there will need to be a different handling here where the selected field becomes the entire prompt. With the aim that the vector embedding is created from that field only.
+
+	// Enhance prompt with SelectFields if specified
+	if len(task.Definition().SelectFields) > 0 {
+		// Add selected field values directly to the prompt
+		prompt += "\n\nContext from previous generation:\n"
+		for _, fieldPath := range task.Definition().SelectFields {
+			log.Printf("[PrimitiveProcessor] Looking for field '%s' in context", fieldPath)
+			if value, exists := context.GeneratedValues()[fieldPath]; exists {
+				prompt += fmt.Sprintf("\n%s:\n%v\n", fieldPath, value)
+				log.Printf("[PrimitiveProcessor] Added field '%s' to prompt (length: %d chars)", fieldPath, len(fmt.Sprintf("%v", value)))
+			} else {
+				log.Printf("[PrimitiveProcessor] Field '%s' not found in context", fieldPath)
+			}
+		}
+	}
+
 	// Generate with LLM
 	config := context.GenerationConfig()
 	config.Model = p.determineModel(task.Definition())

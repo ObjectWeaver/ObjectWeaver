@@ -4,7 +4,7 @@ go 1.25.1
 
 require (
 	github.com/go-chi/chi/v5 v5.2.3
-	github.com/objectweaver/go-sdk v0.0.0-20251105210855-201436ead05a
+	github.com/objectweaver/go-sdk v0.0.0-20251107173046-17f77f9d1d38
 	github.com/sashabaranov/go-openai v1.40.5
 	google.golang.org/genai v1.18.0
 )

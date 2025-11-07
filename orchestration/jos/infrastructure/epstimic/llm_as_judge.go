@@ -156,12 +156,12 @@ func (j *LLMasJudge) getJudgeDefinition(result TempResult) *jsonSchema.Definitio
 			"completeness": {
 				Type:        jsonSchema.Integer,
 				Instruction: "Evaluate how completely the completion addresses all aspects of the prompt. Score from 0 (incomplete) to 100 (fully complete).",
-				Seed: infrastructure.GenerateSeed(),
+				ModelConfig: &jsonSchema.ModelConfig{Seed: infrastructure.GenerateSeed()},
 			},
 			"correctness": {
 				Type:        jsonSchema.Integer,
 				Instruction: "Evaluate the accuracy and correctness of the information in the completion. Score from 0 (incorrect) to 100 (fully correct).",
-				Seed: infrastructure.GenerateSeed(),
+				ModelConfig: &jsonSchema.ModelConfig{Seed: infrastructure.GenerateSeed()},
 			},
 		},
 	}

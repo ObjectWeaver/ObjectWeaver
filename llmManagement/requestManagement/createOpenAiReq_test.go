@@ -105,9 +105,9 @@ func TestBuildRequest_TextOnly(t *testing.T) {
 	inputs := &llmManagement.Inputs{
 		Def: &jsonSchema.Definition{ // Using jsonSchema.Definition
 			Model:     "gpt4",
-			Temp:      0.5,
 			Stream:    false,
 			SendImage: nil,
+			ModelConfig: &jsonSchema.ModelConfig{Temperature: 0.5, Seed: nil},
 		},
 		Prompt:       "Test prompt",
 		SystemPrompt: "System prompt",
@@ -149,7 +149,7 @@ func TestBuildRequest_WithImages(t *testing.T) {
 	inputs := &llmManagement.Inputs{
 		Def: &jsonSchema.Definition{
 			Model:  "gpt4",
-			Temp:   0.5,
+			ModelConfig: &jsonSchema.ModelConfig{Temperature: 0.5, Seed: nil},
 			Stream: false,
 			SendImage: &jsonSchema.SendImage{
 				ImagesData: imageData,
@@ -176,7 +176,7 @@ func TestBuildRequest_ReasoningModel_Stream(t *testing.T) {
 	inputs := &llmManagement.Inputs{
 		Def: &jsonSchema.Definition{
 			Model:     "o3-mini-2025-01-31",
-			Temp:      0.5,
+			ModelConfig: &jsonSchema.ModelConfig{Temperature: 0.5, Seed: nil},
 			Stream:    true,
 			SendImage: nil,
 		},
@@ -207,7 +207,7 @@ func TestBuildRequest_ReasoningModel_NonStream(t *testing.T) {
 	inputs := &llmManagement.Inputs{
 		Def: &jsonSchema.Definition{
 			Model:     "o3-mini-2025-01-31",
-			Temp:      0.5,
+			ModelConfig: &jsonSchema.ModelConfig{Temperature: 0.5, Seed: nil},
 			Stream:    false,
 			SendImage: nil,
 		},

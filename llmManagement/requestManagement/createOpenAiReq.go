@@ -67,12 +67,42 @@ func NewDefaultOpenAIReqBuilder(modelConverter modelConverter.ModelConverter) Re
 // BuildRequest constructs the OpenAI request based on the inputs.
 // It merges and adapts the logic from the original CreateOpenAIRequest and CreateOpenAIStreamRequest functions.
 func (b *defaultOpenAIReqBuilder) BuildRequest(inputs *llmManagement.Inputs) (gogpt.ChatCompletionRequest, error) {
-	// 1. Extract parameters from the Inputs struct
+	// 1. Validate inputs
+	if inputs == nil {
+		return gogpt.ChatCompletionRequest{}, fmt.Errorf("inputs cannot be nil")
+	}
+	if inputs.Def == nil {
+		return gogpt.ChatCompletionRequest{}, fmt.Errorf("inputs.Def cannot be nil")
+	}
+
+	// 2. Extract parameters from the Inputs struct
 	prompt := inputs.Prompt
 	systemPrompt := inputs.SystemPrompt
 	model := b.modelConverter.Convert(inputs.Def.Model) // Cast ModelType to string
 
-	temp := float32(inputs.Def.Temp)
+	// Set defaults for ModelConfig fields
+	var temp float32 = 1.0 // Default temperature
+	var topP float32 = 1.0
+	var topLogProbs int = 0
+	var presencePenalty float32 = 0.0
+	var frequencyPenalty float32 = 0.0
+	var maxCompletionTokens int = 0
+	var logProbs bool = false
+	var reasoningEffort string = ""
+	var chatTemplateKwargs map[string]interface{} = nil
+
+	if inputs.Def.ModelConfig != nil {
+		temp = float32(inputs.Def.ModelConfig.Temperature)
+		topP = inputs.Def.ModelConfig.TopP
+		topLogProbs = inputs.Def.ModelConfig.TopLogProbs
+		presencePenalty = inputs.Def.ModelConfig.PresencePenalty
+		frequencyPenalty = inputs.Def.ModelConfig.FrequencyPenalty
+		maxCompletionTokens = inputs.Def.ModelConfig.MaxCompletionTokens
+		logProbs = inputs.Def.ModelConfig.LogProbs
+		reasoningEffort = inputs.Def.ModelConfig.ReasoningEffort
+		chatTemplateKwargs = inputs.Def.ModelConfig.ChatTemplateKwargs
+	}
+
 	isStream := inputs.Def.Stream
 
 	// 2. Build the base messages
@@ -161,8 +191,8 @@ func (b *defaultOpenAIReqBuilder) BuildRequest(inputs *llmManagement.Inputs) (go
 
 	// 5. Handle Standard Models logic
 	var seed *int
-	if inputs.Def.Seed != nil  {
-		seed = inputs.Def.Seed
+	if inputs.Def.ModelConfig != nil && inputs.Def.ModelConfig.Seed != nil {
+		seed = inputs.Def.ModelConfig.Seed
 	} else {
 		seedEnv := os.Getenv("LLM_SEED")
 
@@ -171,22 +201,28 @@ func (b *defaultOpenAIReqBuilder) BuildRequest(inputs *llmManagement.Inputs) (go
 			seed = &strconvSeed
 		} else {
 			defaultSeed := 51635473
-			seed = &defaultSeed			
+			seed = &defaultSeed
 		}
 	}
 
 	req := gogpt.ChatCompletionRequest{
-		Messages: messages,
-		Model:    model,
-		Stream:   isStream, // Set stream flag
-		Temperature: temp,
-		TopP:       0.0,
-		Seed:      seed,
+		Messages:            messages,
+		Model:               model,
+		Stream:              isStream,
+		Temperature:         temp,
+		TopP:                topP,
+		Seed:                seed,
+		TopLogProbs:         topLogProbs,
+		PresencePenalty:     presencePenalty,
+		FrequencyPenalty:    frequencyPenalty,
+		MaxCompletionTokens: maxCompletionTokens,
+		LogProbs:            logProbs,
+		ReasoningEffort:     reasoningEffort,
+		ChatTemplateKwargs:  chatTemplateKwargs,
 	}
 
 	return req, nil
 }
-
 
 // --- Private Helper Functions ---
 // (These are the original functions from your prompt, kept as private helpers)

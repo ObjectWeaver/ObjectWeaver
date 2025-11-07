@@ -418,7 +418,7 @@ func TestOrchestrator_EpstimicValidation_SeedGeneration(t *testing.T) {
 
 	generate := func(task *domain.FieldTask, context *domain.ExecutionContext) (any, *domain.ProviderMetadata, error) {
 		mu.Lock()
-		seeds = append(seeds, task.Definition().Seed)
+		seeds = append(seeds, task.Definition().ModelConfig.Seed)
 		mu.Unlock()
 		return "test-value", &domain.ProviderMetadata{}, nil
 	}

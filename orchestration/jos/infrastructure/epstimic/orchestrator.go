@@ -50,7 +50,7 @@ func (o *Orchestrator) EpstimicValidation(
 	for i := 0; i < o.workerCount; i++ {
 		go func() {
 			if i != 0 {
-				task.Definition().Seed = infrastructure.GenerateSeed()
+				task.Definition().ModelConfig.Seed = infrastructure.GenerateSeed()
 			}
 
 			value, metadata, err := generate(task, context)

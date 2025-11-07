@@ -142,7 +142,7 @@ func (p *ArrayProcessor) createListExtractionDefinition(key string, arrayDef *js
 	systemPrompt := fmt.Sprintf("You are a list extracting expert who returns a list of values which relate to the %s. You always return a list of values as numbered bullet-pointed list.", key)
 	numberSystemPrompt := "You are an expert in extracting the number of items in the bullet point list. Return only a whole number."
 
-	temp := 0.0
+	temp := float32(0.0)
 	model := arrayDef.Model
 	// Model will use whatever is set in the array definition, or default from config
 
@@ -157,7 +157,6 @@ func (p *ArrayProcessor) createListExtractionDefinition(key string, arrayDef *js
 		Model:           model,
 		SystemPrompt:    &systemPrompt,
 		ProcessingOrder: []string{"listString", "numItems"},
-		Temp:            temp,
 		Properties: map[string]jsonSchema.Definition{
 			"numItems": {
 				Type:         jsonSchema.Number,
@@ -167,13 +166,13 @@ func (p *ArrayProcessor) createListExtractionDefinition(key string, arrayDef *js
 					Prompt: "Extract the number of items in the bullet point list. Return only a whole number.",
 					Fields: []string{"listString"},
 				},
-				Temp: temp,
+				ModelConfig: &jsonSchema.ModelConfig{Temperature: temp},
 			},
 			"listString": {
 				Type:        jsonSchema.String,
 				Model:       model,
 				Instruction: fmt.Sprintf("Return a numbered bullet point list of unique items. Which directly relate to %s.", key),
-				Temp:        temp,
+				ModelConfig: &jsonSchema.ModelConfig{Temperature: temp},
 			},
 		},
 	}
