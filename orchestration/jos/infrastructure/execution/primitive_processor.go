@@ -73,7 +73,8 @@ func (p *PrimitiveProcessor) Process(task *domain.FieldTask, context *domain.Exe
 
 	// Check if Epstimic engine is being used
 	//if TRUE - then go into the Epstimic flow
-	if os.Getenv("USE_EPSTIMIC_ENGINE") == "true" && task.Definition().Epistemic.Active && p.epstimicOrchestrator != nil {
+	if task.Definition().Epistemic.Active {
+		log.Printf("[PrimitiveProcessor] Epistemic validation is active for field '%s'", task.Key())
 		result, _, err := p.epstimicOrchestrator.EpstimicValidation(task, context, p.generateValue)
 		if err != nil {
 			return nil, fmt.Errorf("failed to validate with Epstimic: %w", err)
@@ -146,8 +147,8 @@ func (p *PrimitiveProcessor) buildRequestPieces(task *domain.FieldTask, context 
 }
 
 func (p *PrimitiveProcessor) buildVectorRequest(task *domain.FieldTask, context *domain.ExecutionContext) (string, *domain.GenerationConfig, error) {
-	// This is a request structure specifically for vector types - the aim is not to use the prompt builder etc 
-	//the only prompt information being passed is in the prompt information passed from the user information 
+	// This is a request structure specifically for vector types - the aim is not to use the prompt builder etc
+	//the only prompt information being passed is in the prompt information passed from the user information
 
 	config := context.GenerationConfig()
 	config.Model = p.determineModel(task.Definition())
@@ -164,8 +165,8 @@ func (p *PrimitiveProcessor) buildVectorRequest(task *domain.FieldTask, context 
 		}
 	}
 
-	//from the selected fields generation. 
-	if (len(task.Definition().SelectFields) > 0) {
+	//from the selected fields generation.
+	if len(task.Definition().SelectFields) > 0 {
 		prompt := ""
 		for _, fieldPath := range task.Definition().SelectFields {
 			if value, exists := context.GeneratedValues()[fieldPath]; exists {
@@ -275,7 +276,6 @@ func cleanResponse(response any) string {
 	// Remove common artifacts
 	responseStr := response.(string)
 
-	
 	responseStr = trimQuotes(responseStr)
 	responseStr = trimWhitespace(responseStr)
 	return responseStr

@@ -14,6 +14,8 @@
 // <https://objectweaver.dev/licensing/server-side-public-license>.
 package domain
 
+import "sync"
+
 // TaskExecutor - Executes field generation tasks by delegating to type-specific processors
 //
 // Implementation: infrastructure/execution/task_executor.go (CompositeTaskExecutor)
@@ -43,6 +45,7 @@ type ExecutionContext struct {
 	metadata         map[string]interface{}
 	promptContext    *PromptContext
 	generationConfig *GenerationConfig
+	mu               sync.RWMutex // Protects generatedValues map from concurrent access
 }
 
 func NewExecutionContext(request *GenerationRequest) *ExecutionContext {
@@ -66,16 +69,32 @@ func (e *ExecutionContext) WithParent(parent *FieldTask) *ExecutionContext {
 	}
 }
 
-func (e *ExecutionContext) Request() *GenerationRequest             { return e.request }
-func (e *ExecutionContext) GeneratedValues() map[string]interface{} { return e.generatedValues }
-func (e *ExecutionContext) PromptContext() *PromptContext           { return e.promptContext }
-func (e *ExecutionContext) GenerationConfig() *GenerationConfig     { return e.generationConfig }
+func (e *ExecutionContext) Request() *GenerationRequest         { return e.request }
+func (e *ExecutionContext) PromptContext() *PromptContext       { return e.promptContext }
+func (e *ExecutionContext) GenerationConfig() *GenerationConfig { return e.generationConfig }
+
+// GeneratedValues returns a copy of the generated values map for thread safety
+func (e *ExecutionContext) GeneratedValues() map[string]interface{} {
+	return e.copyGeneratedValues()
+}
+
+// GetGeneratedValue safely retrieves a single value from the generated values map
+func (e *ExecutionContext) GetGeneratedValue(key string) (interface{}, bool) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	value, exists := e.generatedValues[key]
+	return value, exists
+}
 
 func (e *ExecutionContext) SetGeneratedValue(key string, value interface{}) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 	e.generatedValues[key] = value
 }
 
 func (e *ExecutionContext) copyGeneratedValues() map[string]interface{} {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	copied := make(map[string]interface{})
 	for k, v := range e.generatedValues {
 		copied[k] = v
