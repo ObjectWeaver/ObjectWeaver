@@ -29,12 +29,12 @@ func NewDefaultJobEntryPoint() JobEntryPoint {
 
 // JobEntryPoint handles job submission logic.
 type JobEntryPoint interface {
-	SubmitJob(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (string, *openai.Usage, error)
+	SubmitJob(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (any, *openai.Usage, error)
 }
 
 type DefaultJobEntryPoint struct{}
 
-func (js *DefaultJobEntryPoint) SubmitJob(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (string, *openai.Usage, error) {
+func (js *DefaultJobEntryPoint) SubmitJob(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (any, *openai.Usage, error) {
 	// If def is nil, create a minimal definition with the model
 	if def == nil {
 		def = &jsonSchema.Definition{
@@ -56,7 +56,7 @@ func (js *DefaultJobEntryPoint) SubmitJob(model string, def *jsonSchema.Definiti
 
 	job := &LLM.Job{
 		Inputs: &input,
-		Result: make(chan *openai.ChatCompletionResponse),
+		Result: make(chan *LLM.JobResult),
 		Tokens: 0,
 	}
 
@@ -66,14 +66,14 @@ func (js *DefaultJobEntryPoint) SubmitJob(model string, def *jsonSchema.Definiti
 	}
 
 	submitter := LLM.JobSubmitterFactory(LLM.DefaultSubmitter)
-	response, usage, err := submitter.SubmitJob(job, LLM.WorkerChannel)
+	completion, usage, err := submitter.SubmitJob(job, LLM.WorkerChannel)
 
 	if err != nil {
 		log.Printf("[JobEntryPoint ERROR] Job submission failed: %v", err)
-		return response, usage, err
+		return completion, usage, err
 	}
 
-	log.Printf("[JobEntryPoint] Job completed successfully, response length: %d", len(response))
+	log.Printf("[JobEntryPoint] Job completed successfully, response length: %d", len(completion.(string)))
 
-	return response, usage, err
+	return completion, usage, err
 }

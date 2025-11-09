@@ -492,7 +492,7 @@ func (m *DefaultBatchReqManager) monitorBatchCompletion(ctx context.Context, bat
 			}
 
 			if entry.Job.Result != nil {
-				entry.Job.Result <- chatResp
+				entry.Job.Result <- CreateJobResult(chatResp, nil)
 			}
 		}
 	}

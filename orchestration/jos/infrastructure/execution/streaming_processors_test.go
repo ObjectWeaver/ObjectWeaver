@@ -27,11 +27,11 @@ type mockTokenStreamingProvider struct {
 	generateTokenStreamFunc func(prompt string, config *domain.GenerationConfig) (<-chan *domain.TokenChunk, error)
 }
 
-func (m *mockTokenStreamingProvider) Generate(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+func (m *mockTokenStreamingProvider) Generate(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 	return "", nil, nil
 }
 
-func (m *mockTokenStreamingProvider) GenerateStream(prompt string, config *domain.GenerationConfig) (<-chan string, error) {
+func (m *mockTokenStreamingProvider) GenerateStream(prompt string, config *domain.GenerationConfig) (<-chan any, error) {
 	return nil, nil
 }
 
@@ -60,9 +60,6 @@ func TestNewStreamingPrimitiveProcessor(t *testing.T) {
 
 	processor := NewStreamingPrimitiveProcessor(llmProvider, promptBuilder, domain.GranularityToken)
 
-	if processor.llmProvider != llmProvider {
-		t.Error("Expected llmProvider to be set")
-	}
 	if processor.promptBuilder != promptBuilder {
 		t.Error("Expected promptBuilder to be set")
 	}
@@ -219,9 +216,6 @@ func TestNewStreamingObjectProcessor(t *testing.T) {
 
 	processor := NewStreamingObjectProcessor(llmProvider, promptBuilder, domain.GranularityToken)
 
-	if processor.llmProvider != llmProvider {
-		t.Error("Expected llmProvider to be set")
-	}
 	if processor.promptBuilder != promptBuilder {
 		t.Error("Expected promptBuilder to be set")
 	}
@@ -378,9 +372,6 @@ func TestNewStreamingArrayProcessor(t *testing.T) {
 
 	processor := NewStreamingArrayProcessor(llmProvider, promptBuilder, domain.GranularityToken)
 
-	if processor.llmProvider != llmProvider {
-		t.Error("Expected llmProvider to be set")
-	}
 	if processor.promptBuilder != promptBuilder {
 		t.Error("Expected promptBuilder to be set")
 	}

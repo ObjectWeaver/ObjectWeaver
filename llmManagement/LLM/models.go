@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/sashabaranov/go-openai"
-	gogpt "github.com/sashabaranov/go-openai"
 )
 
 // --- Custom Errors and Types ---
@@ -28,7 +27,7 @@ import (
 
 // ClientAdapter defines the component that actually processes the job's data.
 type JobSumitter interface {
-	SubmitJob(job *Job, workerChannel chan *Job) (string, *gogpt.Usage, error)
+	SubmitJob(job *Job, workerChannel chan *Job) (any, *openai.Usage, error)
 }
 
 // BackoffManager defines the contract for different backoff strategies.
@@ -39,9 +38,21 @@ type BackoffManager interface {
 }
 
 type Job struct {
-	Result  chan *openai.ChatCompletionResponse
+	Result  chan *JobResult
 	Tokens  int
 	Inputs  *llmManagement.Inputs
 	Error   chan error
 	Retries int // Tracks the number of retry attempts for transient errors.
+}
+
+type JobResult struct {
+	ChatRes      *openai.ChatCompletionResponse
+	EmbeddingRes *openai.EmbeddingResponse
+}
+
+func CreateJobResult(chatRes *openai.ChatCompletionResponse, embeddingRes *openai.EmbeddingResponse) *JobResult {
+	return &JobResult{
+		ChatRes:      chatRes,
+		EmbeddingRes: embeddingRes,
+	}
 }

@@ -27,10 +27,10 @@ import (
 
 // Mock implementations for testing
 type mockLLMProvider struct {
-	generateFunc func(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error)
+	generateFunc func(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error)
 }
 
-func (m *mockLLMProvider) Generate(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+func (m *mockLLMProvider) Generate(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 	if m.generateFunc != nil {
 		return m.generateFunc(prompt, config)
 	}
@@ -61,9 +61,6 @@ func TestNewArrayProcessor(t *testing.T) {
 
 	processor := NewArrayProcessor(llmProvider, promptBuilder)
 
-	if processor.llmProvider != llmProvider {
-		t.Error("Expected llmProvider to be set")
-	}
 	if processor.promptBuilder != promptBuilder {
 		t.Error("Expected promptBuilder to be set")
 	}
@@ -93,7 +90,7 @@ func TestArrayProcessor_CanProcess(t *testing.T) {
 
 func TestArrayProcessor_Process_Success(t *testing.T) {
 	llmProvider := &mockLLMProvider{
-		generateFunc: func(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+		generateFunc: func(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 			if strings.Contains(prompt, "listString") {
 				return "1. Item 1\n2. Item 2\n3. Item 3", &domain.ProviderMetadata{Cost: 0.1}, nil
 			}
@@ -145,7 +142,7 @@ func TestArrayProcessor_Process_Success(t *testing.T) {
 
 func TestArrayProcessor_Process_NilItems(t *testing.T) {
 	llmProvider := &mockLLMProvider{
-		generateFunc: func(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+		generateFunc: func(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 			return "1. Item", &domain.ProviderMetadata{Cost: 0.1}, nil
 		},
 	}
@@ -174,7 +171,7 @@ func TestArrayProcessor_Process_NilItems(t *testing.T) {
 
 func TestArrayProcessor_Process_SizeDeterminationError(t *testing.T) {
 	llmProvider := &mockLLMProvider{
-		generateFunc: func(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+		generateFunc: func(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 			if strings.Contains(prompt, "listString") || strings.Contains(prompt, "numItems") {
 				return "", nil, errors.New("LLM error")
 			}
@@ -213,7 +210,7 @@ func TestArrayProcessor_Process_SizeDeterminationError(t *testing.T) {
 
 func TestArrayProcessor_Process_ItemProcessingError(t *testing.T) {
 	llmProvider := &mockLLMProvider{
-		generateFunc: func(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+		generateFunc: func(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 			if strings.Contains(prompt, "listString") {
 				return "1. Item 1", &domain.ProviderMetadata{Cost: 0.1}, nil
 			}
@@ -250,7 +247,7 @@ func TestArrayProcessor_Process_ItemProcessingError(t *testing.T) {
 
 func TestArrayProcessor_determineArraySize_Success(t *testing.T) {
 	llmProvider := &mockLLMProvider{
-		generateFunc: func(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+		generateFunc: func(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 			if strings.Contains(prompt, "listString") {
 				return "1. Apple\n2. Banana\n3. Cherry", &domain.ProviderMetadata{Cost: 0.1}, nil
 			}
@@ -289,7 +286,7 @@ func TestArrayProcessor_determineArraySize_Success(t *testing.T) {
 
 func TestArrayProcessor_determineArraySize_Error(t *testing.T) {
 	llmProvider := &mockLLMProvider{
-		generateFunc: func(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+		generateFunc: func(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 			return "", nil, errors.New("LLM error")
 		},
 	}

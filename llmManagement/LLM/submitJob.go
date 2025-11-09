@@ -28,7 +28,7 @@ func NewVariedJobSubmitter() *VariedJobSubmitter {
 	return &VariedJobSubmitter{}
 }
 
-func (v *VariedJobSubmitter) SubmitJob(job *Job, workerChannel chan *Job) (string, *gogpt.Usage, error) {
+func (v *VariedJobSubmitter) SubmitJob(job *Job, workerChannel chan *Job) (any, *gogpt.Usage, error) {
 	select {
 	case WorkerChannel <- job:
 	default:
@@ -37,6 +37,11 @@ func (v *VariedJobSubmitter) SubmitJob(job *Job, workerChannel chan *Job) (strin
 
 	result := <-job.Result
 	close(job.Result)
+
+	//TODO have an option to return a different kind of result for the vector/embeddings types
+	if result.EmbeddingRes != nil {
+		return result.EmbeddingRes.Data[0], nil, nil
+	}
 
 	return validateResult(result)
 }
@@ -47,7 +52,7 @@ func NewDefaultJobSubmitter() *DefaultJobSubmitter {
 	return &DefaultJobSubmitter{}
 }
 
-func (d *DefaultJobSubmitter) SubmitJob(job *Job, workerChannel chan *Job) (string, *gogpt.Usage, error) {
+func (d *DefaultJobSubmitter) SubmitJob(job *Job, workerChannel chan *Job) (any, *gogpt.Usage, error) {
 	if job == nil {
 		return blank, nil, errors.New("error, the job is nil")
 	}
@@ -57,16 +62,20 @@ func (d *DefaultJobSubmitter) SubmitJob(job *Job, workerChannel chan *Job) (stri
 	result := <-job.Result
 	close(job.Result)
 
+	if result.EmbeddingRes != nil {
+		return result.EmbeddingRes.Data[0], nil, nil
+	}
+
 	return validateResult(result)
 }
 
-func validateResult(result *gogpt.ChatCompletionResponse) (string, *gogpt.Usage, error) {
+func validateResult(result *JobResult) (any, *gogpt.Usage, error) {
 	if result == nil {
 		return blank, nil, errors.New("error, the returned result is nil")
 	}
-	if len(result.Choices) < 1 {
+	if len(result.ChatRes.Choices) < 1 {
 		return blank, nil, errors.New("error, the returned result is empty")
 	}
 
-	return result.Choices[0].Message.Content, &result.Usage, nil
+	return result.ChatRes.Choices[0].Message.Content, &result.ChatRes.Usage, nil
 }

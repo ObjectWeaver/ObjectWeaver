@@ -33,7 +33,7 @@ import (
 //   - TokenStreamingProvider: For token-by-token streaming
 //   - ByteOperationProvider: For TTS, Image generation, STT
 type LLMProvider interface {
-	Generate(prompt string, config *GenerationConfig) (string, *ProviderMetadata, error)
+	Generate(prompt string, config *GenerationConfig) (any, *ProviderMetadata, error)
 	SupportsStreaming() bool
 	ModelType() string
 }
@@ -41,7 +41,7 @@ type LLMProvider interface {
 // TokenStreamingProvider - LLM that supports token streaming
 type TokenStreamingProvider interface {
 	LLMProvider
-	GenerateStream(prompt string, config *GenerationConfig) (<-chan string, error)
+	GenerateStream(prompt string, config *GenerationConfig) (<-chan any, error)
 	GenerateTokenStream(prompt string, config *GenerationConfig) (<-chan *TokenChunk, error)
 	SupportsTokenStreaming() bool
 }

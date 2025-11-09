@@ -26,10 +26,10 @@ import (
 
 // MockJobEntryPoint for testing
 type MockJobEntryPoint struct {
-	submitJobFunc func(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (string, *gogpt.Usage, error)
+	submitJobFunc func(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (any, *gogpt.Usage, error)
 }
 
-func (m *MockJobEntryPoint) SubmitJob(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (string, *gogpt.Usage, error) {
+func (m *MockJobEntryPoint) SubmitJob(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (any, *gogpt.Usage, error) {
 	if m.submitJobFunc != nil {
 		return m.submitJobFunc(model, def, newPrompt, systemPrompt, outStream)
 	}
@@ -114,7 +114,7 @@ func TestOpenAIProvider_Generate(t *testing.T) {
 	provider := NewOpenAIProvider()
 	// Replace submitter with mock
 	mockSubmitter := &MockJobEntryPoint{
-		submitJobFunc: func(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (string, *gogpt.Usage, error) {
+		submitJobFunc: func(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (any, *gogpt.Usage, error) {
 			return "test response", &gogpt.Usage{TotalTokens: 100}, nil
 		},
 	}
@@ -192,7 +192,7 @@ func TestStreamingOpenAIProvider_GenerateStream(t *testing.T) {
 	provider := NewStreamingOpenAIProvider()
 	// Mock the submitter
 	mockSubmitter := &MockJobEntryPoint{
-		submitJobFunc: func(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (string, *gogpt.Usage, error) {
+		submitJobFunc: func(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (any, *gogpt.Usage, error) {
 			return "hello world", &gogpt.Usage{}, nil
 		},
 	}
@@ -207,7 +207,9 @@ func TestStreamingOpenAIProvider_GenerateStream(t *testing.T) {
 
 	var received []string
 	for chunk := range stream {
-		received = append(received, chunk)
+		if str, ok := chunk.(string); ok {
+			received = append(received, str)
+		}
 	}
 
 	if len(received) != 1 {
@@ -225,7 +227,7 @@ func TestStreamingOpenAIProvider_GenerateTokenStream(t *testing.T) {
 	provider := NewStreamingOpenAIProvider()
 	// Mock the submitter
 	mockSubmitter := &MockJobEntryPoint{
-		submitJobFunc: func(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (string, *gogpt.Usage, error) {
+		submitJobFunc: func(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (any, *gogpt.Usage, error) {
 			return "hi", &gogpt.Usage{}, nil
 		},
 	}

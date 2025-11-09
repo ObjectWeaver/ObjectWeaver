@@ -24,7 +24,7 @@ import (
 
 type ChannelJobSubmitter struct{}
 
-func (js *ChannelJobSubmitter) SubmitJob(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (string, *openai.Usage, error) {
+func (js *ChannelJobSubmitter) SubmitJob(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (any, *openai.Usage, error) {
 	input := llmManagement.Inputs{
 		Prompt:       newPrompt,
 		SystemPrompt: systemPrompt,
@@ -34,7 +34,7 @@ func (js *ChannelJobSubmitter) SubmitJob(model string, def *jsonSchema.Definitio
 
 	job := &LLM.Job{
 		Inputs: &input,
-		Result: make(chan *openai.ChatCompletionResponse),
+		Result: make(chan *LLM.JobResult),
 		Tokens: 0,
 	}
 

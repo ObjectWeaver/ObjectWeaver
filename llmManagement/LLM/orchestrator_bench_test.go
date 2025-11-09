@@ -111,7 +111,7 @@ func BenchmarkJobQueue(b *testing.B) {
 							if err != nil {
 								job.Error <- err
 							} else {
-								job.Result <- resp
+								job.Result <- CreateJobResult(resp, nil)
 							}
 						}
 					}(w)
@@ -128,7 +128,7 @@ func BenchmarkJobQueue(b *testing.B) {
 							Def:          &jsonSchema.Definition{Type: jsonSchema.String},
 							Priority:     int32(j % 10), // Vary priorities
 						},
-						Result: make(chan *openai.ChatCompletionResponse, 1),
+						Result: make(chan *JobResult, 1),
 						Error:  make(chan error, 1),
 						Tokens: 30,
 					}
@@ -225,7 +225,7 @@ func BenchmarkOrchestrator(b *testing.B) {
 							Def:          &jsonSchema.Definition{Type: jsonSchema.String},
 							Priority:     int32(j % 10),
 						},
-						Result: make(chan *openai.ChatCompletionResponse, 1),
+						Result: make(chan *JobResult, 1),
 						Error:  make(chan error, 1),
 						Tokens: 30,
 					}
@@ -307,7 +307,7 @@ func BenchmarkConcurrentJobSubmission(b *testing.B) {
 									Def:          &jsonSchema.Definition{Type: jsonSchema.String},
 									Priority:     int32(j % 10),
 								},
-								Result: make(chan *openai.ChatCompletionResponse, 1),
+								Result: make(chan *JobResult, 1),
 								Error:  make(chan error, 1),
 								Tokens: 30,
 							}
@@ -363,7 +363,7 @@ func BenchmarkQueueTypes(b *testing.B) {
 							if err != nil {
 								job.Error <- err
 							} else {
-								job.Result <- resp
+								job.Result <- CreateJobResult(resp, nil)
 							}
 						}
 					}()
@@ -379,7 +379,7 @@ func BenchmarkQueueTypes(b *testing.B) {
 							Def:      &jsonSchema.Definition{Type: jsonSchema.String},
 							Priority: int32(j % 20),
 						},
-						Result: make(chan *openai.ChatCompletionResponse, 1),
+						Result: make(chan *JobResult, 1),
 						Error:  make(chan error, 1),
 						Tokens: 30,
 					}

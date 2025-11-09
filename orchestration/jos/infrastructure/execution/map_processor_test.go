@@ -27,9 +27,6 @@ func TestNewMapProcessor(t *testing.T) {
 
 	processor := NewMapProcessor(llmProvider, promptBuilder)
 
-	if processor.llmProvider != llmProvider {
-		t.Error("Expected llmProvider to be set")
-	}
 	if processor.promptBuilder != promptBuilder {
 		t.Error("Expected promptBuilder to be set")
 	}

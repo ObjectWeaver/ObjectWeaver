@@ -17,6 +17,8 @@ package epstimic
 import (
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/infrastructure"
+
+	"github.com/objectweaver/go-sdk/jsonSchema"
 )
 
 // orchestrator will handle the overall tasks of processing
@@ -24,6 +26,13 @@ import (
 type Orchestrator struct {
 	epstimicEngine EpstimicEngine
 	workerCount    int
+}
+
+// ensureModelConfig ensures that the ModelConfig is initialized
+func ensureModelConfig(def *jsonSchema.Definition) {
+	if def.ModelConfig == nil {
+		def.ModelConfig = &jsonSchema.ModelConfig{}
+	}
 }
 
 type TempResult struct {
@@ -39,6 +48,9 @@ func (o *Orchestrator) EpstimicValidation(
 	context *domain.ExecutionContext,
 	generate func(task *domain.FieldTask, context *domain.ExecutionContext) (any, *domain.ProviderMetadata, error),
 ) (*domain.TaskResult, *domain.ProviderMetadata, error) {
+	// Ensure ModelConfig is initialized at the start
+	ensureModelConfig(task.Definition())
+
 	// start with a buffered channel with n values - dependent on the config
 	resultsChan := make(chan TempResult, o.workerCount)
 
@@ -48,8 +60,9 @@ func (o *Orchestrator) EpstimicValidation(
 
 	// start a loop of n values using the fan-out pattern to process the functions independently
 	for i := 0; i < o.workerCount; i++ {
-		go func() {
-			if i != 0 {
+		go func(workerIndex int) {
+			// For workers after the first, generate a new random seed
+			if workerIndex != 0 {
 				task.Definition().ModelConfig.Seed = infrastructure.GenerateSeed()
 			}
 
@@ -69,7 +82,7 @@ func (o *Orchestrator) EpstimicValidation(
 				Metadata: metadata,
 				Error:    nil,
 			}
-		}()
+		}(i)
 	}
 
 	// consume the results chan and handle errors / results accordingly

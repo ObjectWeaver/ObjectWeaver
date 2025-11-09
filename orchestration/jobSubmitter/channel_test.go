@@ -58,7 +58,7 @@ func TestChannelJobSubmitter_SubmitJob(t *testing.T) {
 				TotalTokens:      30,
 			},
 		}
-		job.Result <- response
+		job.Result <- LLM.CreateJobResult(response, nil)
 	}()
 
 	response, usage, err := submitter.SubmitJob(model, def, newPrompt, systemPrompt, outStream)
@@ -104,7 +104,7 @@ func TestChannelJobSubmitter_SubmitJob_InitializesSendImage(t *testing.T) {
 			},
 			Usage: openai.Usage{},
 		}
-		job.Result <- response
+		job.Result <- LLM.CreateJobResult(response, nil)
 	}()
 
 	_, _, err := submitter.SubmitJob(model, def, newPrompt, systemPrompt, outStream)

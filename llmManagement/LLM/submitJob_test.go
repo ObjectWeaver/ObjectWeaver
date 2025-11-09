@@ -38,7 +38,8 @@ func TestValidateResult(t *testing.T) {
 		result := &gogpt.ChatCompletionResponse{
 			Choices: []gogpt.ChatCompletionChoice{},
 		}
-		content, usage, err := validateResult(result)
+		jobResult := CreateJobResult(result, nil)
+		content, usage, err := validateResult(jobResult)
 		if err == nil {
 			t.Error("Expected error for empty choices")
 		}
@@ -67,7 +68,8 @@ func TestValidateResult(t *testing.T) {
 			},
 			Usage: expectedUsage,
 		}
-		content, usage, err := validateResult(result)
+		jobResult := CreateJobResult(result, nil)
+		content, usage, err := validateResult(jobResult)
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
@@ -100,7 +102,7 @@ func TestDefaultJobSubmitter_SubmitJob(t *testing.T) {
 	t.Run("valid job", func(t *testing.T) {
 		workerChannel := make(chan *Job, 1)
 		job := &Job{
-			Result: make(chan *gogpt.ChatCompletionResponse, 1),
+			Result: make(chan *JobResult, 1),
 		}
 		expectedContent := "Test response"
 		expectedUsage := gogpt.Usage{
@@ -122,7 +124,7 @@ func TestDefaultJobSubmitter_SubmitJob(t *testing.T) {
 		// Simulate worker
 		go func() {
 			receivedJob := <-workerChannel
-			receivedJob.Result <- result
+			receivedJob.Result <- CreateJobResult(result, nil)
 		}()
 
 		content, usage, err := submitter.SubmitJob(job, workerChannel)
@@ -148,7 +150,7 @@ func TestVariedJobSubmitter_SubmitJob(t *testing.T) {
 		defer func() { WorkerChannel = originalWorkerChannel }()
 
 		job := &Job{
-			Result: make(chan *gogpt.ChatCompletionResponse, 1),
+			Result: make(chan *JobResult, 1),
 		}
 		expectedContent := "Varied response"
 		expectedUsage := gogpt.Usage{
@@ -170,7 +172,7 @@ func TestVariedJobSubmitter_SubmitJob(t *testing.T) {
 		// Simulate worker
 		go func() {
 			receivedJob := <-WorkerChannel
-			receivedJob.Result <- result
+			receivedJob.Result <- CreateJobResult(result, nil)
 		}()
 
 		content, usage, err := submitter.SubmitJob(job, nil) // workerChannel param not used

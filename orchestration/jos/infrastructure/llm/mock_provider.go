@@ -36,7 +36,7 @@ func NewMockProvider() *MockProvider {
 }
 
 // Generate creates random data matching the schema type
-func (m *MockProvider) Generate(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+func (m *MockProvider) Generate(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 	if config == nil || config.Definition == nil {
 		return m.randomString(10), m.metadata(), nil
 	}

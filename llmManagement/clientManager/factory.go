@@ -90,6 +90,7 @@ func NewClientAdapter(config AdapterConfig) (ClientAdapter, error) {
 	// Setup common dependencies that all adapters need
 	modelConv := modelConverter.NewModelConverter()
 	reqBuilder := requestManagement.NewDefaultOpenAIReqBuilder(modelConv)
+	embeddingReqBuilder := requestManagement.NewEmbeddingOpenAIReqBuilder()
 
 	// Setup HTTP client if not provided
 	httpClient := config.HTTPClient
@@ -108,7 +109,7 @@ func NewClientAdapter(config AdapterConfig) (ClientAdapter, error) {
 		if config.APIKey == "" {
 			return nil, fmt.Errorf("openAI API key is required (set LLM_API_KEY)")
 		}
-		return NewOpenAIClientAdapter(config.APIKey, reqBuilder), nil
+		return NewOpenAIClientAdapter(config.APIKey, reqBuilder, embeddingReqBuilder), nil
 
 	case ProviderGemini:
 		if config.APIKey == "" {

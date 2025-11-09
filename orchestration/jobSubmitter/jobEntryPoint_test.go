@@ -57,7 +57,7 @@ func TestDefaultJobEntryPoint_SubmitJob(t *testing.T) {
 				TotalTokens:      30,
 			},
 		}
-		job.Result <- response
+		job.Result <- LLM.CreateJobResult(response, nil)
 	}()
 
 	response, usage, err := entryPoint.SubmitJob(model, def, newPrompt, systemPrompt, outStream)
@@ -100,7 +100,7 @@ func TestDefaultJobEntryPoint_SubmitJob_DefNil(t *testing.T) {
 			},
 			Usage: openai.Usage{},
 		}
-		job.Result <- response
+		job.Result <- LLM.CreateJobResult(response, nil)
 	}()
 
 	response, _, err := entryPoint.SubmitJob(model, def, newPrompt, systemPrompt, outStream)
@@ -142,7 +142,7 @@ func TestDefaultJobEntryPoint_SubmitJob_SetsModel(t *testing.T) {
 			},
 			Usage: openai.Usage{},
 		}
-		job.Result <- response
+		job.Result <- LLM.CreateJobResult(response, nil)
 	}()
 
 	_, _, err := entryPoint.SubmitJob(model, def, newPrompt, systemPrompt, outStream)
@@ -185,7 +185,7 @@ func TestDefaultJobEntryPoint_SubmitJob_InitializesSendImage(t *testing.T) {
 			},
 			Usage: openai.Usage{},
 		}
-		job.Result <- response
+		job.Result <- LLM.CreateJobResult(response, nil)
 	}()
 
 	_, _, err := entryPoint.SubmitJob(model, def, newPrompt, systemPrompt, outStream)

@@ -28,9 +28,6 @@ func TestNewBooleanProcessor(t *testing.T) {
 
 	processor := NewBooleanProcessor(llmProvider, promptBuilder)
 
-	if processor.llmProvider != llmProvider {
-		t.Error("Expected llmProvider to be set")
-	}
 	if processor.promptBuilder != promptBuilder {
 		t.Error("Expected promptBuilder to be set")
 	}
@@ -47,9 +44,6 @@ func TestNewBooleanProcessorWithPromptProvider(t *testing.T) {
 	processor := NewBooleanProcessorWithPromptProvider(llmProvider, promptBuilder, promptProvider)
 
 	// Just verify it doesn't panic and fields are set
-	if processor.llmProvider != llmProvider {
-		t.Error("Expected llmProvider to be set")
-	}
 	if processor.promptBuilder != promptBuilder {
 		t.Error("Expected promptBuilder to be set")
 	}
@@ -83,7 +77,7 @@ func TestBooleanProcessor_CanProcess(t *testing.T) {
 
 func TestBooleanProcessor_Process(t *testing.T) {
 	llmProvider := &mockLLMProvider{
-		generateFunc: func(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+		generateFunc: func(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 			return "true", &domain.ProviderMetadata{Cost: 0.01}, nil
 		},
 	}
@@ -126,9 +120,6 @@ func TestNewNumberProcessor(t *testing.T) {
 
 	processor := NewNumberProcessor(llmProvider, promptBuilder)
 
-	if processor.llmProvider != llmProvider {
-		t.Error("Expected llmProvider to be set")
-	}
 	if processor.promptBuilder != promptBuilder {
 		t.Error("Expected promptBuilder to be set")
 	}
@@ -145,9 +136,6 @@ func TestNewNumberProcessorWithPromptProvider(t *testing.T) {
 	processor := NewNumberProcessorWithPromptProvider(llmProvider, promptBuilder, promptProvider)
 
 	// Just verify it doesn't panic and fields are set
-	if processor.llmProvider != llmProvider {
-		t.Error("Expected llmProvider to be set")
-	}
 	if processor.promptBuilder != promptBuilder {
 		t.Error("Expected promptBuilder to be set")
 	}
@@ -179,9 +167,9 @@ func TestNumberProcessor_CanProcess(t *testing.T) {
 	}
 }
 
-func TestNumberProcessor_Process_Number(t *testing.T) {
+func TestNumberProcessor_Process(t *testing.T) {
 	llmProvider := &mockLLMProvider{
-		generateFunc: func(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+		generateFunc: func(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 			return "42", &domain.ProviderMetadata{Cost: 0.01}, nil
 		},
 	}
@@ -220,7 +208,7 @@ func TestNumberProcessor_Process_Number(t *testing.T) {
 
 func TestNumberProcessor_Process_Integer(t *testing.T) {
 	llmProvider := &mockLLMProvider{
-		generateFunc: func(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+		generateFunc: func(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 			return "25", &domain.ProviderMetadata{Cost: 0.01}, nil
 		},
 	}

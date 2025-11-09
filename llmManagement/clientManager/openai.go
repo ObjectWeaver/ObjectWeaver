@@ -29,17 +29,20 @@ import (
 type OpenAIClientAdapter struct {
 	client         *openai.Client
 	requestBuilder requestManagement.RequestBuilder
+	embeddingRequestBuilder requestManagement.EmbeddingRequestBuilder
 }
 
 // NewOpenAIClientAdapter creates a new adapter that uses the native OpenAI SDK.
 func NewOpenAIClientAdapter(
 	apiKey string,
 	builder requestManagement.RequestBuilder,
+	embeddingBuilder requestManagement.EmbeddingRequestBuilder,
 ) *OpenAIClientAdapter {
 	client := openai.NewClient(apiKey)
 	return &OpenAIClientAdapter{
 		client:         client,
 		requestBuilder: builder,
+		embeddingRequestBuilder: embeddingBuilder,
 	}
 }
 

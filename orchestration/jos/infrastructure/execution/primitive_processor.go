@@ -99,6 +99,10 @@ func (p *PrimitiveProcessor) Process(task *domain.FieldTask, context *domain.Exe
 }
 
 func (p *PrimitiveProcessor) buildRequestPieces(task *domain.FieldTask, context *domain.ExecutionContext) (string, *domain.GenerationConfig, error) {
+	if task.Definition().Type == jsonSchema.Vector {
+		return p.buildVectorRequest(task, context)
+	}
+
 	// Build prompt
 	prompt, err := p.promptBuilder.Build(task, context.PromptContext())
 	if err != nil {
@@ -141,6 +145,44 @@ func (p *PrimitiveProcessor) buildRequestPieces(task *domain.FieldTask, context 
 	return prompt, config, nil
 }
 
+func (p *PrimitiveProcessor) buildVectorRequest(task *domain.FieldTask, context *domain.ExecutionContext) (string, *domain.GenerationConfig, error) {
+	// This is a request structure specifically for vector types - the aim is not to use the prompt builder etc 
+	//the only prompt information being passed is in the prompt information passed from the user information 
+
+	config := context.GenerationConfig()
+	config.Model = p.determineModel(task.Definition())
+	config.Definition = task.Definition() // Pass the full definition for SendImage support
+
+	// Set system prompt with priority: definition-level > provider-level
+	if task.Definition().SystemPrompt != nil {
+		// Use definition-level system prompt if provided
+		config.SystemPrompt = *task.Definition().SystemPrompt
+	} else if p.systemPromptProvider != nil {
+		// Otherwise use provider's system prompt for this type
+		if systemPrompt := p.systemPromptProvider.GetSystemPrompt(task.Definition().Type); systemPrompt != nil {
+			config.SystemPrompt = *systemPrompt
+		}
+	}
+
+	//from the selected fields generation. 
+	if (len(task.Definition().SelectFields) > 0) {
+		prompt := ""
+		for _, fieldPath := range task.Definition().SelectFields {
+			if value, exists := context.GeneratedValues()[fieldPath]; exists {
+				prompt += fmt.Sprintf("%v\n", value)
+				log.Printf("[PrimitiveProcessor] Added field '%s' to prompt (length: %d chars)", fieldPath, len(fmt.Sprintf("%v", value)))
+			} else {
+				log.Printf("[PrimitiveProcessor] Field '%s' not found in context", fieldPath)
+			}
+		}
+
+		return prompt, config, nil
+	}
+
+	//if there are no selected fields - then just return the first prompt from the context
+	return context.PromptContext().FirstPrompt(), config, nil
+}
+
 func (p *PrimitiveProcessor) generateValue(task *domain.FieldTask, context *domain.ExecutionContext) (any, *domain.ProviderMetadata, error) {
 	prompt, config, err := p.buildRequestPieces(task, context)
 	if err != nil {
@@ -165,20 +207,23 @@ func (p *PrimitiveProcessor) generateValue(task *domain.FieldTask, context *doma
 	return value, metadata, nil
 }
 
-func (p *PrimitiveProcessor) parseValue(response string, fieldType jsonSchema.DataType) interface{} {
+func (p *PrimitiveProcessor) parseValue(response any, fieldType jsonSchema.DataType) interface{} {
 	// Clean response
-	response = cleanResponse(response)
-
 	switch fieldType {
 	case jsonSchema.Boolean:
+		response = cleanResponse(response.(string))
 		return response == "true" || response == "True" || response == "TRUE"
 	case jsonSchema.Number, jsonSchema.Integer:
 		// Parse number - simplified
-		num, err := p.numberExtractor.Extract(response)
+		response = cleanResponse(response.(string))
+		num, err := p.numberExtractor.Extract(response.(string))
 		if err != nil {
 			return 0
 		}
 		return num
+	case jsonSchema.String:
+		response = cleanResponse(response.(string))
+		return response
 	default:
 		return response
 	}
@@ -216,11 +261,14 @@ func getDefaultModelForProvider() string {
 	}
 }
 
-func cleanResponse(response string) string {
+func cleanResponse(response any) string {
 	// Remove common artifacts
-	response = trimQuotes(response)
-	response = trimWhitespace(response)
-	return response
+	responseStr := response.(string)
+
+	
+	responseStr = trimQuotes(responseStr)
+	responseStr = trimWhitespace(responseStr)
+	return responseStr
 }
 
 func trimQuotes(s string) string {

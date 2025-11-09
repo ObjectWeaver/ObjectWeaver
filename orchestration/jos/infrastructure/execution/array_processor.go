@@ -219,7 +219,10 @@ func (p *ArrayProcessor) executeLLMRequest(task *domain.FieldTask, context *doma
 
 	// Parse the response to extract the number
 	var numItems int
-	fmt.Sscanf(numResponse, "%d", &numItems)
+	numResponseStr, ok := numResponse.(string)
+	if ok {
+		fmt.Sscanf(numResponseStr, "%d", &numItems)
+	}
 	if numItems < 1 {
 		numItems = 3 // Default number of items to be in the list. This was chosen as LLMs like to do things in three's like people
 	}

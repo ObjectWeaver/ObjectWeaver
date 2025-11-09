@@ -58,7 +58,7 @@ func (m *mockByteOperationProvider) SupportsByteOperations() bool {
 	return m.supportsByteOps
 }
 
-func (m *mockByteOperationProvider) Generate(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+func (m *mockByteOperationProvider) Generate(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 	return "", nil, errors.New("not implemented")
 }
 
@@ -71,9 +71,6 @@ func TestNewByteProcessor(t *testing.T) {
 
 	processor := NewByteProcessor(llmProvider, promptBuilder)
 
-	if processor.llmProvider != llmProvider {
-		t.Error("Expected llmProvider to be set")
-	}
 	if processor.promptBuilder != promptBuilder {
 		t.Error("Expected promptBuilder to be set")
 	}

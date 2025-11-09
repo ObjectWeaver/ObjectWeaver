@@ -81,7 +81,7 @@ func getDefaultModelForProvider() string {
 	}
 }
 
-func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig) (string, *domain.ProviderMetadata, error) {
+func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
 	// Determine model - use config model if provided, otherwise use provider-specific default
 	model := config.Model
 	if model == "" {
@@ -92,20 +92,18 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 	log.Printf("[LLM] Submitting job with model: %s, prompt length: %d chars", model, len(prompt))
 
 	// Submit job with Definition (includes SendImage if present)
-	response, usage, err := p.submitter.SubmitJob(model, config.Definition, prompt, config.SystemPrompt, nil)
+	completion, usage, err := p.submitter.SubmitJob(model, config.Definition, prompt, config.SystemPrompt, nil)
 	if err != nil {
 		log.Printf("[LLM ERROR] Job submission failed: %v", err)
 		return "", nil, fmt.Errorf("job submission failed: %w", err)
 	}
-
-	log.Printf("[LLM] Response received, length: %d chars, tokens used: %d", len(response), usage.TotalTokens)
 
 	metadata := &domain.ProviderMetadata{
 		TokensUsed: usage.TotalTokens,
 		Model:      string(model),
 	}
 
-	return response, metadata, nil
+	return	completion, metadata, nil
 }
 
 func (p *OpenAIProvider) SupportsStreaming() bool {
@@ -133,10 +131,10 @@ func NewStreamingOpenAIProvider() *StreamingOpenAIProvider {
 	}
 }
 
-func (p *StreamingOpenAIProvider) GenerateStream(prompt string, config *domain.GenerationConfig) (<-chan string, error) {
+func (p *StreamingOpenAIProvider) GenerateStream(prompt string, config *domain.GenerationConfig) (<-chan any, error) {
 	// Placeholder for streaming implementation
 	// This would use the actual streaming API
-	out := make(chan string)
+	out := make(chan any)
 
 	go func() {
 		defer close(out)
@@ -170,7 +168,7 @@ func (p *StreamingOpenAIProvider) GenerateTokenStream(prompt string, config *dom
 		for str := range stringStream {
 			// Simulate token-by-token streaming
 			// In reality, this would come directly from the LLM API
-			for _, char := range str {
+			for _, char := range str.(string) {
 				chunk := domain.NewTokenChunk(string(char))
 				out <- chunk
 			}

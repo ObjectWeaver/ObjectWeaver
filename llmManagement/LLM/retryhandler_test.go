@@ -19,8 +19,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/sashabaranov/go-openai"
 )
 
 // Mock implementation of IJobQueueManager for testing
@@ -78,7 +76,7 @@ func TestHandleTransientError_Retry(t *testing.T) {
 		jobs: make([]*Job, 0),
 	}
 	job := &Job{
-		Result:  make(chan *openai.ChatCompletionResponse, 1),
+		Result:  make(chan *JobResult, 1),
 		Inputs:  &llmManagement.Inputs{},
 		Error:   make(chan error, 1),
 		Retries: 0,
@@ -110,7 +108,7 @@ func TestHandleTransientError_MaxRetries(t *testing.T) {
 		jobs: make([]*Job, 0),
 	}
 	job := &Job{
-		Result:  make(chan *openai.ChatCompletionResponse, 1),
+		Result:  make(chan *JobResult, 1),
 		Inputs:  &llmManagement.Inputs{},
 		Error:   make(chan error, 1),
 		Retries: 1, // already at max
@@ -139,7 +137,7 @@ func TestHandleTransientError_MaxRetries(t *testing.T) {
 func TestHandlePermanentError(t *testing.T) {
 	rh := NewRetryHandler(3, true)
 	job := &Job{
-		Result:  make(chan *openai.ChatCompletionResponse, 1),
+		Result:  make(chan *JobResult, 1),
 		Inputs:  &llmManagement.Inputs{},
 		Error:   make(chan error, 1),
 		Retries: 0,
