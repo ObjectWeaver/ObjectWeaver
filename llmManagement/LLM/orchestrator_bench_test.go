@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"objectweaver/llmManagement"
 	"objectweaver/llmManagement/backoff"
+	"objectweaver/llmManagement/domain"
 	"sync"
 	"testing"
 	"time"
@@ -35,12 +36,12 @@ func NewMockClientAdapter(delay time.Duration) *MockClientAdapter {
 	return &MockClientAdapter{processDelay: delay}
 }
 
-func (m *MockClientAdapter) Process(inputs *llmManagement.Inputs) (*openai.ChatCompletionResponse, error) {
+func (m *MockClientAdapter) Process(inputs *llmManagement.Inputs) (*domain.JobResult, error) {
 	if m.processDelay > 0 {
 		time.Sleep(m.processDelay)
 	}
 
-	return &openai.ChatCompletionResponse{
+	chatRes := &openai.ChatCompletionResponse{
 		ID:      "mock-response",
 		Object:  "chat.completion",
 		Created: time.Now().Unix(),
@@ -60,11 +61,13 @@ func (m *MockClientAdapter) Process(inputs *llmManagement.Inputs) (*openai.ChatC
 			CompletionTokens: 20,
 			TotalTokens:      30,
 		},
-	}, nil
+	}
+
+	return domain.CreateJobResult(chatRes, nil), nil
 }
 
 func (m *MockClientAdapter) ProcessBatch(jobs []any) (*openai.ChatCompletionResponse, error) {
-	return m.Process(nil)
+	return nil, nil
 }
 
 // BenchmarkJobQueue tests the job queue performance
@@ -111,7 +114,7 @@ func BenchmarkJobQueue(b *testing.B) {
 							if err != nil {
 								job.Error <- err
 							} else {
-								job.Result <- CreateJobResult(resp, nil)
+								job.Result <- resp
 							}
 						}
 					}(w)
@@ -128,7 +131,7 @@ func BenchmarkJobQueue(b *testing.B) {
 							Def:          &jsonSchema.Definition{Type: jsonSchema.String},
 							Priority:     int32(j % 10), // Vary priorities
 						},
-						Result: make(chan *JobResult, 1),
+						Result: make(chan *domain.JobResult, 1),
 						Error:  make(chan error, 1),
 						Tokens: 30,
 					}
@@ -225,7 +228,7 @@ func BenchmarkOrchestrator(b *testing.B) {
 							Def:          &jsonSchema.Definition{Type: jsonSchema.String},
 							Priority:     int32(j % 10),
 						},
-						Result: make(chan *JobResult, 1),
+						Result: make(chan *domain.JobResult, 1),
 						Error:  make(chan error, 1),
 						Tokens: 30,
 					}
@@ -307,7 +310,7 @@ func BenchmarkConcurrentJobSubmission(b *testing.B) {
 									Def:          &jsonSchema.Definition{Type: jsonSchema.String},
 									Priority:     int32(j % 10),
 								},
-								Result: make(chan *JobResult, 1),
+								Result: make(chan *domain.JobResult, 1),
 								Error:  make(chan error, 1),
 								Tokens: 30,
 							}
@@ -363,7 +366,7 @@ func BenchmarkQueueTypes(b *testing.B) {
 							if err != nil {
 								job.Error <- err
 							} else {
-								job.Result <- CreateJobResult(resp, nil)
+								job.Result <- resp
 							}
 						}
 					}()
@@ -379,7 +382,7 @@ func BenchmarkQueueTypes(b *testing.B) {
 							Def:      &jsonSchema.Definition{Type: jsonSchema.String},
 							Priority: int32(j % 20),
 						},
-						Result: make(chan *JobResult, 1),
+						Result: make(chan *domain.JobResult, 1),
 						Error:  make(chan error, 1),
 						Tokens: 30,
 					}

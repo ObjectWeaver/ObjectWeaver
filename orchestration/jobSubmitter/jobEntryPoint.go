@@ -18,6 +18,7 @@ import (
 	"log"
 	"objectweaver/llmManagement"
 	"objectweaver/llmManagement/LLM"
+	"objectweaver/llmManagement/domain"
 
 	"github.com/objectweaver/go-sdk/jsonSchema"
 	"github.com/sashabaranov/go-openai"
@@ -56,7 +57,7 @@ func (js *DefaultJobEntryPoint) SubmitJob(model string, def *jsonSchema.Definiti
 
 	job := &LLM.Job{
 		Inputs: &input,
-		Result: make(chan *LLM.JobResult),
+		Result: make(chan *domain.JobResult),
 		Tokens: 0,
 	}
 
@@ -73,7 +74,7 @@ func (js *DefaultJobEntryPoint) SubmitJob(model string, def *jsonSchema.Definiti
 		return completion, usage, err
 	}
 
-	log.Printf("[JobEntryPoint] Job completed successfully, response length: %d", len(completion.(string)))
+	log.Printf("[JobEntryPoint] Job completed successfully, response: %v", completion)
 
 	return completion, usage, err
 }

@@ -158,7 +158,7 @@ func (o *Orchestrator) orchestrationJob(job *Job, workerID int) {
 
 	// 5. On success, reset backoff and send result.
 	o.backoffManager.ResetBackoff(workerID)
-	job.Result <- CreateJobResult(resp, nil)
+	job.Result <- resp
 }
 
 // Stop gracefully shuts down the orchestrator and waits for workers to finish.

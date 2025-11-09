@@ -48,6 +48,12 @@ func (m *mockRequestBuilder) BuildRequest(inputs *llmManagement.Inputs) (openai.
 	return m.request, m.err
 }
 
+type mockEmbeddingRequestBuilder struct{}
+
+func (m *mockEmbeddingRequestBuilder) BuildRequest(inputs *llmManagement.Inputs) (openai.EmbeddingRequest, error) {
+	return openai.EmbeddingRequest{}, nil
+}
+
 type mockModelConverter struct{}
 
 func (m *mockModelConverter) Convert(model string) string {
@@ -57,10 +63,11 @@ func (m *mockModelConverter) Convert(model string) string {
 func TestNewGeminiClientAdapter(t *testing.T) {
 	apiKey := "test-key"
 	builder := &mockRequestBuilder{}
+	embeddingBuilder := &mockEmbeddingRequestBuilder{}
 	converter := &mockModelConverter{}
 	httpClient := &http.Client{}
 
-	adapter := NewGeminiClientAdapter(apiKey, builder, converter, httpClient)
+	adapter := NewGeminiClientAdapter(apiKey, builder, embeddingBuilder, converter, httpClient)
 
 	if adapter.apiKey != apiKey {
 		t.Errorf("expected apiKey %s, got %s", apiKey, adapter.apiKey)
@@ -79,9 +86,10 @@ func TestNewGeminiClientAdapter(t *testing.T) {
 func TestNewGeminiClientAdapter_NilHttpClient(t *testing.T) {
 	apiKey := "test-key"
 	builder := &mockRequestBuilder{}
+	embeddingBuilder := &mockEmbeddingRequestBuilder{}
 	converter := &mockModelConverter{}
 
-	adapter := NewGeminiClientAdapter(apiKey, builder, converter, nil)
+	adapter := NewGeminiClientAdapter(apiKey, builder, embeddingBuilder, converter, nil)
 
 	if adapter.httpClient == nil {
 		t.Errorf("expected httpClient to be initialized")
@@ -315,7 +323,7 @@ func TestProcess_Success(t *testing.T) {
 		},
 	}
 	builder := &mockRequestBuilder{request: mockReq}
-
+	embeddingBuilder := &mockEmbeddingRequestBuilder{}
 	converter := &mockModelConverter{}
 
 	// Mock HTTP server
@@ -347,13 +355,8 @@ func TestProcess_Success(t *testing.T) {
 
 	// Create adapter with test server client
 	httpClient := server.Client()
-	adapter := &GeminiClientAdapter{
-		httpClient:     httpClient,
-		apiKey:         "test-key",
-		baseURL:        server.URL,
-		requestBuilder: builder,
-		modelConverter: converter,
-	}
+	adapter := NewGeminiClientAdapter("test-key", builder, embeddingBuilder, converter, httpClient)
+	adapter.baseURL = server.URL
 
 	inputs := &llmManagement.Inputs{} // Assuming empty inputs for mock
 
@@ -362,15 +365,16 @@ func TestProcess_Success(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 
-	if result.Choices[0].Message.Content != "Mocked response" {
-		t.Errorf("expected 'Mocked response', got '%s'", result.Choices[0].Message.Content)
+	if result.ChatRes.Choices[0].Message.Content != "Mocked response" {
+		t.Errorf("expected 'Mocked response', got '%s'", result.ChatRes.Choices[0].Message.Content)
 	}
 }
 
 func TestProcess_BuildRequestError(t *testing.T) {
 	builder := &mockRequestBuilder{err: fmt.Errorf("build error")}
+	embeddingBuilder := &mockEmbeddingRequestBuilder{}
 	converter := &mockModelConverter{}
-	adapter := NewGeminiClientAdapter("key", builder, converter, nil)
+	adapter := NewGeminiClientAdapter("key", builder, embeddingBuilder, converter, nil)
 
 	inputs := &llmManagement.Inputs{}
 	_, err := adapter.Process(inputs)
@@ -382,6 +386,7 @@ func TestProcess_BuildRequestError(t *testing.T) {
 func TestProcess_ApiError(t *testing.T) {
 	mockReq := openai.ChatCompletionRequest{Model: "gemini-test"}
 	builder := &mockRequestBuilder{request: mockReq}
+	embeddingBuilder := &mockEmbeddingRequestBuilder{}
 	converter := &mockModelConverter{}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -395,13 +400,8 @@ func TestProcess_ApiError(t *testing.T) {
 	defer server.Close()
 
 	httpClient := server.Client()
-	adapter := &GeminiClientAdapter{
-		httpClient:     httpClient,
-		apiKey:         "test-key",
-		baseURL:        server.URL,
-		requestBuilder: builder,
-		modelConverter: converter,
-	}
+	adapter := NewGeminiClientAdapter("test-key", builder, embeddingBuilder, converter, httpClient)
+	adapter.baseURL = server.URL
 
 	inputs := &llmManagement.Inputs{}
 	_, err := adapter.Process(inputs)

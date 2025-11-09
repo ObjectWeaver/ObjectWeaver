@@ -19,8 +19,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"objectweaver/llmManagement"
+	"objectweaver/llmManagement/domain"
 	"objectweaver/llmManagement/requestManagement"
 
 	"github.com/sashabaranov/go-openai"
@@ -29,33 +31,45 @@ import (
 // LocalClientAdapter orchestrates the conversion and processing of requests
 // to a standard HTTP client, mimicking a specific API like OpenAI's.
 type LocalClientAdapter struct {
-	client           *http.Client
-	requestBuilder   requestManagement.RequestBuilder
-	requestConverter requestManagement.RequestConverter
-	targetURL        string
-	authToken        string
+	client                  *http.Client
+	requestBuilder          requestManagement.RequestBuilder
+	embeddingRequestBuilder requestManagement.EmbeddingRequestBuilder
+	requestConverter        requestManagement.RequestConverter
+	targetURL               string
+	authToken               string
 }
 
 // NewLocalClientAdapter creates a new adapter with necessary dependencies.
 func NewLocalClientAdapter(
 	url, token string,
 	builder requestManagement.RequestBuilder,
+	embeddingBuilder requestManagement.EmbeddingRequestBuilder,
 	converter requestManagement.RequestConverter,
 	httpClient *http.Client,
 ) *LocalClientAdapter {
 	return &LocalClientAdapter{
-		client:           httpClient,
-		requestBuilder:   builder,
-		requestConverter: converter,
-		targetURL:        url,
-		authToken:        token,
+		client:                  httpClient,
+		requestBuilder:          builder,
+		embeddingRequestBuilder: embeddingBuilder,
+		requestConverter:        converter,
+		targetURL:               url,
+		authToken:               token,
 	}
 }
 
 // Process handles the end-to-end flow: builds a request from inputs,
 // converts it to a standard HTTP request, sends it, and converts the
 // response back to a typed struct.
-func (h *LocalClientAdapter) Process(inputs *llmManagement.Inputs) (*openai.ChatCompletionResponse, error) {
+func (h *LocalClientAdapter) Process(inputs *llmManagement.Inputs) (*domain.JobResult, error) {
+	// Check if this is an embedding request
+	if inputs.Def != nil && inputs.Def.Type == "vector" {
+		return h.processEmbedding(inputs)
+	}
+	return h.processChat(inputs)
+}
+
+// processChat handles chat completion requests
+func (h *LocalClientAdapter) processChat(inputs *llmManagement.Inputs) (*domain.JobResult, error) {
 	// 1. Build the API-specific request object (e.g., openai.ChatCompletionRequest).
 	openAIReq, err := h.requestBuilder.BuildRequest(inputs)
 	if err != nil {
@@ -94,9 +108,72 @@ func (h *LocalClientAdapter) Process(inputs *llmManagement.Inputs) (*openai.Chat
 		return nil, fmt.Errorf("failed to convert http response: %w", err)
 	}
 
-	return &chatResponse, nil
+	return domain.CreateJobResult(&chatResponse, nil), nil
+}
+
+// processEmbedding handles embedding requests
+func (h *LocalClientAdapter) processEmbedding(inputs *llmManagement.Inputs) (*domain.JobResult, error) {
+	// 1. Build the embedding request
+	embeddingReq, err := h.embeddingRequestBuilder.BuildRequest(inputs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build embedding request: %w", err)
+	}
+
+	// 2. Marshal the request object into a JSON byte slice for the HTTP body.
+	reqBytes, err := json.Marshal(embeddingReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal embedding request body: %w", err)
+	}
+
+	// 3. Create a standard *http.Request that the http.Client can send.
+	// For local/OpenAI-compatible APIs, embeddings typically use /v1/embeddings endpoint
+	embeddingURL := h.targetURL
+	// If the target URL is for chat completions, we need to adjust it for embeddings
+	// This assumes the local API follows OpenAI's URL structure
+	if len(embeddingURL) > 0 && (embeddingURL[len(embeddingURL)-len("/chat/completions"):] == "/chat/completions" ||
+		embeddingURL[len(embeddingURL)-len("/completions"):] == "/completions") {
+		// Replace the endpoint with embeddings
+		embeddingURL = embeddingURL[:len(embeddingURL)-len("/chat/completions")] + "/embeddings"
+	}
+
+	httpReq, err := http.NewRequest(http.MethodPost, embeddingURL, bytes.NewBuffer(reqBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new http request: %w", err)
+	}
+
+	// 4. Set necessary headers for the target API.
+	httpReq.Header.Set("Content-Type", "application/json")
+	if h.authToken != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+h.authToken)
+	}
+
+	// 5. Use the standard http.Client to send the request.
+	response, err := h.client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("http client failed to process embedding request: %w", err)
+	}
+	defer response.Body.Close()
+
+	// 6. Handle non-200 status codes
+	if response.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(response.Body)
+		return nil, fmt.Errorf("embedding api error (status %d): %s", response.StatusCode, string(body))
+	}
+
+	// 7. Parse the embedding response
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read embedding response: %w", err)
+	}
+
+	var embeddingResp openai.EmbeddingResponse
+	if err := json.Unmarshal(body, &embeddingResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal embedding response: %w", err)
+	}
+
+	return domain.CreateJobResult(nil, &embeddingResp), nil
 }
 
 func (a *LocalClientAdapter) ProcessBatch(jobs []any) (*openai.ChatCompletionResponse, error) {
-	return nil, errors.New("Doesn't exist")
+	return nil, errors.New("doesn't exist")
 }

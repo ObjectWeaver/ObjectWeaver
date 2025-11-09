@@ -19,16 +19,18 @@ import (
 	"errors"
 	"fmt"
 	"objectweaver/llmManagement"
+	"objectweaver/llmManagement/domain"
 	"objectweaver/llmManagement/requestManagement"
 
+	"github.com/objectweaver/go-sdk/jsonSchema"
 	"github.com/sashabaranov/go-openai"
 )
 
 // OpenAIClientAdapter uses the official OpenAI Go SDK directly.
 // This adapter is useful for direct OpenAI API calls without HTTP middleware.
 type OpenAIClientAdapter struct {
-	client         *openai.Client
-	requestBuilder requestManagement.RequestBuilder
+	client                  *openai.Client
+	requestBuilder          requestManagement.RequestBuilder
 	embeddingRequestBuilder requestManagement.EmbeddingRequestBuilder
 }
 
@@ -40,14 +42,25 @@ func NewOpenAIClientAdapter(
 ) *OpenAIClientAdapter {
 	client := openai.NewClient(apiKey)
 	return &OpenAIClientAdapter{
-		client:         client,
-		requestBuilder: builder,
+		client:                  client,
+		requestBuilder:          builder,
 		embeddingRequestBuilder: embeddingBuilder,
 	}
 }
 
 // Process implements the ClientAdapter interface using the native OpenAI SDK.
-func (a *OpenAIClientAdapter) Process(inputs *llmManagement.Inputs) (*openai.ChatCompletionResponse, error) {
+func (a *OpenAIClientAdapter) Process(inputs *llmManagement.Inputs) (*domain.JobResult, error) {
+	if inputs.Def.Type == jsonSchema.Vector {
+		return a.processEmbedding(inputs)
+	}
+	return a.processChat(inputs)
+}
+
+func (a *OpenAIClientAdapter) ProcessBatch(jobs []any) (*openai.ChatCompletionResponse, error) {
+	return nil, errors.New("doesn't exist")
+}
+
+func (a *OpenAIClientAdapter) processChat(inputs *llmManagement.Inputs) (*domain.JobResult, error) {
 	// 1. Build the request using the standard builder
 	req, err := a.requestBuilder.BuildRequest(inputs)
 	if err != nil {
@@ -61,9 +74,22 @@ func (a *OpenAIClientAdapter) Process(inputs *llmManagement.Inputs) (*openai.Cha
 		return nil, fmt.Errorf("openai api error: %w", err)
 	}
 
-	return &resp, nil
+	return domain.CreateJobResult(&resp, nil), nil
 }
 
-func (a *OpenAIClientAdapter) ProcessBatch(jobs []any) (*openai.ChatCompletionResponse, error) {
-	return nil, errors.New("Doesn't exist")
+func (a *OpenAIClientAdapter) processEmbedding(inputs *llmManagement.Inputs) (*domain.JobResult, error) {
+	// 1. Build the embedding request using the standard builder
+	req, err := a.embeddingRequestBuilder.BuildRequest(inputs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build openai embedding request: %w", err)
+	}
+
+	// 2. Use the native OpenAI SDK to make the request
+	ctx := context.Background()
+	resp, err := a.client.CreateEmbeddings(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("openai api error: %w", err)
+	}
+
+	return domain.CreateJobResult(nil, &resp), nil
 }

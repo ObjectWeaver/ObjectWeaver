@@ -17,6 +17,7 @@ package jobSubmitter
 import (
 	"objectweaver/llmManagement"
 	"objectweaver/llmManagement/LLM"
+	"objectweaver/llmManagement/domain"
 
 	"github.com/objectweaver/go-sdk/jsonSchema"
 	"github.com/sashabaranov/go-openai"
@@ -34,7 +35,7 @@ func (js *ChannelJobSubmitter) SubmitJob(model string, def *jsonSchema.Definitio
 
 	job := &LLM.Job{
 		Inputs: &input,
-		Result: make(chan *LLM.JobResult),
+		Result: make(chan *domain.JobResult),
 		Tokens: 0,
 	}
 

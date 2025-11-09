@@ -23,9 +23,11 @@ import (
 	"log"
 	"net/http"
 	"objectweaver/llmManagement"
+	"objectweaver/llmManagement/domain"
 	"objectweaver/llmManagement/modelConverter"
 	"objectweaver/llmManagement/requestManagement"
 
+	"github.com/objectweaver/go-sdk/jsonSchema"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -41,11 +43,12 @@ func min(a, b int) int {
 // All requests are built using OpenAI format and then converted for Gemini.
 // Responses are converted back to OpenAI format for consistency.
 type GeminiClientAdapter struct {
-	httpClient     *http.Client
-	apiKey         string
-	baseURL        string
-	requestBuilder requestManagement.RequestBuilder
-	modelConverter modelConverter.ModelConverter
+	httpClient              *http.Client
+	apiKey                  string
+	baseURL                 string
+	requestBuilder          requestManagement.RequestBuilder
+	embeddingRequestBuilder requestManagement.EmbeddingRequestBuilder
+	modelConverter          modelConverter.ModelConverter
 }
 
 // NewGeminiClientAdapter creates a new Gemini adapter that converts between
@@ -53,6 +56,7 @@ type GeminiClientAdapter struct {
 func NewGeminiClientAdapter(
 	apiKey string,
 	builder requestManagement.RequestBuilder,
+	embeddingBuilder requestManagement.EmbeddingRequestBuilder,
 	converter modelConverter.ModelConverter,
 	httpClient *http.Client,
 ) *GeminiClientAdapter {
@@ -60,16 +64,26 @@ func NewGeminiClientAdapter(
 		httpClient = &http.Client{}
 	}
 	return &GeminiClientAdapter{
-		httpClient:     httpClient,
-		apiKey:         apiKey,
-		baseURL:        "https://generativelanguage.googleapis.com/v1beta",
-		requestBuilder: builder,
-		modelConverter: converter,
+		httpClient:              httpClient,
+		apiKey:                  apiKey,
+		baseURL:                 "https://generativelanguage.googleapis.com/v1beta",
+		requestBuilder:          builder,
+		embeddingRequestBuilder: embeddingBuilder,
+		modelConverter:          converter,
 	}
 }
 
 // Process implements the ClientAdapter interface with OpenAI-to-Gemini conversion.
-func (a *GeminiClientAdapter) Process(inputs *llmManagement.Inputs) (*openai.ChatCompletionResponse, error) {
+func (a *GeminiClientAdapter) Process(inputs *llmManagement.Inputs) (*domain.JobResult, error) {
+	// Check if this is an embedding request
+	if inputs.Def != nil && inputs.Def.Type == jsonSchema.Vector {
+		return a.processEmbedding(inputs)
+	}
+	return a.processChat(inputs)
+}
+
+// processChat handles chat completion requests
+func (a *GeminiClientAdapter) processChat(inputs *llmManagement.Inputs) (*domain.JobResult, error) {
 	// 1. Build request in OpenAI format (our standard)
 	openaiReq, err := a.requestBuilder.BuildRequest(inputs)
 	if err != nil {
@@ -112,7 +126,63 @@ func (a *GeminiClientAdapter) Process(inputs *llmManagement.Inputs) (*openai.Cha
 	}
 
 	// 5. Convert Gemini response back to OpenAI format
-	return a.convertFromGeminiFormat(resp)
+	res, err := a.convertFromGeminiFormat(resp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert gemini response: %w", err)
+	}
+
+	return domain.CreateJobResult(res, nil), nil
+}
+
+// processEmbedding handles embedding requests
+func (a *GeminiClientAdapter) processEmbedding(inputs *llmManagement.Inputs) (*domain.JobResult, error) {
+	// 1. Build embedding request in OpenAI format
+	openaiReq, err := a.embeddingRequestBuilder.BuildRequest(inputs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build embedding request: %w", err)
+	}
+
+	// 2. Convert OpenAI format to Gemini embedding format
+	geminiReq := a.convertToGeminiEmbeddingFormat(openaiReq)
+
+	// 3. Send to Gemini API
+	reqBytes, err := json.Marshal(geminiReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal gemini embedding request: %w", err)
+	}
+
+	// Gemini uses embedContent endpoint for embeddings
+	url := fmt.Sprintf("%s/models/%s:embedContent?key=%s",
+		a.baseURL, openaiReq.Model, a.apiKey)
+
+	log.Printf("[Gemini DEBUG] Using embedding model: %s", openaiReq.Model)
+	log.Printf("[Gemini DEBUG] Embedding API URL: %s", url)
+
+	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create http request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := a.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("gemini embedding api request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// 4. Handle non-200 status codes
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("gemini embedding api error (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	// 5. Convert Gemini embedding response back to OpenAI format
+	res, err := a.convertFromGeminiEmbeddingFormat(resp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert gemini embedding response: %w", err)
+	}
+
+	return domain.CreateJobResult(nil, res), nil
 }
 
 // convertToGeminiFormat transforms an OpenAI ChatCompletionRequest to Gemini's format.
@@ -290,6 +360,72 @@ func (a *GeminiClientAdapter) convertFromGeminiFormat(resp *http.Response) (*ope
 	return openaiResp, nil
 }
 
+// convertToGeminiEmbeddingFormat transforms an OpenAI EmbeddingRequest to Gemini's format.
+func (a *GeminiClientAdapter) convertToGeminiEmbeddingFormat(req openai.EmbeddingRequest) map[string]interface{} {
+	// Convert input to string if it's not already
+	var text string
+	switch v := req.Input.(type) {
+	case string:
+		text = v
+	case []string:
+		if len(v) > 0 {
+			text = v[0] // Gemini embedContent typically processes one text at a time
+		}
+	default:
+		text = fmt.Sprintf("%v", v)
+	}
+
+	geminiReq := map[string]interface{}{
+		"content": map[string]interface{}{
+			"parts": []map[string]interface{}{
+				{
+					"text": text,
+				},
+			},
+		},
+	}
+
+	return geminiReq
+}
+
+// convertFromGeminiEmbeddingFormat transforms a Gemini embedding response to OpenAI format.
+func (a *GeminiClientAdapter) convertFromGeminiEmbeddingFormat(resp *http.Response) (*openai.EmbeddingResponse, error) {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read gemini embedding response: %w", err)
+	}
+
+	// Gemini embedding response structure
+	var geminiResp struct {
+		Embedding struct {
+			Values []float32 `json:"values"`
+		} `json:"embedding"`
+	}
+
+	if err := json.Unmarshal(body, &geminiResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal gemini embedding response: %w", err)
+	}
+
+	// Convert to OpenAI format
+	openaiResp := &openai.EmbeddingResponse{
+		Object: "list",
+		Data: []openai.Embedding{
+			{
+				Object:    "embedding",
+				Embedding: geminiResp.Embedding.Values,
+				Index:     0,
+			},
+		},
+		Model: openai.AdaEmbeddingV2, // Default model identifier
+		Usage: openai.Usage{
+			PromptTokens: 0, // Gemini doesn't provide token usage in embedding response
+			TotalTokens:  0,
+		},
+	}
+
+	return openaiResp, nil
+}
+
 func (a *GeminiClientAdapter) ProcessBatch(jobs []any) (*openai.ChatCompletionResponse, error) {
-	return nil, errors.New("Doesn't exist")
+	return nil, errors.New("doesn't exist")
 }

@@ -16,6 +16,7 @@ package LLM
 
 import (
 	"errors"
+	"objectweaver/llmManagement/domain"
 
 	gogpt "github.com/sashabaranov/go-openai"
 )
@@ -40,7 +41,9 @@ func (v *VariedJobSubmitter) SubmitJob(job *Job, workerChannel chan *Job) (any, 
 
 	//TODO have an option to return a different kind of result for the vector/embeddings types
 	if result.EmbeddingRes != nil {
-		return result.EmbeddingRes.Data[0], nil, nil
+		// Return the embedding vector ([]float32) instead of the Embedding struct
+		// to avoid proto serialization issues
+		return result.EmbeddingRes.Data[0].Embedding, nil, nil
 	}
 
 	return validateResult(result)
@@ -63,13 +66,15 @@ func (d *DefaultJobSubmitter) SubmitJob(job *Job, workerChannel chan *Job) (any,
 	close(job.Result)
 
 	if result.EmbeddingRes != nil {
-		return result.EmbeddingRes.Data[0], nil, nil
+		// Return the embedding vector ([]float32) instead of the Embedding struct
+		// to avoid proto serialization issues
+		return result.EmbeddingRes.Data[0].Embedding, nil, nil
 	}
 
 	return validateResult(result)
 }
 
-func validateResult(result *JobResult) (any, *gogpt.Usage, error) {
+func validateResult(result *domain.JobResult) (any, *gogpt.Usage, error) {
 	if result == nil {
 		return blank, nil, errors.New("error, the returned result is nil")
 	}

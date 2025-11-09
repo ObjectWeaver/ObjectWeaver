@@ -224,6 +224,16 @@ func (p *PrimitiveProcessor) parseValue(response any, fieldType jsonSchema.DataT
 	case jsonSchema.String:
 		response = cleanResponse(response.(string))
 		return response
+	case jsonSchema.Vector:
+		// Convert []float32 to []interface{} for protobuf compatibility
+		if vec, ok := response.([]float32); ok {
+			result := make([]interface{}, len(vec))
+			for i, v := range vec {
+				result[i] = float64(v)
+			}
+			return result
+		}
+		return response
 	default:
 		return response
 	}

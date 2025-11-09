@@ -16,6 +16,7 @@ package LLM
 
 import (
 	"objectweaver/llmManagement"
+	"objectweaver/llmManagement/domain"
 	"time"
 
 	"github.com/sashabaranov/go-openai"
@@ -38,21 +39,10 @@ type BackoffManager interface {
 }
 
 type Job struct {
-	Result  chan *JobResult
+	Result  chan *domain.JobResult
 	Tokens  int
 	Inputs  *llmManagement.Inputs
 	Error   chan error
 	Retries int // Tracks the number of retry attempts for transient errors.
 }
 
-type JobResult struct {
-	ChatRes      *openai.ChatCompletionResponse
-	EmbeddingRes *openai.EmbeddingResponse
-}
-
-func CreateJobResult(chatRes *openai.ChatCompletionResponse, embeddingRes *openai.EmbeddingResponse) *JobResult {
-	return &JobResult{
-		ChatRes:      chatRes,
-		EmbeddingRes: embeddingRes,
-	}
-}

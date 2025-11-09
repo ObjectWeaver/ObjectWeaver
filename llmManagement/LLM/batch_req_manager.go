@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"objectweaver/llmManagement/client"
+	"objectweaver/llmManagement/domain"
 	"objectweaver/llmManagement/modelConverter"
 	"objectweaver/llmManagement/requestManagement"
 
@@ -492,7 +493,7 @@ func (m *DefaultBatchReqManager) monitorBatchCompletion(ctx context.Context, bat
 			}
 
 			if entry.Job.Result != nil {
-				entry.Job.Result <- CreateJobResult(chatResp, nil)
+				entry.Job.Result <- domain.CreateJobResult(chatResp, nil)
 			}
 		}
 	}

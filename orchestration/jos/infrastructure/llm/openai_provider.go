@@ -92,14 +92,13 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 	log.Printf("[LLM] Submitting job with model: %s, prompt length: %d chars", model, len(prompt))
 
 	// Submit job with Definition (includes SendImage if present)
-	completion, usage, err := p.submitter.SubmitJob(model, config.Definition, prompt, config.SystemPrompt, nil)
+	completion, _, err := p.submitter.SubmitJob(model, config.Definition, prompt, config.SystemPrompt, nil)
 	if err != nil {
 		log.Printf("[LLM ERROR] Job submission failed: %v", err)
 		return "", nil, fmt.Errorf("job submission failed: %w", err)
 	}
 
 	metadata := &domain.ProviderMetadata{
-		TokensUsed: usage.TotalTokens,
 		Model:      string(model),
 	}
 

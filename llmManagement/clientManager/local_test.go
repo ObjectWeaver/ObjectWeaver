@@ -41,10 +41,11 @@ func TestNewLocalClientAdapter(t *testing.T) {
 	url := "http://example.com"
 	token := "test-token"
 	builder := &mockRequestBuilder{}
+	embeddingBuilder := &mockEmbeddingRequestBuilder{}
 	converter := &mockRequestConverter{}
 	httpClient := &http.Client{}
 
-	adapter := NewLocalClientAdapter(url, token, builder, converter, httpClient)
+	adapter := NewLocalClientAdapter(url, token, builder, embeddingBuilder, converter, httpClient)
 
 	if adapter.targetURL != url {
 		t.Errorf("expected targetURL %s, got %s", url, adapter.targetURL)
@@ -100,29 +101,31 @@ func TestLocalClientAdapter_Process_Success(t *testing.T) {
 	}
 
 	builder := &mockRequestBuilder{request: mockReq}
+	embeddingBuilder := &mockEmbeddingRequestBuilder{}
 	converter := &mockRequestConverter{response: expectedResponse}
 	httpClient := server.Client()
 
-	adapter := NewLocalClientAdapter(server.URL, "test-token", builder, converter, httpClient)
+	adapter := NewLocalClientAdapter(server.URL, "test-token", builder, embeddingBuilder, converter, httpClient)
 
 	result, err := adapter.Process(inputs)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if result.ID != expectedResponse.ID {
-		t.Errorf("expected ID %s, got %s", expectedResponse.ID, result.ID)
+	if result.ChatRes.ID != expectedResponse.ID {
+		t.Errorf("expected ID %s, got %s", expectedResponse.ID, result.ChatRes.ID)
 	}
-	if len(result.Choices) != 1 || result.Choices[0].Message.Content != "test content" {
+	if len(result.ChatRes.Choices) != 1 || result.ChatRes.Choices[0].Message.Content != "test content" {
 		t.Error("response not matched")
 	}
 }
 
 func TestLocalClientAdapter_Process_BuildRequestError(t *testing.T) {
 	builder := &mockRequestBuilder{err: errors.New("build error")}
+	embeddingBuilder := &mockEmbeddingRequestBuilder{}
 	converter := &mockRequestConverter{}
 	httpClient := &http.Client{}
 
-	adapter := NewLocalClientAdapter("http://example.com", "", builder, converter, httpClient)
+	adapter := NewLocalClientAdapter("http://example.com", "", builder, embeddingBuilder, converter, httpClient)
 
 	_, err := adapter.Process(&llmManagement.Inputs{})
 	if err == nil {
@@ -145,11 +148,12 @@ func TestLocalClientAdapter_Process_HTTPRequestCreationError(t *testing.T) {
 	// http.NewRequest fails if method is invalid, but POST is valid.
 	// URL could be invalid, but let's use a bad URL.
 	builder := &mockRequestBuilder{request: openai.ChatCompletionRequest{}}
+	embeddingBuilder := &mockEmbeddingRequestBuilder{}
 	converter := &mockRequestConverter{}
 	httpClient := &http.Client{}
 
 	// Invalid URL
-	adapter := NewLocalClientAdapter("http://invalid url", "", builder, converter, httpClient)
+	adapter := NewLocalClientAdapter("http://invalid url", "", builder, embeddingBuilder, converter, httpClient)
 
 	_, err := adapter.Process(&llmManagement.Inputs{})
 	if err == nil {
@@ -164,10 +168,11 @@ func TestLocalClientAdapter_Process_HTTPClientError(t *testing.T) {
 	// To simulate client.Do error, perhaps use a bad URL or timeout.
 	// For simplicity, use a non-existent server.
 	builder := &mockRequestBuilder{request: openai.ChatCompletionRequest{}}
+	embeddingBuilder := &mockEmbeddingRequestBuilder{}
 	converter := &mockRequestConverter{}
 	httpClient := &http.Client{Timeout: 0} // No timeout, but still.
 
-	adapter := NewLocalClientAdapter("http://nonexistent", "", builder, converter, httpClient)
+	adapter := NewLocalClientAdapter("http://nonexistent", "", builder, embeddingBuilder, converter, httpClient)
 
 	_, err := adapter.Process(&llmManagement.Inputs{})
 	if err == nil {
@@ -186,10 +191,11 @@ func TestLocalClientAdapter_Process_ConversionError(t *testing.T) {
 	defer server.Close()
 
 	builder := &mockRequestBuilder{request: openai.ChatCompletionRequest{}}
+	embeddingBuilder := &mockEmbeddingRequestBuilder{}
 	converter := &mockRequestConverter{err: errors.New("conversion error")}
 	httpClient := server.Client()
 
-	adapter := NewLocalClientAdapter(server.URL, "", builder, converter, httpClient)
+	adapter := NewLocalClientAdapter(server.URL, "", builder, embeddingBuilder, converter, httpClient)
 
 	_, err := adapter.Process(&llmManagement.Inputs{})
 	if err == nil {
@@ -211,10 +217,11 @@ func TestLocalClientAdapter_Process_NoAuthToken(t *testing.T) {
 	defer server.Close()
 
 	builder := &mockRequestBuilder{request: openai.ChatCompletionRequest{}}
+	embeddingBuilder := &mockEmbeddingRequestBuilder{}
 	converter := &mockRequestConverter{response: openai.ChatCompletionResponse{}}
 	httpClient := server.Client()
 
-	adapter := NewLocalClientAdapter(server.URL, "", builder, converter, httpClient) // No token
+	adapter := NewLocalClientAdapter(server.URL, "", builder, embeddingBuilder, converter, httpClient) // No token
 
 	_, err := adapter.Process(&llmManagement.Inputs{})
 	if err != nil {
