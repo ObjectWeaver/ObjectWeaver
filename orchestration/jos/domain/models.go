@@ -281,9 +281,6 @@ type TaskResult struct {
 	metadata *ResultMetadata
 	path     []string
 	err      error
-
-	//beginging of the confidence and choices introduction - aim is to provide multiple options for a field using varying levels of temp etc
-	choices []TaskChoice
 }
 
 type TaskChoice struct {
