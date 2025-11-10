@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package logger
 
 import (
@@ -26,7 +26,7 @@ type Out struct {
 
 var Output *Out
 
-func init(){
+func init() {
 	Output = &Out{}
 	verbose, err := strconv.ParseBool(os.Getenv("VERBOSE"))
 	if err != nil {
@@ -37,7 +37,7 @@ func init(){
 }
 
 func (o *Out) Println(val any) {
-	if (!o.verbose) {
+	if !o.verbose {
 		return
 	}
 	log.Println(val)

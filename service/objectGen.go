@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package service
 
 import (
@@ -28,10 +28,25 @@ import (
 	"github.com/objectweaver/go-sdk/client"
 )
 
-// Create a response struct
+// FieldMetadata contains metadata for a single field
+type FieldMetadata struct {
+	TokensUsed int             `json:"tokensUsed"`
+	Cost       float64         `json:"cost"`
+	ModelUsed  string          `json:"modelUsed"`
+	Choices    []domain.Choice `json:"choices,omitempty"`
+}
+
+// DetailedField contains both the value and metadata for a field
+type DetailedField struct {
+	Value    interface{}    `json:"value"`
+	Metadata *FieldMetadata `json:"metadata"`
+}
+
+// Response struct with both simple data and detailed metadata
 type Response struct {
-	Data    map[string]any `json:"data"`
-	UsdCost float64        `json:"usdCost"`
+	Data         map[string]any            `json:"data"`
+	DetailedData map[string]*DetailedField `json:"detailedData,omitempty"`
+	UsdCost      float64                   `json:"usdCost"`
 }
 
 func ObjectGen(w http.ResponseWriter, r *http.Request) {
@@ -118,10 +133,32 @@ func ObjectGen(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[ObjectGen] Result cost: %f", cost)
 	log.Printf("[ObjectGen] Result metadata: %+v", result.Metadata())
 
+	// Build detailed data structure if available
+	var detailedData map[string]*DetailedField
+	if result.HasDetailedData() {
+		detailedData = make(map[string]*DetailedField)
+		for key, fieldResult := range result.DetailedData() {
+			var fieldMeta *FieldMetadata
+			if fieldResult.Metadata != nil {
+				fieldMeta = &FieldMetadata{
+					TokensUsed: fieldResult.Metadata.TokensUsed,
+					Cost:       fieldResult.Metadata.Cost,
+					ModelUsed:  fieldResult.Metadata.ModelUsed,
+					Choices:    fieldResult.Metadata.Choices,
+				}
+			}
+			detailedData[key] = &DetailedField{
+				Value:    fieldResult.Value,
+				Metadata: fieldMeta,
+			}
+		}
+	}
+
 	// Marshal and send the successful response
 	response := Response{
-		Data:    data,
-		UsdCost: cost,
+		Data:         data,
+		DetailedData: detailedData,
+		UsdCost:      cost,
 	}
 
 	// Log the final JSON response being sent to client

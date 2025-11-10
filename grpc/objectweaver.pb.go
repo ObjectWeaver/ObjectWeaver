@@ -1502,6 +1502,197 @@ func (x *ModelConfig) GetChatTemplateKwargs() *structpb.Struct {
 	return nil
 }
 
+// Choice message for epistemic validation results
+type Choice struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Score         int32                  `protobuf:"varint,1,opt,name=score,proto3" json:"score,omitempty"`
+	Confidence    float64                `protobuf:"fixed64,2,opt,name=confidence,proto3" json:"confidence,omitempty"`
+	Value         *structpb.Struct       `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
+	Embedding     []float64              `protobuf:"fixed64,4,rep,packed,name=embedding,proto3" json:"embedding,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Choice) Reset() {
+	*x = Choice{}
+	mi := &file_objectweaver_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Choice) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Choice) ProtoMessage() {}
+
+func (x *Choice) ProtoReflect() protoreflect.Message {
+	mi := &file_objectweaver_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Choice.ProtoReflect.Descriptor instead.
+func (*Choice) Descriptor() ([]byte, []int) {
+	return file_objectweaver_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *Choice) GetScore() int32 {
+	if x != nil {
+		return x.Score
+	}
+	return 0
+}
+
+func (x *Choice) GetConfidence() float64 {
+	if x != nil {
+		return x.Confidence
+	}
+	return 0
+}
+
+func (x *Choice) GetValue() *structpb.Struct {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+func (x *Choice) GetEmbedding() []float64 {
+	if x != nil {
+		return x.Embedding
+	}
+	return nil
+}
+
+// FieldMetadata contains metadata for a single field
+type FieldMetadata struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TokensUsed    int32                  `protobuf:"varint,1,opt,name=tokensUsed,proto3" json:"tokensUsed,omitempty"`
+	Cost          float64                `protobuf:"fixed64,2,opt,name=cost,proto3" json:"cost,omitempty"`
+	ModelUsed     string                 `protobuf:"bytes,3,opt,name=modelUsed,proto3" json:"modelUsed,omitempty"`
+	Choices       []*Choice              `protobuf:"bytes,4,rep,name=choices,proto3" json:"choices,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FieldMetadata) Reset() {
+	*x = FieldMetadata{}
+	mi := &file_objectweaver_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FieldMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FieldMetadata) ProtoMessage() {}
+
+func (x *FieldMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_objectweaver_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FieldMetadata.ProtoReflect.Descriptor instead.
+func (*FieldMetadata) Descriptor() ([]byte, []int) {
+	return file_objectweaver_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *FieldMetadata) GetTokensUsed() int32 {
+	if x != nil {
+		return x.TokensUsed
+	}
+	return 0
+}
+
+func (x *FieldMetadata) GetCost() float64 {
+	if x != nil {
+		return x.Cost
+	}
+	return 0
+}
+
+func (x *FieldMetadata) GetModelUsed() string {
+	if x != nil {
+		return x.ModelUsed
+	}
+	return ""
+}
+
+func (x *FieldMetadata) GetChoices() []*Choice {
+	if x != nil {
+		return x.Choices
+	}
+	return nil
+}
+
+// DetailedField contains both the value and metadata for a field
+type DetailedField struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         *structpb.Struct       `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	Metadata      *FieldMetadata         `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DetailedField) Reset() {
+	*x = DetailedField{}
+	mi := &file_objectweaver_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DetailedField) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DetailedField) ProtoMessage() {}
+
+func (x *DetailedField) ProtoReflect() protoreflect.Message {
+	mi := &file_objectweaver_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DetailedField.ProtoReflect.Descriptor instead.
+func (*DetailedField) Descriptor() ([]byte, []int) {
+	return file_objectweaver_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *DetailedField) GetValue() *structpb.Struct {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+func (x *DetailedField) GetMetadata() *FieldMetadata {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
 // RequestBody message for the GenerateObject RPC
 type RequestBody struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1513,7 +1704,7 @@ type RequestBody struct {
 
 func (x *RequestBody) Reset() {
 	*x = RequestBody{}
-	mi := &file_objectweaver_proto_msgTypes[18]
+	mi := &file_objectweaver_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1525,7 +1716,7 @@ func (x *RequestBody) String() string {
 func (*RequestBody) ProtoMessage() {}
 
 func (x *RequestBody) ProtoReflect() protoreflect.Message {
-	mi := &file_objectweaver_proto_msgTypes[18]
+	mi := &file_objectweaver_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1538,7 +1729,7 @@ func (x *RequestBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestBody.ProtoReflect.Descriptor instead.
 func (*RequestBody) Descriptor() ([]byte, []int) {
-	return file_objectweaver_proto_rawDescGZIP(), []int{18}
+	return file_objectweaver_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *RequestBody) GetPrompt() string {
@@ -1557,16 +1748,17 @@ func (x *RequestBody) GetDefinition() *Definition {
 
 // Updated Response message for the GenerateObject RPC
 type Response struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          *structpb.Struct       `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"` // Use Struct to hold a dynamic map<string, any>
-	UsdCost       float64                `protobuf:"fixed64,2,opt,name=usdCost,proto3" json:"usdCost,omitempty"`
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Data          *structpb.Struct          `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"` // Use Struct to hold a dynamic map<string, any>
+	UsdCost       float64                   `protobuf:"fixed64,2,opt,name=usdCost,proto3" json:"usdCost,omitempty"`
+	DetailedData  map[string]*DetailedField `protobuf:"bytes,3,rep,name=detailedData,proto3" json:"detailedData,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Detailed data with metadata per field
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Response) Reset() {
 	*x = Response{}
-	mi := &file_objectweaver_proto_msgTypes[19]
+	mi := &file_objectweaver_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1578,7 +1770,7 @@ func (x *Response) String() string {
 func (*Response) ProtoMessage() {}
 
 func (x *Response) ProtoReflect() protoreflect.Message {
-	mi := &file_objectweaver_proto_msgTypes[19]
+	mi := &file_objectweaver_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1591,7 +1783,7 @@ func (x *Response) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Response.ProtoReflect.Descriptor instead.
 func (*Response) Descriptor() ([]byte, []int) {
-	return file_objectweaver_proto_rawDescGZIP(), []int{19}
+	return file_objectweaver_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *Response) GetData() *structpb.Struct {
@@ -1608,19 +1800,27 @@ func (x *Response) GetUsdCost() float64 {
 	return 0
 }
 
+func (x *Response) GetDetailedData() map[string]*DetailedField {
+	if x != nil {
+		return x.DetailedData
+	}
+	return nil
+}
+
 // StreamingResponse message for the stream method
 type StreamingResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          *structpb.Struct       `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"` // Same as above, using Struct for map<string, any>
-	UsdCost       float64                `protobuf:"fixed64,2,opt,name=usdCost,proto3" json:"usdCost,omitempty"`
-	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"` // A status message for each streamed response
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Data          *structpb.Struct          `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"` // Same as above, using Struct for map<string, any>
+	UsdCost       float64                   `protobuf:"fixed64,2,opt,name=usdCost,proto3" json:"usdCost,omitempty"`
+	Status        string                    `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`                                                                                       // A status message for each streamed response
+	DetailedData  map[string]*DetailedField `protobuf:"bytes,4,rep,name=detailedData,proto3" json:"detailedData,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Detailed data with metadata per field
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StreamingResponse) Reset() {
 	*x = StreamingResponse{}
-	mi := &file_objectweaver_proto_msgTypes[20]
+	mi := &file_objectweaver_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1632,7 +1832,7 @@ func (x *StreamingResponse) String() string {
 func (*StreamingResponse) ProtoMessage() {}
 
 func (x *StreamingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_objectweaver_proto_msgTypes[20]
+	mi := &file_objectweaver_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1645,7 +1845,7 @@ func (x *StreamingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamingResponse.ProtoReflect.Descriptor instead.
 func (*StreamingResponse) Descriptor() ([]byte, []int) {
-	return file_objectweaver_proto_rawDescGZIP(), []int{20}
+	return file_objectweaver_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *StreamingResponse) GetData() *structpb.Struct {
@@ -1667,6 +1867,13 @@ func (x *StreamingResponse) GetStatus() string {
 		return x.Status
 	}
 	return ""
+}
+
+func (x *StreamingResponse) GetDetailedData() map[string]*DetailedField {
+	if x != nil {
+		return x.DetailedData
+	}
+	return nil
 }
 
 var File_objectweaver_proto protoreflect.FileDescriptor
@@ -1820,19 +2027,44 @@ const file_objectweaver_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"]\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8b\x01\n" +
+	"\x06Choice\x12\x14\n" +
+	"\x05score\x18\x01 \x01(\x05R\x05score\x12\x1e\n" +
+	"\n" +
+	"confidence\x18\x02 \x01(\x01R\n" +
+	"confidence\x12-\n" +
+	"\x05value\x18\x03 \x01(\v2\x17.google.protobuf.StructR\x05value\x12\x1c\n" +
+	"\tembedding\x18\x04 \x03(\x01R\tembedding\"\x8f\x01\n" +
+	"\rFieldMetadata\x12\x1e\n" +
+	"\n" +
+	"tokensUsed\x18\x01 \x01(\x05R\n" +
+	"tokensUsed\x12\x12\n" +
+	"\x04cost\x18\x02 \x01(\x01R\x04cost\x12\x1c\n" +
+	"\tmodelUsed\x18\x03 \x01(\tR\tmodelUsed\x12,\n" +
+	"\achoices\x18\x04 \x03(\v2\x12.jsonSchema.ChoiceR\achoices\"u\n" +
+	"\rDetailedField\x12-\n" +
+	"\x05value\x18\x01 \x01(\v2\x17.google.protobuf.StructR\x05value\x125\n" +
+	"\bmetadata\x18\x02 \x01(\v2\x19.jsonSchema.FieldMetadataR\bmetadata\"]\n" +
 	"\vRequestBody\x12\x16\n" +
 	"\x06prompt\x18\x01 \x01(\tR\x06prompt\x126\n" +
 	"\n" +
 	"definition\x18\x02 \x01(\v2\x16.jsonSchema.DefinitionR\n" +
-	"definition\"Q\n" +
+	"definition\"\xf9\x01\n" +
 	"\bResponse\x12+\n" +
 	"\x04data\x18\x01 \x01(\v2\x17.google.protobuf.StructR\x04data\x12\x18\n" +
-	"\ausdCost\x18\x02 \x01(\x01R\ausdCost\"r\n" +
+	"\ausdCost\x18\x02 \x01(\x01R\ausdCost\x12J\n" +
+	"\fdetailedData\x18\x03 \x03(\v2&.jsonSchema.Response.DetailedDataEntryR\fdetailedData\x1aZ\n" +
+	"\x11DetailedDataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.jsonSchema.DetailedFieldR\x05value:\x028\x01\"\xa3\x02\n" +
 	"\x11StreamingResponse\x12+\n" +
 	"\x04data\x18\x01 \x01(\v2\x17.google.protobuf.StructR\x04data\x12\x18\n" +
 	"\ausdCost\x18\x02 \x01(\x01R\ausdCost\x12\x16\n" +
-	"\x06status\x18\x03 \x01(\tR\x06status2\xa8\x01\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\x12S\n" +
+	"\fdetailedData\x18\x04 \x03(\v2/.jsonSchema.StreamingResponse.DetailedDataEntryR\fdetailedData\x1aZ\n" +
+	"\x11DetailedDataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.jsonSchema.DetailedFieldR\x05value:\x028\x012\xa8\x01\n" +
 	"\x11JSONSchemaService\x12?\n" +
 	"\x0eGenerateObject\x12\x17.jsonSchema.RequestBody\x1a\x14.jsonSchema.Response\x12R\n" +
 	"\x16StreamGeneratedObjects\x12\x17.jsonSchema.RequestBody\x1a\x1d.jsonSchema.StreamingResponse0\x01B\bZ\x06./grpcb\x06proto3"
@@ -1849,7 +2081,7 @@ func file_objectweaver_proto_rawDescGZIP() []byte {
 	return file_objectweaver_proto_rawDescData
 }
 
-var file_objectweaver_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
+var file_objectweaver_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_objectweaver_proto_goTypes = []any{
 	(*Definition)(nil),          // 0: jsonSchema.Definition
 	(*TextToSpeech)(nil),        // 1: jsonSchema.TextToSpeech
@@ -1869,18 +2101,23 @@ var file_objectweaver_proto_goTypes = []any{
 	(*RecursiveLoop)(nil),       // 15: jsonSchema.RecursiveLoop
 	(*EpistemicValidation)(nil), // 16: jsonSchema.EpistemicValidation
 	(*ModelConfig)(nil),         // 17: jsonSchema.ModelConfig
-	(*RequestBody)(nil),         // 18: jsonSchema.RequestBody
-	(*Response)(nil),            // 19: jsonSchema.Response
-	(*StreamingResponse)(nil),   // 20: jsonSchema.StreamingResponse
-	nil,                         // 21: jsonSchema.Definition.PropertiesEntry
-	nil,                         // 22: jsonSchema.RequestFormat.HeadersEntry
-	nil,                         // 23: jsonSchema.ScoringCriteria.DimensionsEntry
-	nil,                         // 24: jsonSchema.ModelConfig.LogitBiasEntry
-	nil,                         // 25: jsonSchema.ModelConfig.MetadataEntry
-	(*structpb.Struct)(nil),     // 26: google.protobuf.Struct
+	(*Choice)(nil),              // 18: jsonSchema.Choice
+	(*FieldMetadata)(nil),       // 19: jsonSchema.FieldMetadata
+	(*DetailedField)(nil),       // 20: jsonSchema.DetailedField
+	(*RequestBody)(nil),         // 21: jsonSchema.RequestBody
+	(*Response)(nil),            // 22: jsonSchema.Response
+	(*StreamingResponse)(nil),   // 23: jsonSchema.StreamingResponse
+	nil,                         // 24: jsonSchema.Definition.PropertiesEntry
+	nil,                         // 25: jsonSchema.RequestFormat.HeadersEntry
+	nil,                         // 26: jsonSchema.ScoringCriteria.DimensionsEntry
+	nil,                         // 27: jsonSchema.ModelConfig.LogitBiasEntry
+	nil,                         // 28: jsonSchema.ModelConfig.MetadataEntry
+	nil,                         // 29: jsonSchema.Response.DetailedDataEntry
+	nil,                         // 30: jsonSchema.StreamingResponse.DetailedDataEntry
+	(*structpb.Struct)(nil),     // 31: google.protobuf.Struct
 }
 var file_objectweaver_proto_depIdxs = []int32{
-	21, // 0: jsonSchema.Definition.properties:type_name -> jsonSchema.Definition.PropertiesEntry
+	24, // 0: jsonSchema.Definition.properties:type_name -> jsonSchema.Definition.PropertiesEntry
 	0,  // 1: jsonSchema.Definition.items:type_name -> jsonSchema.Definition
 	8,  // 2: jsonSchema.Definition.req:type_name -> jsonSchema.RequestFormat
 	6,  // 3: jsonSchema.Definition.narrowFocus:type_name -> jsonSchema.Focus
@@ -1895,32 +2132,40 @@ var file_objectweaver_proto_depIdxs = []int32{
 	16, // 12: jsonSchema.Definition.epistemic:type_name -> jsonSchema.EpistemicValidation
 	17, // 13: jsonSchema.Definition.modelConfig:type_name -> jsonSchema.ModelConfig
 	0,  // 14: jsonSchema.HashMap.fieldDefinition:type_name -> jsonSchema.Definition
-	22, // 15: jsonSchema.RequestFormat.headers:type_name -> jsonSchema.RequestFormat.HeadersEntry
-	26, // 16: jsonSchema.RequestFormat.body:type_name -> google.protobuf.Struct
+	25, // 15: jsonSchema.RequestFormat.headers:type_name -> jsonSchema.RequestFormat.HeadersEntry
+	31, // 16: jsonSchema.RequestFormat.body:type_name -> google.protobuf.Struct
 	10, // 17: jsonSchema.DecisionPoint.branches:type_name -> jsonSchema.ConditionalBranch
 	11, // 18: jsonSchema.ConditionalBranch.conditions:type_name -> jsonSchema.Condition
 	0,  // 19: jsonSchema.ConditionalBranch.logic:type_name -> jsonSchema.Definition
 	0,  // 20: jsonSchema.ConditionalBranch.then:type_name -> jsonSchema.Definition
-	23, // 21: jsonSchema.ScoringCriteria.dimensions:type_name -> jsonSchema.ScoringCriteria.DimensionsEntry
+	26, // 21: jsonSchema.ScoringCriteria.dimensions:type_name -> jsonSchema.ScoringCriteria.DimensionsEntry
 	14, // 22: jsonSchema.ScoringDimension.scale:type_name -> jsonSchema.ScoreScale
 	9,  // 23: jsonSchema.RecursiveLoop.terminationPoint:type_name -> jsonSchema.DecisionPoint
-	24, // 24: jsonSchema.ModelConfig.logitBias:type_name -> jsonSchema.ModelConfig.LogitBiasEntry
-	25, // 25: jsonSchema.ModelConfig.metadata:type_name -> jsonSchema.ModelConfig.MetadataEntry
-	26, // 26: jsonSchema.ModelConfig.chatTemplateKwargs:type_name -> google.protobuf.Struct
-	0,  // 27: jsonSchema.RequestBody.definition:type_name -> jsonSchema.Definition
-	26, // 28: jsonSchema.Response.data:type_name -> google.protobuf.Struct
-	26, // 29: jsonSchema.StreamingResponse.data:type_name -> google.protobuf.Struct
-	0,  // 30: jsonSchema.Definition.PropertiesEntry.value:type_name -> jsonSchema.Definition
-	13, // 31: jsonSchema.ScoringCriteria.DimensionsEntry.value:type_name -> jsonSchema.ScoringDimension
-	18, // 32: jsonSchema.JSONSchemaService.GenerateObject:input_type -> jsonSchema.RequestBody
-	18, // 33: jsonSchema.JSONSchemaService.StreamGeneratedObjects:input_type -> jsonSchema.RequestBody
-	19, // 34: jsonSchema.JSONSchemaService.GenerateObject:output_type -> jsonSchema.Response
-	20, // 35: jsonSchema.JSONSchemaService.StreamGeneratedObjects:output_type -> jsonSchema.StreamingResponse
-	34, // [34:36] is the sub-list for method output_type
-	32, // [32:34] is the sub-list for method input_type
-	32, // [32:32] is the sub-list for extension type_name
-	32, // [32:32] is the sub-list for extension extendee
-	0,  // [0:32] is the sub-list for field type_name
+	27, // 24: jsonSchema.ModelConfig.logitBias:type_name -> jsonSchema.ModelConfig.LogitBiasEntry
+	28, // 25: jsonSchema.ModelConfig.metadata:type_name -> jsonSchema.ModelConfig.MetadataEntry
+	31, // 26: jsonSchema.ModelConfig.chatTemplateKwargs:type_name -> google.protobuf.Struct
+	31, // 27: jsonSchema.Choice.value:type_name -> google.protobuf.Struct
+	18, // 28: jsonSchema.FieldMetadata.choices:type_name -> jsonSchema.Choice
+	31, // 29: jsonSchema.DetailedField.value:type_name -> google.protobuf.Struct
+	19, // 30: jsonSchema.DetailedField.metadata:type_name -> jsonSchema.FieldMetadata
+	0,  // 31: jsonSchema.RequestBody.definition:type_name -> jsonSchema.Definition
+	31, // 32: jsonSchema.Response.data:type_name -> google.protobuf.Struct
+	29, // 33: jsonSchema.Response.detailedData:type_name -> jsonSchema.Response.DetailedDataEntry
+	31, // 34: jsonSchema.StreamingResponse.data:type_name -> google.protobuf.Struct
+	30, // 35: jsonSchema.StreamingResponse.detailedData:type_name -> jsonSchema.StreamingResponse.DetailedDataEntry
+	0,  // 36: jsonSchema.Definition.PropertiesEntry.value:type_name -> jsonSchema.Definition
+	13, // 37: jsonSchema.ScoringCriteria.DimensionsEntry.value:type_name -> jsonSchema.ScoringDimension
+	20, // 38: jsonSchema.Response.DetailedDataEntry.value:type_name -> jsonSchema.DetailedField
+	20, // 39: jsonSchema.StreamingResponse.DetailedDataEntry.value:type_name -> jsonSchema.DetailedField
+	21, // 40: jsonSchema.JSONSchemaService.GenerateObject:input_type -> jsonSchema.RequestBody
+	21, // 41: jsonSchema.JSONSchemaService.StreamGeneratedObjects:input_type -> jsonSchema.RequestBody
+	22, // 42: jsonSchema.JSONSchemaService.GenerateObject:output_type -> jsonSchema.Response
+	23, // 43: jsonSchema.JSONSchemaService.StreamGeneratedObjects:output_type -> jsonSchema.StreamingResponse
+	42, // [42:44] is the sub-list for method output_type
+	40, // [40:42] is the sub-list for method input_type
+	40, // [40:40] is the sub-list for extension type_name
+	40, // [40:40] is the sub-list for extension extendee
+	0,  // [0:40] is the sub-list for field type_name
 }
 
 func init() { file_objectweaver_proto_init() }
@@ -1939,7 +2184,7 @@ func file_objectweaver_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_objectweaver_proto_rawDesc), len(file_objectweaver_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   26,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

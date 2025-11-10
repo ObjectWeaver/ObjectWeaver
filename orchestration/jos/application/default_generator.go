@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package application
 
 import (
@@ -77,23 +77,45 @@ func (g *DefaultGenerator) Generate(request *domain.GenerationRequest) (*domain.
 	// Process all fields recursively
 	resultsCh := g.fieldProcessor.ProcessFields(processedRequest.Schema(), nil, context)
 
-	// Collect results into map
+	// Collect results into map with detailed metadata
 	data := make(map[string]interface{})
+	detailedData := make(map[string]*domain.FieldResultWithMetadata)
+
+	// Aggregate metadata across all fields
+	aggregateMetadata := domain.NewResultMetadata()
 
 	for result := range resultsCh {
 		if result != nil {
+			// Add to simple data map
 			data[result.Key()] = result.Value()
-			//here another object needs to be created which is essentially a verbose version of the results data
-			//the aim is to provide all the related metadata and choices and embeddings etc for the fields generating in a format which makes sense
-			//and means that the end developer can consume it in their own way.
+
+			// Create detailed field result with metadata
+			fieldMetadata := result.Metadata()
+			if fieldMetadata == nil {
+				fieldMetadata = domain.NewResultMetadata()
+			}
+
+			detailedData[result.Key()] = domain.NewFieldResultWithMetadata(
+				result.Value(),
+				fieldMetadata,
+			)
+
+			// Aggregate metadata for overall result
+			if fieldMetadata != nil {
+				aggregateMetadata.AddTokens(fieldMetadata.TokensUsed)
+				aggregateMetadata.AddCost(fieldMetadata.Cost)
+				aggregateMetadata.IncrementFieldCount()
+
+				// Aggregate choices if present
+				if len(fieldMetadata.Choices) > 0 {
+					aggregateMetadata.Choices = append(aggregateMetadata.Choices, fieldMetadata.Choices...)
+				}
+			}
 		}
 	}
 
-	// Create result metadata
-	metadata := domain.NewResultMetadata()
-
-	// Create generation result
-	result := domain.NewGenerationResult(data, metadata)
+	// Create generation result with detailed data
+	result := domain.NewGenerationResultWithDetailedData(data, detailedData, aggregateMetadata)
 
 	// Phase 4: Post-processing plugins
 	processedResult, err := g.plugins.ApplyPostProcessors(result)

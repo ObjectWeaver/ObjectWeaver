@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package domain
 
 import (
@@ -89,26 +89,55 @@ func (r *GenerationRequest) copyMetadata() map[string]interface{} {
 	return newMetadata
 }
 
+// FieldResultWithMetadata - Contains both value and metadata for a single field
+type FieldResultWithMetadata struct {
+	Value    interface{}
+	Metadata *ResultMetadata
+}
+
+func NewFieldResultWithMetadata(value interface{}, metadata *ResultMetadata) *FieldResultWithMetadata {
+	return &FieldResultWithMetadata{
+		Value:    value,
+		Metadata: metadata,
+	}
+}
+
 // GenerationResult - Immutable result
 type GenerationResult struct {
-	data     map[string]interface{}
-	metadata *ResultMetadata
-	errors   []error
+	data                map[string]interface{}
+	detailedData        map[string]*FieldResultWithMetadata
+	metadata            *ResultMetadata
+	errors              []error
+	includeDetailedData bool
 }
 
 func NewGenerationResult(data map[string]interface{}, metadata *ResultMetadata) *GenerationResult {
 	return &GenerationResult{
-		data:     data,
-		metadata: metadata,
-		errors:   make([]error, 0),
+		data:                data,
+		detailedData:        nil,
+		metadata:            metadata,
+		errors:              make([]error, 0),
+		includeDetailedData: false,
+	}
+}
+
+func NewGenerationResultWithDetailedData(data map[string]interface{}, detailedData map[string]*FieldResultWithMetadata, metadata *ResultMetadata) *GenerationResult {
+	return &GenerationResult{
+		data:                data,
+		detailedData:        detailedData,
+		metadata:            metadata,
+		errors:              make([]error, 0),
+		includeDetailedData: true,
 	}
 }
 
 func NewGenerationResultWithError(err error) *GenerationResult {
 	return &GenerationResult{
-		data:     nil,
-		metadata: nil,
-		errors:   []error{err},
+		data:                nil,
+		detailedData:        nil,
+		metadata:            nil,
+		errors:              []error{err},
+		includeDetailedData: false,
 	}
 }
 
@@ -120,12 +149,20 @@ func (r *GenerationResult) Data() map[string]interface{} {
 	return r.data
 }
 
+func (r *GenerationResult) DetailedData() map[string]*FieldResultWithMetadata {
+	return r.detailedData
+}
+
 func (r *GenerationResult) Metadata() *ResultMetadata {
 	return r.metadata
 }
 
 func (r *GenerationResult) Errors() []error {
 	return r.errors
+}
+
+func (r *GenerationResult) HasDetailedData() bool {
+	return r.includeDetailedData && r.detailedData != nil
 }
 
 // ResultMetadata contains metrics about the generation
@@ -245,14 +282,14 @@ type TaskResult struct {
 	path     []string
 	err      error
 
-	//beginging of the confidence and choices introduction - aim is to provide multiple options for a field using varying levels of temp etc 
-	choices  []TaskChoice
+	//beginging of the confidence and choices introduction - aim is to provide multiple options for a field using varying levels of temp etc
+	choices []TaskChoice
 }
 
 type TaskChoice struct {
-	Value     interface{}
-	Embedding []float64
-	Score     float64
+	Value      interface{}
+	Embedding  []float64
+	Score      float64
 	Confidence float64
 }
 

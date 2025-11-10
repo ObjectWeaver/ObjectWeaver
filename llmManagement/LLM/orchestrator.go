@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package LLM
 
 import (
@@ -47,8 +47,8 @@ type OrchestratorConfig struct {
 	MaxRequestsPerMinute   int
 	MaxQueueSize           int
 	Verbose                bool
-	EnableBatchProcessing  bool // Enable batch processing for low-priority jobs
-	BatchPriorityThreshold int32  // Jobs with priority below this go to batch (default: 0)
+	EnableBatchProcessing  bool  // Enable batch processing for low-priority jobs
+	BatchPriorityThreshold int32 // Jobs with priority below this go to batch (default: 0)
 }
 
 // NewOrchestrator creates and wires up a new Orchestrator instance.
@@ -191,7 +191,7 @@ func (o *Orchestrator) SubmitJobWithRouting(job *Job) error {
 				job.Inputs.Priority, o.config.BatchPriorityThreshold)
 		}
 		log.Printf("Routing job to batch processing (priority: %d, threshold: %d)",
-	job.Inputs.Priority, o.config.BatchPriorityThreshold)
+			job.Inputs.Priority, o.config.BatchPriorityThreshold)
 		return o.batchManager.AddJob(job)
 	}
 

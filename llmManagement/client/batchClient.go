@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package client
 
 import (
@@ -30,14 +30,14 @@ import (
 type BatchStatus string
 
 const (
-	StatusValidating  BatchStatus = "validating"
-	StatusFailed      BatchStatus = "failed"
-	StatusInProgress  BatchStatus = "in_progress"
-	StatusFinalizing  BatchStatus = "finalizing"
-	StatusCompleted   BatchStatus = "completed"
-	StatusExpired     BatchStatus = "expired"
-	StatusCancelling  BatchStatus = "cancelling"
-	StatusCancelled   BatchStatus = "cancelled"
+	StatusValidating BatchStatus = "validating"
+	StatusFailed     BatchStatus = "failed"
+	StatusInProgress BatchStatus = "in_progress"
+	StatusFinalizing BatchStatus = "finalizing"
+	StatusCompleted  BatchStatus = "completed"
+	StatusExpired    BatchStatus = "expired"
+	StatusCancelling BatchStatus = "cancelling"
+	StatusCancelled  BatchStatus = "cancelled"
 )
 
 // BatchEndpoint represents supported batch endpoints
@@ -61,10 +61,10 @@ type BatchRequest struct {
 
 // BatchResponse represents a single response in the batch output file
 type BatchResponse struct {
-	ID         string                 `json:"id"`
-	CustomID   string                 `json:"custom_id"`
-	Response   *ResponseData          `json:"response,omitempty"`
-	Error      *BatchError            `json:"error,omitempty"`
+	ID       string        `json:"id"`
+	CustomID string        `json:"custom_id"`
+	Response *ResponseData `json:"response,omitempty"`
+	Error    *BatchError   `json:"error,omitempty"`
 }
 
 // ResponseData contains the HTTP response details
@@ -89,25 +89,25 @@ type RequestCounts struct {
 
 // Batch represents a batch processing job
 type Batch struct {
-	ID                string                 `json:"id"`
-	Object            string                 `json:"object"`
-	Endpoint          string                 `json:"endpoint"`
-	Errors            interface{}            `json:"errors"`
-	InputFileID       string                 `json:"input_file_id"`
-	CompletionWindow  string                 `json:"completion_window"`
-	Status            BatchStatus            `json:"status"`
-	OutputFileID      *string                `json:"output_file_id"`
-	ErrorFileID       *string                `json:"error_file_id"`
-	CreatedAt         int64                  `json:"created_at"`
-	InProgressAt      *int64                 `json:"in_progress_at"`
-	ExpiresAt         int64                  `json:"expires_at"`
-	CompletedAt       *int64                 `json:"completed_at"`
-	FailedAt          *int64                 `json:"failed_at"`
-	ExpiredAt         *int64                 `json:"expired_at"`
-	CancellingAt      *int64                 `json:"cancelling_at"`
-	CancelledAt       *int64                 `json:"cancelled_at"`
-	RequestCounts     RequestCounts          `json:"request_counts"`
-	Metadata          map[string]interface{} `json:"metadata,omitempty"`
+	ID               string                 `json:"id"`
+	Object           string                 `json:"object"`
+	Endpoint         string                 `json:"endpoint"`
+	Errors           interface{}            `json:"errors"`
+	InputFileID      string                 `json:"input_file_id"`
+	CompletionWindow string                 `json:"completion_window"`
+	Status           BatchStatus            `json:"status"`
+	OutputFileID     *string                `json:"output_file_id"`
+	ErrorFileID      *string                `json:"error_file_id"`
+	CreatedAt        int64                  `json:"created_at"`
+	InProgressAt     *int64                 `json:"in_progress_at"`
+	ExpiresAt        int64                  `json:"expires_at"`
+	CompletedAt      *int64                 `json:"completed_at"`
+	FailedAt         *int64                 `json:"failed_at"`
+	ExpiredAt        *int64                 `json:"expired_at"`
+	CancellingAt     *int64                 `json:"cancelling_at"`
+	CancelledAt      *int64                 `json:"cancelled_at"`
+	RequestCounts    RequestCounts          `json:"request_counts"`
+	Metadata         map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // File represents an uploaded file
@@ -139,18 +139,18 @@ type ListBatchesResponse struct {
 
 // BatchClient handles interactions with OpenAI's Batch API
 type BatchClient struct {
-	apiKey     string
-	httpClient *http.Client
-	baseURL    string
+	apiKey       string
+	httpClient   *http.Client
+	baseURL      string
 	pollInterval time.Duration
 }
 
 // NewBatchClientWithHTTPClient creates a new batch API client with a custom HTTP client
 func NewBatchClientWithHTTPClient(apiKey, baseURL string, pollInterval time.Duration, httpClient *http.Client) *BatchClient {
 	return &BatchClient{
-		apiKey:     apiKey,
-		baseURL:    baseURL,
-		httpClient: httpClient,
+		apiKey:       apiKey,
+		baseURL:      baseURL,
+		httpClient:   httpClient,
 		pollInterval: pollInterval,
 	}
 }
@@ -206,23 +206,23 @@ func (c *BatchClient) UploadFileReader(ctx context.Context, reader io.Reader, fi
 
 	// Create multipart form
 	boundary := "----WebKitFormBoundary" + fmt.Sprintf("%d", time.Now().Unix())
-	
+
 	// Write purpose field
 	fmt.Fprintf(writer, "--%s\r\n", boundary)
 	fmt.Fprintf(writer, "Content-Disposition: form-data; name=\"purpose\"\r\n\r\n")
 	fmt.Fprintf(writer, "batch\r\n")
-	
+
 	// Write file field
 	fmt.Fprintf(writer, "--%s\r\n", boundary)
 	fmt.Fprintf(writer, "Content-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n", filename)
 	fmt.Fprintf(writer, "Content-Type: application/jsonl\r\n\r\n")
 	writer.Flush()
-	
+
 	// Copy file content
 	if _, err := io.Copy(&buffer, reader); err != nil {
 		return nil, fmt.Errorf("failed to copy file content: %w", err)
 	}
-	
+
 	// Write closing boundary
 	fmt.Fprintf(writer, "\r\n--%s--\r\n", boundary)
 	writer.Flush()
@@ -426,7 +426,7 @@ func NewChatCompletionBatchRequest(customID, model string, messages []map[string
 		"messages":   messages,
 		"max_tokens": maxTokens,
 	}
-	
+
 	return BatchRequest{
 		CustomID: customID,
 		Method:   "POST",
@@ -441,7 +441,7 @@ func NewEmbeddingBatchRequest(customID, model string, input interface{}) BatchRe
 		"model": model,
 		"input": input,
 	}
-	
+
 	return BatchRequest{
 		CustomID: customID,
 		Method:   "POST",
@@ -456,7 +456,7 @@ func NewModerationBatchRequest(customID, model string, input interface{}) BatchR
 		"model": model,
 		"input": input,
 	}
-	
+
 	return BatchRequest{
 		CustomID: customID,
 		Method:   "POST",

@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package requestManagement
 
 import (
@@ -22,7 +22,6 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 )
-
 
 // RequestConverter defines an interface for converting a standard http.Response
 // into a structured OpenAI ChatCompletionResponse.

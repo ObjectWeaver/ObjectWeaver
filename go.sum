@@ -59,6 +59,8 @@ github.com/objectweaver/go-sdk v0.0.0-20251105210855-201436ead05a h1:cSfmkwZTgmE
 github.com/objectweaver/go-sdk v0.0.0-20251105210855-201436ead05a/go.mod h1:jV044gC7MglGHiua+94ivXSYYyPMSiRWzX5mlOVfElU=
 github.com/objectweaver/go-sdk v0.0.0-20251107173046-17f77f9d1d38 h1:MicieJ0fYaSrnfavHs4mzyROOINfLk+5X7HvCujAP68=
 github.com/objectweaver/go-sdk v0.0.0-20251107173046-17f77f9d1d38/go.mod h1:jV044gC7MglGHiua+94ivXSYYyPMSiRWzX5mlOVfElU=
+github.com/objectweaver/go-sdk v0.0.0-20251110180655-46f1bd34e930 h1:dySj9I1q1wnjCGLefxosj8ABzaOjW4I+n/Dmwn95Yzg=
+github.com/objectweaver/go-sdk v0.0.0-20251110180655-46f1bd34e930/go.mod h1:jV044gC7MglGHiua+94ivXSYYyPMSiRWzX5mlOVfElU=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/client_golang v1.20.2 h1:5ctymQzZlyOON1666svgwn3s6IKWgfbjsejTMiXIyjg=

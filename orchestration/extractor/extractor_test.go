@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package extractor
 
 import (
@@ -279,7 +279,7 @@ func TestDefaultExtractor_LargeDataset(t *testing.T) {
 	keys := make([]string, 1000)
 
 	for i := 0; i < 1000; i++ {
-		key := string(rune('a' + (i % 26))) + string(rune('0' + (i / 26)))
+		key := string(rune('a'+(i%26))) + string(rune('0'+(i/26)))
 		currentGen[key] = i
 		keys[i] = key
 	}
@@ -328,8 +328,8 @@ func TestDefaultExtractor_ComplexTypes(t *testing.T) {
 		{
 			name: "Channel (should be formatted)",
 			currentGen: map[string]any{
-				"text": "before",
-				"chan": make(chan int),
+				"text":  "before",
+				"chan":  make(chan int),
 				"after": "after",
 			},
 			keys:     []string{"text", "chan", "after"},

@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package execution
 
 import (
@@ -222,27 +222,27 @@ func (d *DecisionProcessor) executeBranch(
 	log.Printf("BranchDef: %v", branchDef)
 	log.Printf("Context %v", context.GeneratedValues()) //this is empty ie it doesn't contain the previsouly generated information
 
-	    // Build the prompt starting with the instruction
-    prompt := branchDef.Instruction
-    if branchDef.OverridePrompt != nil {
-        prompt = *branchDef.OverridePrompt
-    }
+	// Build the prompt starting with the instruction
+	prompt := branchDef.Instruction
+	if branchDef.OverridePrompt != nil {
+		prompt = *branchDef.OverridePrompt
+	}
 
-    // Enhance prompt with SelectFields if specified
-    if len(branchDef.SelectFields) > 0 {
-        // Add selected field values directly to the prompt
-        prompt += "\n\nContext from previous generation:\n"
-        for _, fieldPath := range branchDef.SelectFields {
-            log.Printf("[DecisionProcessor] Looking for field '%s' in context", fieldPath)
-            if value, exists := context.GeneratedValues()[fieldPath]; exists {
-                prompt += fmt.Sprintf("\n%s:\n%v\n", fieldPath, value)
-                log.Printf("[DecisionProcessor] Added field '%s' to branch prompt (length: %d chars)", fieldPath, len(fmt.Sprintf("%v", value)))
-            } else {
+	// Enhance prompt with SelectFields if specified
+	if len(branchDef.SelectFields) > 0 {
+		// Add selected field values directly to the prompt
+		prompt += "\n\nContext from previous generation:\n"
+		for _, fieldPath := range branchDef.SelectFields {
+			log.Printf("[DecisionProcessor] Looking for field '%s' in context", fieldPath)
+			if value, exists := context.GeneratedValues()[fieldPath]; exists {
+				prompt += fmt.Sprintf("\n%s:\n%v\n", fieldPath, value)
+				log.Printf("[DecisionProcessor] Added field '%s' to branch prompt (length: %d chars)", fieldPath, len(fmt.Sprintf("%v", value)))
+			} else {
 				log.Printf("[DecisionProcessor] Field '%s' not found in context", fieldPath)
 			}
-        }
-    }
-	
+		}
+	}
+
 	request := domain.NewGenerationRequest(prompt, &branchDef)
 	result, err := d.generator.Generate(request)
 	if err != nil {

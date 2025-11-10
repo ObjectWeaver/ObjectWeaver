@@ -11,9 +11,8 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package LLM
-
 
 type PriorityQueue []*Job
 
@@ -43,11 +42,8 @@ func (pq *PriorityQueue) Pop() any {
 	old := *pq
 	n := len(old)
 	item := old[n-1]
-	old[n-1] = nil  // avoid memory leak
+	old[n-1] = nil         // avoid memory leak
 	item.Inputs.Index = -1 // for safety
 	*pq = old[0 : n-1]
 	return item
 }
-
-
-

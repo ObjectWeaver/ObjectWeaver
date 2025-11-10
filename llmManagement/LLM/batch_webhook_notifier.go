@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package LLM
 
 import (
@@ -37,12 +37,12 @@ type IBatchWebhookNotifier interface {
 
 // BatchWebhookPayload represents the data sent to the webhook endpoint
 type BatchWebhookPayload struct {
-	BatchID      string                  `json:"batch_id"`
-	Status       string                  `json:"status"`
-	JobCount     int                     `json:"job_count"`
-	CompletedAt  int64                   `json:"completed_at"`
-	Responses    []WebhookResponse       `json:"responses"`
-	Metadata     map[string]interface{}  `json:"metadata,omitempty"`
+	BatchID       string                 `json:"batch_id"`
+	Status        string                 `json:"status"`
+	JobCount      int                    `json:"job_count"`
+	CompletedAt   int64                  `json:"completed_at"`
+	Responses     []WebhookResponse      `json:"responses"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 	RequestCounts *client.RequestCounts  `json:"request_counts,omitempty"`
 }
 

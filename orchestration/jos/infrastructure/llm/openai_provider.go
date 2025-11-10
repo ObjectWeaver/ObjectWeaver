@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package llm
 
 import (
@@ -99,10 +99,10 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 	}
 
 	metadata := &domain.ProviderMetadata{
-		Model:      string(model),
+		Model: string(model),
 	}
 
-	return	completion, metadata, nil
+	return completion, metadata, nil
 }
 
 func (p *OpenAIProvider) SupportsStreaming() bool {

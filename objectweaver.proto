@@ -178,6 +178,28 @@ message ModelConfig {
   google.protobuf.Struct chatTemplateKwargs = 17;
 }
 
+// Choice message for epistemic validation results
+message Choice {
+  int32 score = 1;
+  double confidence = 2;
+  google.protobuf.Struct value = 3;
+  repeated double embedding = 4;
+}
+
+// FieldMetadata contains metadata for a single field
+message FieldMetadata {
+  int32 tokensUsed = 1;
+  double cost = 2;
+  string modelUsed = 3;
+  repeated Choice choices = 4;
+}
+
+// DetailedField contains both the value and metadata for a field
+message DetailedField {
+  google.protobuf.Struct value = 1;
+  FieldMetadata metadata = 2;
+}
+
 // RequestBody message for the GenerateObject RPC
 message RequestBody {
   string prompt = 1; // Corresponds to Go's Prompt field
@@ -188,6 +210,7 @@ message RequestBody {
 message Response {
   google.protobuf.Struct data = 1;  // Use Struct to hold a dynamic map<string, any>
   double usdCost = 2;
+  map<string, DetailedField> detailedData = 3;  // Detailed data with metadata per field
 }
 
 // StreamingResponse message for the stream method
@@ -195,6 +218,7 @@ message StreamingResponse {
   google.protobuf.Struct data = 1;  // Same as above, using Struct for map<string, any>
   double usdCost = 2;
   string status = 3;  // A status message for each streamed response
+  map<string, DetailedField> detailedData = 4;  // Detailed data with metadata per field
 }
 
 // The JSONSchemaService defines a service for generating JSON objects based on a schema definition.

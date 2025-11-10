@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package domain
 
 import (
@@ -87,17 +87,18 @@ type ProviderMetadata struct {
 	Cost         float64
 	Model        string
 	FinishReason string
-	Prompt string
-	Choices []Choice
+	Prompt       string
+	Choices      []Choice
 }
 
 type Choice struct {
-	Prompt string
+	Prompt     string
 	Completion any
-	FieldTask FieldTask
-	Score int
+	FieldTask  FieldTask
+	Score      int
 	Confidence float64
-	Model string
+	Model      string
+	Embedding  []float64
 }
 
 // GenerationConfig configures LLM generation

@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 
 package epstimic
 
@@ -251,6 +251,12 @@ func (k *KMeanEngine) convertToChoices(kMeanResults []KMeanResult, avgEmbedding 
 		log.Printf("[KMeanEngine] Choice %d: distance=%.6f, confidence=%.2f, score=%d",
 			i, distance, confidence, score)
 
+		// Convert float32 embeddings to float64 for domain.Choice
+		embedding64 := make([]float64, len(result.Embedding))
+		for j, v := range result.Embedding {
+			embedding64[j] = float64(v)
+		}
+
 		choice := domain.Choice{
 			Prompt:     result.Metadata.Prompt,
 			Completion: result.Completion,
@@ -258,6 +264,7 @@ func (k *KMeanEngine) convertToChoices(kMeanResults []KMeanResult, avgEmbedding 
 			Model:      result.Metadata.Model,
 			Score:      score,
 			Confidence: confidence,
+			Embedding:  embedding64,
 		}
 		choices = append(choices, choice)
 	}

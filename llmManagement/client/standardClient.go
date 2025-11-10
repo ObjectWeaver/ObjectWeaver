@@ -11,7 +11,7 @@
 //
 // You should have received a copy of the Server Side Public License
 // along with this program. If not, see
-// <https://objectweaver.dev/licensing/server-side-public-license>.
+// <https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt>.
 package client
 
 import (
@@ -26,8 +26,8 @@ var once = sync.Once{}
 // NewStandardClient creates a standard HTTP client suitable for JSON APIs like OpenAI.
 // This client supports mTLS for secure communication with the completion server.
 func NewStandardClient() *http.Client {
-		once.Do(func() {
-			standardClient = &http.Client{}
+	once.Do(func() {
+		standardClient = &http.Client{}
 	})
 	return standardClient
 }
