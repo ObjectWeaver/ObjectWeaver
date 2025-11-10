@@ -2,7 +2,7 @@
 
 # ObjectWeaver
 
-[![License](https://img.shields.io/badge/License-EULA-blue.svg)](https://github.com/objectweaver/objectweaver/blob/main/LICENSE.txt)
+[![License](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/objectweaver/objectweaver/blob/main/LICENSE.txt)
 [![Docker](https://img.shields.io/badge/Docker-Ready-brightgreen.svg)](https://hub.docker.com/r/objectweaver/objectweaver)
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8.svg)](https://golang.org/)
 [![Documentation](https://img.shields.io/badge/Docs-objectweaver.dev-orange.svg)](https://objectweaver.dev/docs)
@@ -114,10 +114,11 @@ It's designed to be the boring infrastructure piece you don't want to build your
 
 Everything else you need is on the website:
 
-- [Full documentation](https://objectweaver.dev/docs)
+- [High Level documentation](https://objectweaver.dev/docs)
 - [API reference](https://objectweaver.dev/api)
 - [Examples and tutorials](https://objectweaver.dev/examples)
 - [Configuration guide](https://objectweaver.dev/docs/configuration)
+- Low level documentation using CodeLeft
 
 ## Contributing
 
@@ -125,4 +126,29 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.MD) for the guidel
 
 ## License
 
-See [LICENSE.txt](LICENSE.txt) for details.
+ObjectWeaver uses a **dual licensing model**:
+
+### Community Edition (AGPL-3)
+ObjectWeaver Community Edition is available under the [GNU Affero General Public License v3](LICENSE.txt). This means:
+- **Free to use**: Use ObjectWeaver for any purpose at no cost
+- **Modify freely**: Change the code to suit your needs
+- **Run as a service**: Deploy it commercially or non-commercially
+- **Source code disclosure**: If you modify ObjectWeaver and offer it as a network service, you must make your modified source code available under AGPL-3
+- **Copyleft**: Derivative works must also be licensed under AGPL-3
+
+### Enterprise Edition (Source Available)
+Code in the `ee/` directory is licensed under the [ObjectWeaver Commercial License](ee/LICENSE). This code is:
+- **Source available**: You can view and audit the code
+- **Requires subscription**: Production use requires a valid ObjectWeaver Enterprise Edition subscription
+- **Additional features**: Advanced monitoring, SSO, multi-tenancy, and other enterprise capabilities
+
+A commercial license is available. [Contact us](https://objectweaver.dev/contact) for Enterprise Edition inquiries.
+
+### Licensing Summary
+- **Core functionality** (outside `ee/` directory): AGPL-3
+- **Enterprise features** (`ee/` directory): ObjectWeaver Commercial License
+- **Third-party components**: Original licenses apply
+
+See [LICENSE.txt](LICENSE.txt) for complete terms.
+
+**Need help choosing?** If you're building an open-source project or can comply with AGPL-3 terms, use the Community Edition. If you need enterprise features or proprietary/closed-source usage, contact us about Enterprise Edition.
