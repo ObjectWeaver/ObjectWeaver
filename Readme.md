@@ -7,72 +7,27 @@
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8.svg)](https://golang.org/)
 [![Documentation](https://img.shields.io/badge/Docs-objectweaver.dev-orange.svg)](https://objectweaver.dev/docs)
 
-</div>
-
-<div align="center">
-  <h5>
-      <a href="https://objectweaver.dev">
-        Website
-      </a>
-      <span> | </span>
-      <a href="https://objectweaver.dev/docs">
-        Documentation
-      </a>
-      <span> | </span>
-      <a href="https://objectweaver.dev/api">
-        API Reference
-      </a>
-      <span> | </span>
-      <a href="https://objectweaver.dev/contact">
-        Contact Us
-      </a>
-  </h5>
-</div>
-
-<div align="center">
-
-[![GitHub stars](https://img.shields.io/github/stars/objectweaver/objectweaver?style=flat-square)](https://github.com/objectweaver/objectweaver/stargazers)
-[![Docker Pulls](https://img.shields.io/docker/pulls/objectweaver/objectweaver?style=flat-square)](https://hub.docker.com/r/objectweaver/objectweaver)
+[Website](https://objectweaver.dev) • [Documentation](https://objectweaver.dev/docs) • [API Reference](https://objectweaver.dev/api)
 
 </div>
 
-<p align="center">
-    <strong>
-        Start generating structured JSON with ObjectWeaver today
-    </strong>
-</p>
-
-ObjectWeaver is an LLM orchestration service for generating structured objects in JSON format. It guarantees 100% valid JSON output by decomposing schemas into field-level tasks, routing them to optimal language models, and processing them in parallel. This approach not only ensures reliability but also significantly reduces costs and improves performance by using the best model for each task.
+ObjectWeaver is an AI Orchestration Service for generating structured objects in JSON format. It guarantees 100% valid JSON output by decomposing schemas into field-level tasks, routing them to optimal language models, and processing them in parallel. This approach not only ensures reliability but also significantly reduces costs and improves performance by using the best model for each task.
 
 For complete documentation, examples, and guides, visit [objectweaver.dev](https://objectweaver.dev).
 
-## Installation
+## Table of Contents
 
-- Check out the [Getting Started](#getting-started) section below for how to install and set up ObjectWeaver.
-- Pull the Docker image from [Docker Hub](https://hub.docker.com/r/objectweaver/objectweaver).
+- Why ObjectWeaver?
+- Getting Started
+- Making Your First Request
+- Features
+- Configuration
+- Building from Source
+- Community and Support
+- Contributing
+- License
 
-## Deployment Options
-
-| <img width=500 /> | Description |
-|-----------------|--------------|
-| **Self-Host: Community Edition** | Free, open source, and licensed under AGPL-3. |
-| **Self-Host: Enterprise Edition** | Licensed under ObjectWeaver Commercial License. Includes advanced features such as SSO, multi-tenancy, and enhanced monitoring. |
-| **ObjectWeaver Cloud** | Fully managed service with instant setup and pay-as-you-go pricing — no infrastructure required. |
-
-## Key Features
-
-ObjectWeaver packages everything you need for reliable JSON generation into one cohesive platform.
-
-| <img width=500 />                                                                                                                                                                                                                                                                                                                                                                | <img width=500 />                                                  |
-|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| **Guaranteed JSON Output**<br /><br /> Field-level type validation and compositional assembly ensure 100% valid JSON every time, solving the common problem of LLMs failing to generate proper structure.                                                                                                                                                                                    | <img src="https://objectweaver.dev/images/json-validation.png" width=500 /><tr></tr> |
-| **Parallel Generation**<br /><br />Independent fields are generated concurrently, leading to significantly faster processing times compared to sequential generation.                                                                                                  | <img src="https://objectweaver.dev/images/parallel-processing.png" width=500 /><tr></tr>          |
-| **Model Specialization**<br /><br />Route simple tasks to efficient models and complex reasoning to more powerful ones, reducing costs by 10-20x while maintaining quality.                                                                                                                                                                                                | <img src="https://objectweaver.dev/images/model-routing.png" width=500 /><tr></tr>               |
-| **Advanced Orchestration**<br /><br />Create complex workflows with field dependencies, decision points, batch processing, and priority systems for production-ready applications.                                                                                                                                                                                   | <img src="https://objectweaver.dev/images/orchestration.png" width=500 /><tr></tr>               |
-
-## Get Started
-
-### Why ObjectWeaver?
+## Why ObjectWeaver?
 
 Traditional JSON generation with LLMs often fails, with success rates as low as 35-65%. While grammar-constrained alternatives can guarantee syntax, they force a one-size-fits-all approach, using a single model and prompt for all fields. ObjectWeaver solves this by providing intelligent, field-level orchestration that offers several key advantages:
 
@@ -82,7 +37,7 @@ Traditional JSON generation with LLMs often fails, with success rates as low as 
 - **Break Context Limits**: Generate massive datasets and comprehensive documents that exceed the context window of a single model.
 - **Field Dependencies**: Create complex workflows where the output of one field can be used as input for another.
 
-### Getting Started
+## Getting Started
 
 The easiest way to get ObjectWeaver running is with Docker.
 
@@ -106,11 +61,11 @@ The easiest way to get ObjectWeaver running is with Docker.
 
 That's it! The server will be running on `localhost:2008`.
 
-### Making Your First Request
+## Making Your First Request
 
 Here’s how to make a basic API call to generate a structured JSON object. The `definition` field uses standard JSON Schema syntax to specify the desired output structure.
 
-#### cURL
+### cURL
 
 ```bash
 curl -X POST http://localhost:2008/api/objectGen \
@@ -130,7 +85,7 @@ curl -X POST http://localhost:2008/api/objectGen \
   }'
 ```
 
-#### Python
+### Python
 
 ```python
 import requests
@@ -159,7 +114,7 @@ response = requests.post(url, headers=headers, json=data)
 print(response.json())
 ```
 
-#### JavaScript (Node.js)
+### JavaScript (Node.js)
 
 ```javascript
 const fetch = require('node-fetch');
@@ -206,6 +161,17 @@ You'll get back a JSON response with your generated object and the cost:
   "usdCost": 0.0023
 }
 ```
+
+## Features
+
+ObjectWeaver is designed for production use and includes several powerful features to handle real-world complexity:
+
+-   **Batch Processing & Priority System**: Optimize costs by up to 50% by routing non-urgent requests to OpenAI's Batch API. You can assign priorities to different fields to balance speed and cost.
+-   **Decision Points**: Embed adaptive intelligence in your schemas to dynamically alter the generation process based on the output of other fields.
+-   **Streaming Requests**: Stream data as it's generated for real-time applications.
+-   **Quality Assurance**: Implement validation and retry logic to ensure the quality and accuracy of the generated data.
+-   **Data Fetching**: Fetch data from external sources and use it as context for generation.
+-   **Prometheus Metrics**: Track costs, performance, and other key metrics with built-in Prometheus support.
 
 ## Configuration
 
