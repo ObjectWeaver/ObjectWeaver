@@ -7,15 +7,263 @@
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8.svg)](https://golang.org/)
 [![Documentation](https://img.shields.io/badge/Docs-objectweaver.dev-orange.svg)](https://objectweaver.dev/docs)
 
-[Website](https://objectweaver.dev) • [Documentation](https://objectweaver.dev/docs) • [API Reference](https://objectweaver.dev/api)
+</div>
+
+<div align="center">
+  <h5>
+      <a href="https://objectweaver.dev">
+        Website
+      </a>
+      <span> | </span>
+      <a href="https://objectweaver.dev/docs">
+        Documentation
+      </a>
+      <span> | </span>
+      <a href="https://objectweaver.dev/api">
+        API Reference
+      </a>
+      <span> | </span>
+      <a href="https://objectweaver.dev/contact">
+        Contact Us
+      </a>
+  </h5>
+</div>
+
+<div align="center">
+
+[![GitHub stars](https://img.shields.io/github/stars/objectweaver/objectweaver?style=flat-square)](https://github.com/objectweaver/objectweaver/stargazers)
+[![Docker Pulls](https://img.shields.io/docker/pulls/objectweaver/objectweaver?style=flat-square)](https://hub.docker.com/r/objectweaver/objectweaver)
 
 </div>
 
-ObjectWeaver is an LLM orchestration service for generating structured objects in JSON format. Utilising the benefits of Go's concurrency to have parallel processing of requests to improve the speed at which fields are generated. Along with options to link fields, make decisions and have output validation baked into the processing engine. Allowing you to focus on the quality of your prompts and model selection and let the orchestration be handled by ObjectWeaver. 
+<p align="center">
+    <strong>
+        Start generating structured JSON with ObjectWeaver today
+    </strong>
+</p>
+
+ObjectWeaver is an LLM orchestration service for generating structured objects in JSON format. It guarantees 100% valid JSON output by decomposing schemas into field-level tasks, routing them to optimal language models, and processing them in parallel. This approach not only ensures reliability but also significantly reduces costs and improves performance by using the best model for each task.
 
 For complete documentation, examples, and guides, visit [objectweaver.dev](https://objectweaver.dev).
 
-## Getting Started
+## Installation
+
+- Check out the [Getting Started](#getting-started) section below for how to install and set up ObjectWeaver.
+- Pull the Docker image from [Docker Hub](https://hub.docker.com/r/objectweaver/objectweaver).
+
+## Deployment Options
+
+| <img width=500 /> | Description |
+|-----------------|--------------|
+| **Self-Host: Community Edition** | Free, open source, and licensed under AGPL-3. |
+| **Self-Host: Enterprise Edition** | Licensed under ObjectWeaver Commercial License. Includes advanced features such as SSO, multi-tenancy, and enhanced monitoring. |
+| **ObjectWeaver Cloud** | Fully managed service with instant setup and pay-as-you-go pricing — no infrastructure required. |
+
+## Key Features
+
+ObjectWeaver packages everything you need for reliable JSON generation into one cohesive platform.
+
+| <img width=500 />                                                                                                                                                                                                                                                                                                                                                                | <img width=500 />                                                  |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| **Guaranteed JSON Output**<br /><br /> Field-level type validation and compositional assembly ensure 100% valid JSON every time, solving the common problem of LLMs failing to generate proper structure.                                                                                                                                                                                    | <img src="https://objectweaver.dev/images/json-validation.png" width=500 /><tr></tr> |
+| **Parallel Generation**<br /><br />Independent fields are generated concurrently, leading to significantly faster processing times compared to sequential generation.                                                                                                  | <img src="https://objectweaver.dev/images/parallel-processing.png" width=500 /><tr></tr>          |
+| **Model Specialization**<br /><br />Route simple tasks to efficient models and complex reasoning to more powerful ones, reducing costs by 10-20x while maintaining quality.                                                                                                                                                                                                | <img src="https://objectweaver.dev/images/model-routing.png" width=500 /><tr></tr>               |
+| **Advanced Orchestration**<br /><br />Create complex workflows with field dependencies, decision points, batch processing, and priority systems for production-ready applications.                                                                                                                                                                                   | <img src="https://objectweaver.dev/images/orchestration.png" width=500 /><tr></tr>               |
+
+## Get Started
+
+### Why ObjectWeaver?
+
+Traditional JSON generation with LLMs often fails, with success rates as low as 35-65%. While grammar-constrained alternatives can guarantee syntax, they force a one-size-fits-all approach, using a single model and prompt for all fields. ObjectWeaver solves this by providing intelligent, field-level orchestration that offers several key advantages:
+
+- **Guaranteed JSON Output**: Field-level type validation and compositional assembly ensure 100% valid JSON every time.
+- **Parallel Generation**: Independent fields are generated concurrently, leading to significantly faster processing times.
+- **Model Specialization**: Route simple tasks to efficient models and complex reasoning to more powerful ones, reducing costs by 10-20x.
+- **Break Context Limits**: Generate massive datasets and comprehensive documents that exceed the context window of a single model.
+- **Field Dependencies**: Create complex workflows where the output of one field can be used as input for another.
+
+### Getting Started
+
+The easiest way to get ObjectWeaver running is with Docker.
+
+1.  **Pull the Docker image:**
+
+    ```bash
+    docker pull objectweaver/objectweaver:latest
+    ```
+
+2.  **Run the Docker container:**
+
+    ```bash
+    docker run -p 2008:2008 \
+      -e PASSWORD=your-request-api-key \
+      -e OPENAI_API_KEY=your-openai-key \
+      objectweaver/objectweaver:latest
+    ```
+
+    - `PASSWORD`: Your chosen API key for securing the ObjectWeaver service.
+    - `OPENAI_API_KEY`: Your OpenAI API key. ObjectWeaver can also be configured to use other providers like Gemini or a local model.
+
+That's it! The server will be running on `localhost:2008`.
+
+### Making Your First Request
+
+Here’s how to make a basic API call to generate a structured JSON object. The `definition` field uses standard JSON Schema syntax to specify the desired output structure.
+
+#### cURL
+
+```bash
+curl -X POST http://localhost:2008/api/objectGen \
+  -H "Authorization: Bearer your-api-token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Generate a user profile for a software engineer",
+    "definition": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "experience_years": { "type": "integer" }
+      }
+    }
+  }'
+```
+
+#### Python
+
+```python
+import requests
+import json
+
+url = "http://localhost:2008/api/objectGen"
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer your-api-token"
+}
+
+data = {
+    "prompt": "Generate a user profile for a software engineer",
+    "definition": {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "email": {"type": "string"},
+            "skills": {"type": "array", "items": {"type": "string"}},
+            "experience_years": {"type": "integer"}
+        }
+    }
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
+```
+
+#### JavaScript (Node.js)
+
+```javascript
+const fetch = require('node-fetch');
+
+const url = 'http://localhost:2008/api/objectGen';
+const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer your-api-token'
+};
+
+const data = {
+    prompt: 'Generate a user profile for a software engineer',
+    definition: {
+        type: 'object',
+        properties: {
+            name: { type: 'string' },
+            email: { type: 'string' },
+            skills: { type: 'array', items: { type: 'string' } },
+            experience_years: { type: 'integer' }
+        }
+    }
+};
+
+fetch(url, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify(data)
+})
+.then(response => response.json())
+.then(data => console.log(data))
+.catch(error => console.error('Error:', error));
+```
+
+You'll get back a JSON response with your generated object and the cost:
+
+```json
+{
+  "data": {
+    "name": "Alex Johnson",
+    "email": "alex.johnson@example.com",
+    "skills": ["Go", "Kubernetes", "PostgreSQL", "gRPC"],
+    "experience_years": 7
+  },
+  "usdCost": 0.0023
+}
+```
+
+## Configuration
+
+Configure the service using environment variables. Here are some of the main options:
+
+```bash
+# Required for API access
+PASSWORD=your-secure-api-token
+# Your LLM provider key
+OPENAI_API_KEY=your-openai-api-key
+
+# LLM provider settings
+LLM_PROVIDER=openai                      # openai, gemini, or local
+LLM_API_URL=https://api.openai.com/v1
+LLM_MAX_TOKENS_PER_MINUTE=150000
+LLM_MAX_REQUESTS_PER_MINUTE=500
+
+# Server settings
+PORT=2008
+ENVIRONMENT=production
+```
+
+For a full list of configuration options and what they do, check out the [configuration guide](https://objectweaver.dev/docs/configuration).
+
+## Building from Source
+
+If you prefer to build ObjectWeaver yourself:
+
+```bash
+git clone https://github.com/objectweaver/objectweaver.git
+cd objectweaver
+go build -o objectweaver .
+./objectweaver
+```
+
+## Community and Support
+
+-   **Documentation**: For detailed guides, examples, and API references, visit our [documentation website](https://objectweaver.dev/docs).
+-   **GitHub Issues**: If you encounter a bug or have a feature request, please [open an issue on GitHub](https://github.com/objectweaver/objectweaver/issues).
+-   **Contact Us**: For enterprise inquiries, please [contact us](https://objectweaver.dev/contact).
+
+## Contributing
+
+Contributions are welcome! Please see CONTRIBUTING.md for guidelines on how to contribute to the project.
+
+## License
+
+ObjectWeaver uses a **dual licensing model**:
+
+### Community Edition (AGPL-3)
+
+The ObjectWeaver Community Edition is available under the GNU Affero General Public License v3. This means it is free to use, modify, and distribute, but if you offer it as a network service, you must make your modified source code available under the same license.
+
+### Enterprise Edition
+
+The code in the `ee/` directory is licensed under the ObjectWeaver Commercial License and requires a valid ObjectWeaver Enterprise Edition subscription for production use. This edition includes advanced features such as SSO, multi-tenancy, and enhanced monitoring.
+
+For more details, see LICENSE.txt or contact us for [Enterprise Edition inquiries](https://objectweaver.dev/contact).## Getting Started
 
 Easiest way to get ObjectWeaver running is with Docker:
 
