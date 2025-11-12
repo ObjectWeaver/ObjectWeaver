@@ -30,29 +30,12 @@ jobs:
       - name: Run tests with coverage
         run: go test ./... -coverprofile=coverage.out -covermode=atomic
 
-      - name: Calculate coverage percentage
-        id: coverage
-        run: |
-          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
-          echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
-          echo "Total coverage: $COVERAGE%"
-
-      - name: Update README with coverage badge
-        run: |
-          COVERAGE=${{ steps.coverage.outputs.percentage }}
-          
-          # Determine color based on coverage
-          if (( $(echo "$COVERAGE >= 80" | bc -l) )); then
-            COLOR="brightgreen"
-          elif (( $(echo "$COVERAGE >= 50" | bc -l) )); then
-            COLOR="yellow"
-          else
-            COLOR="red"
-          fi
-          
-          # Update the badge in README
-          sed -i.bak "s|!\[Coverage\](https://img.shields.io/badge/Coverage-[0-9.]*%25-[a-z]*)|![Coverage](https://img.shields.io/badge/Coverage-${COVERAGE}%25-${COLOR})|g" README.md
-          rm README.md.bak
+      - name: Generate coverage badge
+        uses: tj-actions/coverage-badge-go@v2
+        with:
+          filename: coverage.out
+          green: 80
+          yellow: 50
 
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@v17
