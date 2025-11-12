@@ -7,7 +7,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8.svg)](https://golang.org/)
 [![Documentation](https://img.shields.io/badge/Docs-objectweaver.dev-orange.svg)](https://objectweaver.dev/docs)
 
-![Coverage](https://img.shields.io/badge/Coverage-0%25-red)
+![Coverage](https://img.shields.io/badge/Coverage-1-red)
 
 [Website](https://objectweaver.dev) • [Documentation](https://objectweaver.dev/docs) • [API Reference](https://objectweaver.dev/api)
 
