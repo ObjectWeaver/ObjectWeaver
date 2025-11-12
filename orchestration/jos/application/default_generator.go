@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"fmt"
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/infrastructure/epstimic"
@@ -44,6 +45,11 @@ func NewDefaultGenerator(
 
 // Generate - Main generation workflow using recursive field processing
 func (g *DefaultGenerator) Generate(request *domain.GenerationRequest) (*domain.GenerationResult, error) {
+	// Create context for cancellation support
+	ctx := context.Background()
+	// TODO: In future, accept context from caller for proper deadline/cancellation propagation
+	// func (g *DefaultGenerator) Generate(ctx context.Context, request *domain.GenerationRequest) (*domain.GenerationResult, error)
+
 	// Phase 1: Pre-processing plugins
 	processedRequest, err := g.plugins.ApplyPreProcessors(request)
 	if err != nil {
@@ -57,11 +63,11 @@ func (g *DefaultGenerator) Generate(request *domain.GenerationRequest) (*domain.
 
 	// Phase 3: Generate using recursive field processor
 	// Create execution context
-	context := domain.NewExecutionContext(processedRequest)
-	context.PromptContext().AddPrompt(processedRequest.Prompt())
+	execContext := domain.NewExecutionContext(processedRequest)
+	execContext.PromptContext().AddPrompt(processedRequest.Prompt())
 
 	// Process all fields recursively
-	resultsCh := g.fieldProcessor.ProcessFields(processedRequest.Schema(), nil, context)
+	resultsCh := g.fieldProcessor.ProcessFields(ctx, processedRequest.Schema(), nil, execContext)
 
 	// Collect results into map with detailed metadata
 	data := make(map[string]interface{})

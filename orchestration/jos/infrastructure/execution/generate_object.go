@@ -1,6 +1,7 @@
 package execution
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"objectweaver/orchestration/jos/domain"
@@ -44,7 +45,7 @@ func (fp *FieldProcessor) SetEpstimicOrchestrator(orchestrator EpstimicOrchestra
 
 // ProcessFields processes all properties of an object definition
 // Returns a channel of results for concurrent processing
-func (fp *FieldProcessor) ProcessFields(schema *jsonSchema.Definition, parentTask *domain.FieldTask, context *domain.ExecutionContext) <-chan *domain.TaskResult {
+func (fp *FieldProcessor) ProcessFields(ctx context.Context, schema *jsonSchema.Definition, parentTask *domain.FieldTask, execContext *domain.ExecutionContext) <-chan *domain.TaskResult {
 	ch := make(chan *domain.TaskResult)
 
 	go func() {
@@ -60,10 +61,10 @@ func (fp *FieldProcessor) ProcessFields(schema *jsonSchema.Definition, parentTas
 
 		// Process ordered keys sequentially (dependencies)
 		currentGen := make(map[string]interface{})
-		fp.processSequentialFields(ch, schema, parentTask, context, currentGen, orderedKeys)
+		fp.processSequentialFields(ctx, ch, schema, parentTask, execContext, currentGen, orderedKeys)
 
 		// Process remaining keys concurrently
-		fp.processConcurrentFields(ch, schema, parentTask, context, currentGen, remainingKeys)
+		fp.processConcurrentFields(ctx, ch, schema, parentTask, execContext, currentGen, remainingKeys)
 	}()
 
 	return ch
@@ -71,14 +72,23 @@ func (fp *FieldProcessor) ProcessFields(schema *jsonSchema.Definition, parentTas
 
 // processSequentialFields handles fields that must be processed in order
 func (fp *FieldProcessor) processSequentialFields(
+	ctx context.Context,
 	ch chan<- *domain.TaskResult,
 	schema *jsonSchema.Definition,
 	parentTask *domain.FieldTask,
-	context *domain.ExecutionContext,
+	execContext *domain.ExecutionContext,
 	currentGen map[string]interface{},
 	orderedKeys []string,
 ) {
 	for _, key := range orderedKeys {
+		// Check if context is cancelled
+		select {
+		case <-ctx.Done():
+			log.Printf("[FieldProcessor] Context cancelled during sequential processing: %v", ctx.Err())
+			return
+		default:
+		}
+
 		childDef := schema.Properties[key]
 		childDefCopy := childDef // Copy for goroutine safety
 
@@ -86,13 +96,13 @@ func (fp *FieldProcessor) processSequentialFields(
 		task := domain.NewFieldTask(key, &childDefCopy, parentTask)
 
 		// Process the field and get all results (original + decision branches)
-		results := fp.processField(task, context)
+		results := fp.processField(ctx, task, execContext)
 
 		// Add all results to current generation and send to channel
 		for _, result := range results {
 			if result != nil {
 				currentGen[result.Key()] = result.Value()
-				context.SetGeneratedValue(result.Key(), result.Value())
+				execContext.SetGeneratedValue(result.Key(), result.Value())
 				ch <- result
 			}
 		}
@@ -101,11 +111,19 @@ func (fp *FieldProcessor) processSequentialFields(
 
 // processField processes a field and handles decision points
 // Returns multiple results if decision point creates additional fields
-func (fp *FieldProcessor) processField(task *domain.FieldTask, context *domain.ExecutionContext) []*domain.TaskResult {
+func (fp *FieldProcessor) processField(ctx context.Context, task *domain.FieldTask, execContext *domain.ExecutionContext) []*domain.TaskResult {
+	// Check if context is cancelled
+	select {
+	case <-ctx.Done():
+		log.Printf("[FieldProcessor] Context cancelled during processField: %v", ctx.Err())
+		return nil
+	default:
+	}
+
 	// Special case: Object types are processed by recursively calling ProcessFields
 	// This maintains the concurrent/sequential ordering logic at every level
 	if task.Definition().Type == jsonSchema.Object {
-		return fp.processObjectField(task, context)
+		return fp.processObjectField(ctx, task, execContext)
 	}
 
 	// Get appropriate processor for non-object types
@@ -116,7 +134,7 @@ func (fp *FieldProcessor) processField(task *domain.FieldTask, context *domain.E
 	}
 
 	// Process the field
-	result, err := processor.Process(task, context)
+	result, err := processor.Process(ctx, task, execContext)
 	if err != nil {
 		log.Printf("Error processing field %s: %v", task.Key(), err)
 		return nil
@@ -127,14 +145,14 @@ func (fp *FieldProcessor) processField(task *domain.FieldTask, context *domain.E
 	}
 
 	// Add result to context so decision points can reference it
-	context.SetGeneratedValue(result.Key(), result.Value())
+	execContext.SetGeneratedValue(result.Key(), result.Value())
 	log.Printf("[FieldProcessor] Generated field '%s', value: %v", result.Key(), result.Value())
 
 	// Score if criteria exist
 	log.Printf("[FieldProcessor] Checking scoring criteria for field '%s': %v", task.Key(), task.Definition().ScoringCriteria != nil)
 	if task.Definition().ScoringCriteria != nil {
 		log.Printf("[FieldProcessor] Evaluating scores for field '%s'", task.Key())
-		scores, err := fp.evaluateScores(result, task.Definition().ScoringCriteria, context)
+		scores, err := fp.evaluateScores(ctx, result, task.Definition().ScoringCriteria, execContext)
 		if err != nil {
 			log.Printf("[FieldProcessor] Warning: scoring failed for field %s: %v", task.Key(), err)
 		} else {
@@ -149,7 +167,7 @@ func (fp *FieldProcessor) processField(task *domain.FieldTask, context *domain.E
 	if task.Definition().DecisionPoint != nil {
 		log.Printf("[FieldProcessor] Processing decision point for field %s", task.Key())
 
-		results, err := fp.decisionProcessor.ProcessDecisionPoint(task, result, context)
+		results, err := fp.decisionProcessor.ProcessDecisionPoint(ctx, task, result, execContext)
 		if err != nil {
 			log.Printf("[FieldProcessor] Decision point processing failed: %v", err)
 			return []*domain.TaskResult{result} // Return original result on error
@@ -159,7 +177,7 @@ func (fp *FieldProcessor) processField(task *domain.FieldTask, context *domain.E
 		if len(results) > 1 {
 			log.Printf("[FieldProcessor] Decision point created %d additional fields", len(results)-1)
 			for _, branchResult := range results[1:] {
-				context.SetGeneratedValue(branchResult.Key(), branchResult.Value())
+				execContext.SetGeneratedValue(branchResult.Key(), branchResult.Value())
 				log.Printf("[FieldProcessor] Added branch field to context: %s = %v", branchResult.Key(), branchResult.Value())
 			}
 		}
@@ -172,15 +190,23 @@ func (fp *FieldProcessor) processField(task *domain.FieldTask, context *domain.E
 }
 
 // processObjectField handles object-type fields by recursively processing their properties
-func (fp *FieldProcessor) processObjectField(task *domain.FieldTask, context *domain.ExecutionContext) []*domain.TaskResult {
+func (fp *FieldProcessor) processObjectField(ctx context.Context, task *domain.FieldTask, execContext *domain.ExecutionContext) []*domain.TaskResult {
 	// Process nested fields recursively using the same FieldProcessor logic
 	// This ensures concurrent/sequential ordering is maintained at every nesting level
-	resultsCh := fp.ProcessFields(task.Definition(), task, context)
+	resultsCh := fp.ProcessFields(ctx, task.Definition(), task, execContext)
 
 	// Collect all nested results into a map
 	nestedResults := make(map[string]interface{})
 
 	for result := range resultsCh {
+		// Check if context is cancelled
+		select {
+		case <-ctx.Done():
+			log.Printf("[FieldProcessor] Context cancelled during object field processing: %v", ctx.Err())
+			return nil
+		default:
+		}
+
 		if result != nil {
 			nestedResults[result.Key()] = result.Value()
 		}
@@ -197,10 +223,11 @@ func (fp *FieldProcessor) processObjectField(task *domain.FieldTask, context *do
 
 // processConcurrentFields handles fields that can be processed in parallel
 func (fp *FieldProcessor) processConcurrentFields(
+	ctx context.Context,
 	ch chan<- *domain.TaskResult,
 	schema *jsonSchema.Definition,
 	parentTask *domain.FieldTask,
-	context *domain.ExecutionContext,
+	execContext *domain.ExecutionContext,
 	currentGen map[string]interface{},
 	remainingKeys []string,
 ) {
@@ -212,11 +239,20 @@ func (fp *FieldProcessor) processConcurrentFields(
 		childDefCopy := childDef // Copy for goroutine safety
 
 		go func(k string, def jsonSchema.Definition) {
+			// Check if context is cancelled
+			select {
+			case <-ctx.Done():
+				log.Printf("[FieldProcessor] Context cancelled, skipping field: %s", k)
+				resultCh <- []*domain.TaskResult{}
+				return
+			default:
+			}
+
 			// Create field task
 			task := domain.NewFieldTask(k, &def, parentTask)
 
 			// Process the field with decision point support
-			results := fp.processField(task, context)
+			results := fp.processField(ctx, task, execContext)
 
 			if results != nil {
 				resultCh <- results
@@ -228,10 +264,16 @@ func (fp *FieldProcessor) processConcurrentFields(
 
 	// Collect all results
 	for i := 0; i < len(remainingKeys); i++ {
-		results := <-resultCh
-		for _, result := range results {
-			if result != nil {
-				ch <- result
+		// Check if context is cancelled
+		select {
+		case <-ctx.Done():
+			log.Printf("[FieldProcessor] Context cancelled during concurrent result collection: %v", ctx.Err())
+			return
+		case results := <-resultCh:
+			for _, result := range results {
+				if result != nil {
+					ch <- result
+				}
 			}
 		}
 	}
@@ -309,10 +351,18 @@ func getOrderedKeys(schema *jsonSchema.Definition) ([]string, []string) {
 
 // evaluateScores uses the generator to score the generated content
 func (fp *FieldProcessor) evaluateScores(
+	ctx context.Context,
 	result *domain.TaskResult,
 	criteria *jsonSchema.ScoringCriteria,
-	context *domain.ExecutionContext,
+	execContext *domain.ExecutionContext,
 ) (map[string]float64, error) {
+	// Check if context is cancelled
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+	default:
+	}
+
 	if fp.generator == nil {
 		return nil, fmt.Errorf("generator not set, cannot evaluate scores")
 	}

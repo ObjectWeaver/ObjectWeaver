@@ -1,6 +1,7 @@
 package execution
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -10,6 +11,12 @@ import (
 
 	"github.com/objectweaver/go-sdk/jsonSchema"
 )
+
+// testContext returns a test context with cancellation support
+func testContext(t *testing.T) context.Context {
+	t.Helper()
+	return context.Background()
+}
 
 // Mock implementations for testing
 type mockLLMProvider struct {
@@ -101,7 +108,7 @@ func TestArrayProcessor_Process_Success(t *testing.T) {
 	task := domain.NewFieldTask("testArray", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	result, err := processor.Process(task, context)
+	result, err := processor.Process(testContext(t), task, context)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}
@@ -144,7 +151,7 @@ func TestArrayProcessor_Process_NilItems(t *testing.T) {
 	task := domain.NewFieldTask("testArray", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	_, err := processor.Process(task, context)
+	_, err := processor.Process(testContext(t), task, context)
 	if err == nil {
 		t.Error("Expected error for nil items")
 	}
@@ -179,7 +186,7 @@ func TestArrayProcessor_Process_SizeDeterminationError(t *testing.T) {
 	task := domain.NewFieldTask("testArray", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	result, err := processor.Process(task, context)
+	result, err := processor.Process(testContext(t), task, context)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}
@@ -221,7 +228,7 @@ func TestArrayProcessor_Process_ItemProcessingError(t *testing.T) {
 	task := domain.NewFieldTask("testArray", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	_, err := processor.Process(task, context)
+	_, err := processor.Process(testContext(t), task, context)
 	if err == nil {
 		t.Error("Expected error from item processing")
 	}

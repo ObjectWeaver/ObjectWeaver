@@ -104,7 +104,7 @@ func TestByteProcessor_Process_NoByteOperationsSupport(t *testing.T) {
 	task := domain.NewFieldTask("test", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	_, err := processor.Process(task, context)
+	_, err := processor.Process(testContext(t), task, context)
 	if err == nil {
 		t.Error("Expected error for unsupported byte operations")
 	}
@@ -126,7 +126,7 @@ func TestByteProcessor_Process_NoConfig(t *testing.T) {
 	task := domain.NewFieldTask("test", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	_, err := processor.Process(task, context)
+	_, err := processor.Process(testContext(t), task, context)
 	if err == nil {
 		t.Error("Expected error for missing byte operation config")
 	}
@@ -163,7 +163,7 @@ func TestByteProcessor_Process_TextToSpeech_Success(t *testing.T) {
 	task := domain.NewFieldTask("audioField", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	result, err := processor.Process(task, context)
+	result, err := processor.Process(testContext(t), task, context)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}
@@ -215,7 +215,7 @@ func TestByteProcessor_Process_ImageGeneration_Success(t *testing.T) {
 	task := domain.NewFieldTask("imageField", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	result, err := processor.Process(task, context)
+	result, err := processor.Process(testContext(t), task, context)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}
@@ -269,7 +269,7 @@ func TestByteProcessor_Process_SpeechToText_Success(t *testing.T) {
 	task := domain.NewFieldTask("textField", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	result, err := processor.Process(task, context)
+	result, err := processor.Process(testContext(t), task, context)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}
@@ -313,7 +313,7 @@ func TestByteProcessor_Process_TextToSpeech_Error(t *testing.T) {
 	task := domain.NewFieldTask("audioField", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	_, err := processor.Process(task, context)
+	_, err := processor.Process(testContext(t), task, context)
 	if err == nil {
 		t.Error("Expected error from TTS generation")
 	}
@@ -343,7 +343,7 @@ func TestByteProcessor_Process_ImageGeneration_Error(t *testing.T) {
 	task := domain.NewFieldTask("imageField", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	_, err := processor.Process(task, context)
+	_, err := processor.Process(testContext(t), task, context)
 	if err == nil {
 		t.Error("Expected error from image generation")
 	}
@@ -372,7 +372,7 @@ func TestByteProcessor_Process_SpeechToText_Error(t *testing.T) {
 	task := domain.NewFieldTask("textField", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	_, err := processor.Process(task, context)
+	_, err := processor.Process(testContext(t), task, context)
 	if err == nil {
 		t.Error("Expected error from transcription")
 	}

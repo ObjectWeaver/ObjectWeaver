@@ -1,6 +1,7 @@
 package execution
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"objectweaver/orchestration/extractor"
@@ -55,13 +56,19 @@ func (p *PrimitiveProcessor) CanProcess(schemaType jsonSchema.DataType) bool {
 	// Note: jsonSchema.Byte is handled by ByteProcessor, not PrimitiveProcessor
 }
 
-func (p *PrimitiveProcessor) Process(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
+func (p *PrimitiveProcessor) Process(ctx context.Context, task *domain.FieldTask, execContext *domain.ExecutionContext) (*domain.TaskResult, error) {
+	// Check if context is cancelled
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+	default:
+	}
 
 	// Check if Epstimic engine is being used
 	//if TRUE - then go into the Epstimic flow
 	if task.Definition().Epistemic.Active {
 		log.Printf("[PrimitiveProcessor] Epistemic validation is active for field '%s'", task.Key())
-		result, _, err := p.epstimicOrchestrator.EpstimicValidation(task, context, p.generateValue)
+		result, _, err := p.epstimicOrchestrator.EpstimicValidation(task, execContext, p.generateValue)
 		if err != nil {
 			return nil, fmt.Errorf("failed to validate with Epstimic: %w", err)
 		}
@@ -69,7 +76,7 @@ func (p *PrimitiveProcessor) Process(task *domain.FieldTask, context *domain.Exe
 	}
 
 	// else - go into the normal flow - below:
-	value, metadata, err := p.generateValue(task, context)
+	value, metadata, err := p.generateValue(task, execContext)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate value: %w", err)
 	}

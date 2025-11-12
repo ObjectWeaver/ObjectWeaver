@@ -1,6 +1,7 @@
 package execution
 
 import (
+	"context"
 	"objectweaver/orchestration/jos/domain"
 
 	"github.com/objectweaver/go-sdk/jsonSchema"
@@ -32,7 +33,7 @@ func (p *MapProcessor) CanProcess(schemaType jsonSchema.DataType) bool {
 	return schemaType == jsonSchema.Map
 }
 
-func (p *MapProcessor) Process(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
+func (p *MapProcessor) Process(ctx context.Context, task *domain.FieldTask, execContext *domain.ExecutionContext) (*domain.TaskResult, error) {
 	// Simplified map processing
 	result := make(map[string]interface{})
 	metadata := domain.NewResultMetadata()

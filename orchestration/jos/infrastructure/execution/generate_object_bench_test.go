@@ -1,6 +1,7 @@
 package execution
 
 import (
+	stdcontext "context"
 	"fmt"
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/infrastructure/llm"
@@ -76,7 +77,8 @@ func BenchmarkProcessFields(b *testing.B) {
 
 			for i := 0; i < b.N; i++ {
 				// Process fields and collect results
-				resultsCh := processor.ProcessFields(tt.schema, nil, context)
+				ctx := stdcontext.Background()
+				resultsCh := processor.ProcessFields(ctx, tt.schema, nil, context)
 				count := 0
 				for range resultsCh {
 					count++
@@ -110,7 +112,8 @@ func BenchmarkProcessConcurrentFields(b *testing.B) {
 			b.ReportAllocs()
 
 			for i := 0; i < b.N; i++ {
-				resultsCh := processor.ProcessFields(schema, nil, context)
+				ctx := stdcontext.Background()
+				resultsCh := processor.ProcessFields(ctx, schema, nil, context)
 				for range resultsCh {
 					// Consume results
 				}
@@ -143,7 +146,8 @@ func BenchmarkSequentialVsParallel(b *testing.B) {
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
-			resultsCh := processor.ProcessFields(schema, nil, context)
+			ctx := stdcontext.Background()
+			resultsCh := processor.ProcessFields(ctx, schema, nil, context)
 			for range resultsCh {
 			}
 		}
@@ -160,7 +164,8 @@ func BenchmarkSequentialVsParallel(b *testing.B) {
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
-			resultsCh := processor.ProcessFields(schema, nil, context)
+			ctx := stdcontext.Background()
+			resultsCh := processor.ProcessFields(ctx, schema, nil, context)
 			for range resultsCh {
 			}
 		}
@@ -184,7 +189,8 @@ func BenchmarkSequentialVsParallel(b *testing.B) {
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
-			resultsCh := processor.ProcessFields(schema, nil, context)
+			ctx := stdcontext.Background()
+			resultsCh := processor.ProcessFields(ctx, schema, nil, context)
 			for range resultsCh {
 			}
 		}
@@ -207,7 +213,8 @@ func BenchmarkNestedObjectProcessing(b *testing.B) {
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
-			resultsCh := processor.ProcessFields(schema, nil, context)
+			ctx := stdcontext.Background()
+			resultsCh := processor.ProcessFields(ctx, schema, nil, context)
 			for range resultsCh {
 			}
 		}
@@ -234,7 +241,8 @@ func BenchmarkNestedObjectProcessing(b *testing.B) {
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
-			resultsCh := processor.ProcessFields(schema, nil, context)
+			ctx := stdcontext.Background()
+			resultsCh := processor.ProcessFields(ctx, schema, nil, context)
 			for range resultsCh {
 			}
 		}

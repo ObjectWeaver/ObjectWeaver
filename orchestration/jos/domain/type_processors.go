@@ -1,6 +1,10 @@
 package domain
 
-import "github.com/objectweaver/go-sdk/jsonSchema"
+import (
+	"context"
+
+	"github.com/objectweaver/go-sdk/jsonSchema"
+)
 
 // TypeProcessor - Handles generation for specific JSON schema types
 //
@@ -25,11 +29,11 @@ import "github.com/objectweaver/go-sdk/jsonSchema"
 //   - Return TaskResult with generated value
 type TypeProcessor interface {
 	CanProcess(schemaType jsonSchema.DataType) bool
-	Process(task *FieldTask, context *ExecutionContext) (*TaskResult, error)
+	Process(ctx context.Context, task *FieldTask, execContext *ExecutionContext) (*TaskResult, error)
 }
 
 // StreamingTypeProcessor - Type processor with token-level streaming support
 type StreamingTypeProcessor interface {
 	TypeProcessor
-	ProcessStreaming(task *FieldTask, context *ExecutionContext) (<-chan *TokenStreamChunk, error)
+	ProcessStreaming(ctx context.Context, task *FieldTask, execContext *ExecutionContext) (<-chan *TokenStreamChunk, error)
 }

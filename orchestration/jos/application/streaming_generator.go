@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"fmt"
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/infrastructure/epstimic"
@@ -70,6 +71,10 @@ func (g *StreamingGenerator) GenerateStream(request *domain.GenerationRequest) (
 	go func() {
 		defer close(out)
 
+		// Create context for cancellation support
+		ctx := context.Background()
+		// TODO: In future, accept context from caller for proper deadline/cancellation propagation
+
 		// Pre-processing
 		processedRequest, err := g.plugins.ApplyPreProcessors(request)
 		if err != nil {
@@ -77,11 +82,11 @@ func (g *StreamingGenerator) GenerateStream(request *domain.GenerationRequest) (
 		}
 
 		// Create execution context
-		context := domain.NewExecutionContext(processedRequest)
-		context.PromptContext().AddPrompt(processedRequest.Prompt())
+		execContext := domain.NewExecutionContext(processedRequest)
+		execContext.PromptContext().AddPrompt(processedRequest.Prompt())
 
 		// Process all fields recursively using FieldProcessor
-		resultsCh := g.fieldProcessor.ProcessFields(processedRequest.Schema(), nil, context)
+		resultsCh := g.fieldProcessor.ProcessFields(ctx, processedRequest.Schema(), nil, execContext)
 
 		// Stream results as they come in
 		for result := range resultsCh {

@@ -77,7 +77,7 @@ func TestBooleanProcessor_Process(t *testing.T) {
 	task := domain.NewFieldTask("isActive", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	result, err := processor.Process(task, context)
+	result, err := processor.Process(testContext(t), task, context)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}
@@ -169,7 +169,7 @@ func TestNumberProcessor_Process(t *testing.T) {
 	task := domain.NewFieldTask("count", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	result, err := processor.Process(task, context)
+	result, err := processor.Process(testContext(t), task, context)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}
@@ -208,7 +208,7 @@ func TestNumberProcessor_Process_Integer(t *testing.T) {
 	task := domain.NewFieldTask("age", schema, nil)
 	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
 
-	result, err := processor.Process(task, context)
+	result, err := processor.Process(testContext(t), task, context)
 	if err != nil {
 		t.Fatalf("Process failed: %v", err)
 	}

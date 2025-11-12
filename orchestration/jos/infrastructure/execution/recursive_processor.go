@@ -1,6 +1,7 @@
 package execution
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"objectweaver/orchestration/jos/domain"
@@ -40,7 +41,14 @@ func (r *RecursiveLoopProcessor) CanProcess(schemaType jsonSchema.DataType) bool
 	return r.baseProcessor.CanProcess(schemaType)
 }
 
-func (r *RecursiveLoopProcessor) Process(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
+func (r *RecursiveLoopProcessor) Process(ctx context.Context, task *domain.FieldTask, execContext *domain.ExecutionContext) (*domain.TaskResult, error) {
+	// Check if context is cancelled
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+	default:
+	}
+
 	loop := task.Definition().RecursiveLoop
 	verboseLogs := os.Getenv("VERBOSE") == "true"
 
@@ -51,12 +59,24 @@ func (r *RecursiveLoopProcessor) Process(task *domain.FieldTask, context *domain
 	var results []iterationResult
 
 	for i := 0; i < loop.MaxIterations; i++ {
+		// Check if context is cancelled at each iteration
+		select {
+		case <-ctx.Done():
+			log.Printf("[RecursiveLoop] Context cancelled at iteration %d: %v", i+1, ctx.Err())
+			if len(results) > 0 {
+				// Return best result so far
+				return r.selectResult(results, loop.Selection, task.Key())
+			}
+			return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+		default:
+		}
+
 		if verboseLogs {
 			log.Printf("[RecursiveLoop] Iteration %d/%d for task %s", i+1, loop.MaxIterations, task.Key())
 		}
 
 		// Generate iteration
-		result, err := r.baseProcessor.Process(task, context)
+		result, err := r.baseProcessor.Process(ctx, task, execContext)
 		if err != nil {
 			return nil, fmt.Errorf("iteration %d failed: %w", i+1, err)
 		}
@@ -68,7 +88,7 @@ func (r *RecursiveLoopProcessor) Process(task *domain.FieldTask, context *domain
 
 		// Score if criteria exist
 		if task.Definition().ScoringCriteria != nil {
-			scores, err := r.evaluateScores(result, task.Definition().ScoringCriteria, context)
+			scores, err := r.evaluateScores(result, task.Definition().ScoringCriteria, execContext)
 			if err != nil {
 				log.Printf("[RecursiveLoop] Warning: scoring failed for iteration %d: %v", i+1, err)
 			} else {
@@ -83,7 +103,7 @@ func (r *RecursiveLoopProcessor) Process(task *domain.FieldTask, context *domain
 
 		// Check termination using DecisionPoint logic!
 		if loop.TerminationPoint != nil {
-			shouldStop, err := r.shouldTerminate(loop.TerminationPoint, result, context, task)
+			shouldStop, err := r.shouldTerminate(ctx, loop.TerminationPoint, result, execContext, task)
 			if err != nil {
 				log.Printf("[RecursiveLoop] Warning: termination check failed: %v", err)
 			} else if shouldStop {
@@ -96,7 +116,7 @@ func (r *RecursiveLoopProcessor) Process(task *domain.FieldTask, context *domain
 
 		// Enhance context with feedback for next iteration
 		if i < loop.MaxIterations-1 {
-			r.enhanceContextWithFeedback(loop, iterResult, context)
+			r.enhanceContextWithFeedback(loop, iterResult, execContext)
 		}
 	}
 
@@ -110,11 +130,19 @@ func (r *RecursiveLoopProcessor) Process(task *domain.FieldTask, context *domain
 
 // shouldTerminate uses DecisionPoint logic to check if we should stop iterating
 func (r *RecursiveLoopProcessor) shouldTerminate(
+	ctx context.Context,
 	terminationPoint *jsonSchema.DecisionPoint,
 	currentResult *domain.TaskResult,
-	context *domain.ExecutionContext,
+	execContext *domain.ExecutionContext,
 	task *domain.FieldTask,
 ) (bool, error) {
+	// Check if context is cancelled
+	select {
+	case <-ctx.Done():
+		return true, fmt.Errorf("context cancelled: %w", ctx.Err())
+	default:
+	}
+
 	// If no branches defined, don't terminate
 	if len(terminationPoint.Branches) == 0 {
 		return false, nil
@@ -129,10 +157,11 @@ func (r *RecursiveLoopProcessor) shouldTerminate(
 	// We iterate through branches and check if ANY match (OR logic across branches)
 	for _, branch := range terminationPoint.Branches {
 		matched, err := r.decisionProcessor.evaluateBranch(
+			ctx,
 			branch,
 			task,
 			currentResult,
-			context,
+			execContext,
 			terminationPoint,
 		)
 		if err != nil {

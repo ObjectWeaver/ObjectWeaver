@@ -1,6 +1,9 @@
 package domain
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 // TaskExecutor - Executes field generation tasks by delegating to type-specific processors
 //
@@ -19,8 +22,8 @@ import "sync"
 // multiple sibling fields. The first result is the primary field, subsequent
 // results are additional fields from decision point branches.
 type TaskExecutor interface {
-	Execute(task *FieldTask, context *ExecutionContext) ([]*TaskResult, error)
-	ExecuteBatch(tasks []*FieldTask, context *ExecutionContext) ([]*TaskResult, error)
+	Execute(ctx context.Context, task *FieldTask, execContext *ExecutionContext) ([]*TaskResult, error)
+	ExecuteBatch(ctx context.Context, tasks []*FieldTask, execContext *ExecutionContext) ([]*TaskResult, error)
 }
 
 // ExecutionContext provides context for task execution

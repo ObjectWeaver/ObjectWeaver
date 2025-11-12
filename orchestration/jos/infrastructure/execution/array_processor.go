@@ -1,6 +1,7 @@
 package execution
 
 import (
+	"context"
 	"fmt"
 	"objectweaver/orchestration/jos/domain"
 
@@ -33,9 +34,16 @@ func (p *ArrayProcessor) CanProcess(schemaType jsonSchema.DataType) bool {
 	return schemaType == jsonSchema.Array
 }
 
-func (p *ArrayProcessor) Process(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
+func (p *ArrayProcessor) Process(ctx context.Context, task *domain.FieldTask, execContext *domain.ExecutionContext) (*domain.TaskResult, error) {
+	// Check if context is cancelled
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+	default:
+	}
+
 	// Determine array size using LLM
-	arraySize, listString, err := p.determineArraySize(task, context)
+	arraySize, listString, err := p.determineArraySize(task, execContext)
 	if err != nil {
 		// Log error but continue with default size
 		fmt.Printf("Warning: failed to determine array size, using default: %v\n", err)
@@ -52,12 +60,19 @@ func (p *ArrayProcessor) Process(task *domain.FieldTask, context *domain.Executi
 	totalCost := 0.0
 
 	// Create an enhanced context with the list information if available
-	enhancedContext := context
+	enhancedContext := execContext
 	if listString != "" {
-		enhancedContext = p.createEnhancedContext(context, listString)
+		enhancedContext = p.createEnhancedContext(execContext, listString)
 	}
 
 	for i := 0; i < arraySize; i++ {
+		// Check if context is cancelled
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("context cancelled during array processing: %w", ctx.Err())
+		default:
+		}
+
 		itemTask := domain.NewFieldTask(fmt.Sprintf("%s[%d]", task.Key(), i), itemDef, task)
 
 		// Handle object items specially - they need recursive field processing
@@ -66,7 +81,7 @@ func (p *ArrayProcessor) Process(task *domain.FieldTask, context *domain.Executi
 
 		if itemDef.Type == jsonSchema.Object && p.fieldProcessor != nil {
 			// Object items use FieldProcessor for recursive processing
-			results := p.fieldProcessor.processObjectField(itemTask, enhancedContext)
+			results := p.fieldProcessor.processObjectField(ctx, itemTask, enhancedContext)
 			if len(results) > 0 {
 				result = results[0] // Object fields return single result
 			} else {
@@ -75,7 +90,7 @@ func (p *ArrayProcessor) Process(task *domain.FieldTask, context *domain.Executi
 		} else {
 			// Non-object items use type processors
 			processor := p.createProcessorForType(itemDef.Type)
-			result, err = processor.Process(itemTask, enhancedContext)
+			result, err = processor.Process(ctx, itemTask, enhancedContext)
 			if err != nil {
 				return nil, fmt.Errorf("array item %d failed: %w", i, err)
 			}

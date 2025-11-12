@@ -1,6 +1,7 @@
 package execution
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -48,7 +49,14 @@ func (p *ByteProcessor) CanProcess(schemaType jsonSchema.DataType) bool {
 	return schemaType == jsonSchema.Byte
 }
 
-func (p *ByteProcessor) Process(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
+func (p *ByteProcessor) Process(ctx context.Context, task *domain.FieldTask, execContext *domain.ExecutionContext) (*domain.TaskResult, error) {
+	// Check if context is cancelled
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+	default:
+	}
+
 	def := task.Definition()
 
 	// Check if provider supports byte operations
@@ -59,17 +67,17 @@ func (p *ByteProcessor) Process(task *domain.FieldTask, context *domain.Executio
 
 	// Handle Text-to-Speech (TTS)
 	if def.TextToSpeech != nil {
-		return p.processTextToSpeech(task, context, byteProvider)
+		return p.processTextToSpeech(task, execContext, byteProvider)
 	}
 
 	// Handle Image Generation
 	if def.Image != nil {
-		return p.processImageGeneration(task, context, byteProvider)
+		return p.processImageGeneration(task, execContext, byteProvider)
 	}
 
 	// Handle Speech-to-Text (STT)
 	if def.SpeechToText != nil {
-		return p.processSpeechToText(task, context, byteProvider)
+		return p.processSpeechToText(task, execContext, byteProvider)
 	}
 
 	// Fallback: if no specific byte operation is defined, return error

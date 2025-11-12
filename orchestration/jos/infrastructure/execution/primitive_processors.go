@@ -1,6 +1,7 @@
 package execution
 
 import (
+	"context"
 	"objectweaver/orchestration/jos/domain"
 
 	"github.com/objectweaver/go-sdk/jsonSchema"
@@ -39,14 +40,14 @@ func (p *BooleanProcessor) CanProcess(schemaType jsonSchema.DataType) bool {
 	return schemaType == jsonSchema.Boolean
 }
 
-func (p *BooleanProcessor) Process(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
+func (p *BooleanProcessor) Process(ctx context.Context, task *domain.FieldTask, execContext *domain.ExecutionContext) (*domain.TaskResult, error) {
 	// Use primitive processor with the same prompt provider
 	primitiveProc := NewPrimitiveProcessorWithPromptProvider(p.llmProvider, p.promptBuilder, p.systemPromptProvider)
 	// Propagate epstimic orchestrator if set
 	if p.epstimicOrchestrator != nil {
 		primitiveProc.SetEpstimicOrchestrator(p.epstimicOrchestrator)
 	}
-	return primitiveProc.Process(task, context)
+	return primitiveProc.Process(ctx, task, execContext)
 }
 
 // NumberProcessor handles numeric types
@@ -82,12 +83,12 @@ func (p *NumberProcessor) CanProcess(schemaType jsonSchema.DataType) bool {
 	return schemaType == jsonSchema.Number || schemaType == jsonSchema.Integer
 }
 
-func (p *NumberProcessor) Process(task *domain.FieldTask, context *domain.ExecutionContext) (*domain.TaskResult, error) {
+func (p *NumberProcessor) Process(ctx context.Context, task *domain.FieldTask, execContext *domain.ExecutionContext) (*domain.TaskResult, error) {
 	// Use primitive processor with the same prompt provider
 	primitiveProc := NewPrimitiveProcessorWithPromptProvider(p.llmProvider, p.promptBuilder, p.systemPromptProvider)
 	// Propagate epstimic orchestrator if set
 	if p.epstimicOrchestrator != nil {
 		primitiveProc.SetEpstimicOrchestrator(p.epstimicOrchestrator)
 	}
-	return primitiveProc.Process(task, context)
+	return primitiveProc.Process(ctx, task, execContext)
 }
