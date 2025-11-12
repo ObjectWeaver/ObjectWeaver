@@ -92,7 +92,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: henrylamb/objectweaver
+          images: objectweaver/objectweaver
           tags: |
             type=raw,value=${{ steps.prep_tags.outputs.full_version }}
             type=raw,value=${{ steps.prep_tags.outputs.major_minor }}
