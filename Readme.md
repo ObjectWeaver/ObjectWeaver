@@ -6,6 +6,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-brightgreen.svg)](https://hub.docker.com/r/objectweaver/objectweaver)
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8.svg)](https://golang.org/)
 [![Documentation](https://img.shields.io/badge/Docs-objectweaver.dev-orange.svg)](https://objectweaver.dev/docs)
+![Coverage](https://img.shields.io/badge/Coverage-0%25-red)
 
 [Website](https://objectweaver.dev) • [Documentation](https://objectweaver.dev/docs) • [API Reference](https://objectweaver.dev/api)
 
@@ -147,6 +148,4 @@ The ObjectWeaver Community Edition is available under the GNU Affero General Pub
 
 ### Enterprise Edition
 
-The code in the `ee/` directory is licensed under the ObjectWeaver Commercial License and requires a valid ObjectWeaver Enterprise Edition subscription for production use. This edition includes more advanced management features.
-
-For more details, see LICENSE.txt or contact us for [Enterprise Edition inquiries](https://objectweaver.dev/contact).
+The code in the `ee/` directory is licensed under the ObjectWeaver Commercial License and requires a valid ObjectWeaver Enterprise Edition subscription for production use. This edition includes more advanced management features. Currently it is a placeholder to make everything easier to manage later down the line. If you've got any questions about the features etc. we are building please contact us at enterprise@objectweaver.dev 

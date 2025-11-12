@@ -1,4 +1,4 @@
-name: Run Codeleft CLI
+name: Codeleft Checks
 
 on:
   push:

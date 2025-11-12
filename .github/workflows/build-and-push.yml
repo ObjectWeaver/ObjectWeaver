@@ -1,5 +1,5 @@
 # This workflow name
-name: Auto-incrementing objectweaver Docker Build
+name: Docker Build and Push
 
 # Controls when the workflow will run
 on:
