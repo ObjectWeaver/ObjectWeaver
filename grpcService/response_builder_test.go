@@ -48,7 +48,7 @@ func TestDefaultResponseBuilder_BuildResponse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response, err := builder.BuildResponse(tt.result)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Error("Expected error, got nil")

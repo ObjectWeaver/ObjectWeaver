@@ -15,11 +15,11 @@ import (
 // Server is used to implement the gRPC service with injected dependencies
 type Server struct {
 	pb.UnimplementedJSONSchemaServiceServer
-	requestConverter      RequestConverter
-	circularChecker       CircularDefinitionChecker
-	configFactory         ConfigFactory
-	generatorService      GeneratorService
-	responseBuilder       ResponseBuilder
+	requestConverter RequestConverter
+	circularChecker  CircularDefinitionChecker
+	configFactory    ConfigFactory
+	generatorService GeneratorService
+	responseBuilder  ResponseBuilder
 }
 
 // NewServer creates a new Server with all dependencies injected
@@ -31,11 +31,11 @@ func NewServer(
 	responseBuilder ResponseBuilder,
 ) *Server {
 	return &Server{
-		requestConverter:      requestConverter,
-		circularChecker:       circularChecker,
-		configFactory:         configFactory,
-		generatorService:      generatorService,
-		responseBuilder:       responseBuilder,
+		requestConverter: requestConverter,
+		circularChecker:  circularChecker,
+		configFactory:    configFactory,
+		generatorService: generatorService,
+		responseBuilder:  responseBuilder,
 	}
 }
 

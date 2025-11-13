@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/objectweaver/go-sdk/client"
-	"github.com/objectweaver/go-sdk/jsonSchema"
 	pb "github.com/objectweaver/go-sdk/grpc"
+	"github.com/objectweaver/go-sdk/jsonSchema"
 
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/factory"
@@ -267,7 +267,7 @@ func TestServer_GenerateObjectV2_ResponseBuildError(t *testing.T) {
 
 func TestNewDefaultServer(t *testing.T) {
 	server := NewDefaultServer()
-	
+
 	if server == nil {
 		t.Fatal("Expected non-nil server")
 	}

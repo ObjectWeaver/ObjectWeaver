@@ -4,8 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
 	"objectweaver/orchestration/jos/factory"
+
+	"github.com/objectweaver/go-sdk/jsonSchema"
 )
 
 func TestDefaultGeneratorService_CreateGenerator(t *testing.T) {
@@ -36,7 +37,7 @@ func TestDefaultGeneratorService_CreateGenerator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			generator, err := service.CreateGenerator(tt.config)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Error("Expected error, got nil")
@@ -57,10 +58,10 @@ func TestDefaultGeneratorService_CreateGenerator(t *testing.T) {
 func TestDefaultGeneratorService_Generate(t *testing.T) {
 	// Skip this test as it requires real LLM API keys
 	t.Skip("Skipping integration test that requires LLM API credentials")
-	
+
 	service := NewDefaultGeneratorService()
 	config := factory.DefaultGeneratorConfig().WithMode(factory.ModeParallel)
-	
+
 	generator, err := service.CreateGenerator(config)
 	if err != nil {
 		t.Fatalf("Failed to create generator: %v", err)
@@ -97,7 +98,7 @@ func TestDefaultGeneratorService_Generate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			result, err := service.Generate(ctx, generator, tt.prompt, tt.definition)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Error("Expected error, got nil")

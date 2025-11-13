@@ -10,8 +10,8 @@ func TestDefaultCircularDefinitionChecker_Check(t *testing.T) {
 	checker := NewDefaultCircularDefinitionChecker()
 
 	tests := []struct {
-		name       string
-		definition *jsonSchema.Definition
+		name        string
+		definition  *jsonSchema.Definition
 		hasCircular bool
 	}{
 		{
@@ -26,8 +26,8 @@ func TestDefaultCircularDefinitionChecker_Check(t *testing.T) {
 			hasCircular: false,
 		},
 		{
-			name: "nil definition",
-			definition: nil,
+			name:        "nil definition",
+			definition:  nil,
 			hasCircular: false,
 		},
 		{
