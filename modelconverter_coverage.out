@@ -1,5 +1,0 @@
-mode: set
-objectweaver/llmManagement/modelConverter/generic.go:15.41,17.2 1 1
-objectweaver/llmManagement/modelConverter/generic.go:22.63,26.2 2 1
-objectweaver/llmManagement/modelConverter/toOpenai.go:8.47,10.2 1 1
-objectweaver/llmManagement/modelConverter/toOpenai.go:13.61,15.2 1 1
