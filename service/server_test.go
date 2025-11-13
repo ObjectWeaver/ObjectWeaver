@@ -83,7 +83,7 @@ func TestMountHandlers_DevelopmentMode(t *testing.T) {
 
 	server.Router.ServeHTTP(w, req)
 
-	// In development mode, the route is mounted but will return 404 because 
+	// In development mode, the route is mounted but will return 404 because
 	// /static/index.html doesn't exist in the test environment.
 	// This is expected and proves the route is registered.
 	// If the route wasn't mounted, chi router would handle it differently.
@@ -91,7 +91,7 @@ func TestMountHandlers_DevelopmentMode(t *testing.T) {
 		// File doesn't exist in test, so 404 is expected
 		t.Logf("Got status %d (expected 404 since file doesn't exist in test)", w.Code)
 	}
-	
+
 	// Verify we got SOME response (route is handled)
 	if w.Body.Len() == 0 {
 		t.Error("Expected some response from / endpoint")

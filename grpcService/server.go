@@ -12,9 +12,42 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-// server is used to implement the gRPC service.
+// Server is used to implement the gRPC service with injected dependencies
 type Server struct {
 	pb.UnimplementedJSONSchemaServiceServer
+	requestConverter      RequestConverter
+	circularChecker       CircularDefinitionChecker
+	configFactory         ConfigFactory
+	generatorService      GeneratorService
+	responseBuilder       ResponseBuilder
+}
+
+// NewServer creates a new Server with all dependencies injected
+func NewServer(
+	requestConverter RequestConverter,
+	circularChecker CircularDefinitionChecker,
+	configFactory ConfigFactory,
+	generatorService GeneratorService,
+	responseBuilder ResponseBuilder,
+) *Server {
+	return &Server{
+		requestConverter:      requestConverter,
+		circularChecker:       circularChecker,
+		configFactory:         configFactory,
+		generatorService:      generatorService,
+		responseBuilder:       responseBuilder,
+	}
+}
+
+// NewDefaultServer creates a new Server with default implementations
+func NewDefaultServer() *Server {
+	return NewServer(
+		NewDefaultRequestConverter(),
+		NewDefaultCircularDefinitionChecker(),
+		NewDefaultConfigFactory(),
+		NewDefaultGeneratorService(),
+		NewDefaultResponseBuilder(),
+	)
 }
 
 // GenerateObject implements the gRPC interface by calling GenerateObjectV2
@@ -63,7 +96,7 @@ func NewGRPCServer() *grpc.Server {
 	}
 
 	// Register your service implementation with the gRPC server
-	pb.RegisterJSONSchemaServiceServer(grpcServer, &Server{})
+	pb.RegisterJSONSchemaServiceServer(grpcServer, NewDefaultServer())
 	// Enable gRPC reflection
 	reflection.Register(grpcServer)
 

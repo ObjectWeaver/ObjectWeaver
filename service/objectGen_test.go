@@ -114,10 +114,10 @@ func TestObjectGen_ContextCancellation(t *testing.T) {
 	req = req.WithContext(ctx)
 
 	w := httptest.NewRecorder()
-	
+
 	// Should detect cancelled context and return early
 	ObjectGen(w, req)
-	
+
 	// Should get a timeout/cancel error response
 	if w.Code != http.StatusRequestTimeout {
 		t.Errorf("Expected 408 Request Timeout, got %d", w.Code)
