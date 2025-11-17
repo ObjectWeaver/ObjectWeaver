@@ -2,7 +2,7 @@ package grpcService
 
 import (
 	"errors"
-	"log"
+	"objectweaver/logger"
 
 	"github.com/objectweaver/go-sdk/client"
 	"github.com/objectweaver/go-sdk/converison"
@@ -23,7 +23,7 @@ func (s *Server) StreamGeneratedObjectsV2(req *pb.RequestBody, stream pb.JSONSch
 		Definition: converison.ConvertProtoToModel(req.Definition),
 	}
 
-	log.Println("Received streaming request for definition:", body.Definition)
+	logger.Println("Received streaming request for definition:", body.Definition)
 
 	// Check for circular definitions
 	if checks.CheckCircularDefinitions(body.Definition) {
@@ -37,7 +37,7 @@ func (s *Server) StreamGeneratedObjectsV2(req *pb.RequestBody, stream pb.JSONSch
 	generatorFactory := factory.NewGeneratorFactory(config)
 	generator, err := generatorFactory.Create()
 	if err != nil {
-		log.Printf("Failed to create streaming generator: %v", err)
+		logger.Printf("Failed to create streaming generator: %v", err)
 		return err
 	}
 
@@ -58,7 +58,7 @@ func (s *Server) streamComplete(generator domain.Generator, request *domain.Gene
 	// Get the streaming channel
 	streamChan, err := generator.GenerateStream(request)
 	if err != nil {
-		log.Printf("Failed to start streaming generation: %v", err)
+		logger.Printf("Failed to start streaming generation: %v", err)
 		return err
 	}
 
@@ -82,7 +82,7 @@ func (s *Server) streamComplete(generator domain.Generator, request *domain.Gene
 		// Convert accumulated data to protobuf struct
 		protoStruct, err := structpb.NewStruct(accumulatedData)
 		if err != nil {
-			log.Printf("Failed to convert map to protobuf struct: %v", err)
+			logger.Printf("Failed to convert map to protobuf struct: %v", err)
 			return err
 		}
 
@@ -95,7 +95,7 @@ func (s *Server) streamComplete(generator domain.Generator, request *domain.Gene
 
 		// Send the chunk
 		if err := stream.Send(response); err != nil {
-			log.Printf("Failed to send streaming response: %v", err)
+			logger.Printf("Failed to send streaming response: %v", err)
 			return err
 		}
 
@@ -108,7 +108,7 @@ func (s *Server) streamComplete(generator domain.Generator, request *domain.Gene
 	// Send final completion message
 	finalStruct, err := structpb.NewStruct(accumulatedData)
 	if err != nil {
-		log.Printf("Failed to create final struct: %v", err)
+		logger.Printf("Failed to create final struct: %v", err)
 		return err
 	}
 
@@ -119,7 +119,7 @@ func (s *Server) streamComplete(generator domain.Generator, request *domain.Gene
 	}
 
 	if err := stream.Send(finalResponse); err != nil {
-		log.Printf("Failed to send final response: %v", err)
+		logger.Printf("Failed to send final response: %v", err)
 		return err
 	}
 
@@ -131,7 +131,7 @@ func (s *Server) streamProgressively(generator domain.Generator, request *domain
 	// Get the progressive streaming channel
 	progressiveChan, err := generator.GenerateStreamProgressive(request)
 	if err != nil {
-		log.Printf("Failed to start progressive streaming: %v", err)
+		logger.Printf("Failed to start progressive streaming: %v", err)
 		return err
 	}
 
@@ -164,7 +164,7 @@ func (s *Server) streamProgressively(generator domain.Generator, request *domain
 		protoStruct, err := structpb.NewStruct(accumulatedData)
 		if err != nil {
 			// Log but don't fail - might be due to incomplete data
-			log.Printf("Warning: Failed to convert partial data to struct: %v", err)
+			logger.Printf("Warning: Failed to convert partial data to struct: %v", err)
 			continue
 		}
 
@@ -177,7 +177,7 @@ func (s *Server) streamProgressively(generator domain.Generator, request *domain
 
 		// Send the progressive update
 		if err := stream.Send(response); err != nil {
-			log.Printf("Failed to send progressive response: %v", err)
+			logger.Printf("Failed to send progressive response: %v", err)
 			return err
 		}
 
@@ -190,7 +190,7 @@ func (s *Server) streamProgressively(generator domain.Generator, request *domain
 	// Send final completion message
 	finalStruct, err := structpb.NewStruct(accumulatedData)
 	if err != nil {
-		log.Printf("Failed to create final struct: %v", err)
+		logger.Printf("Failed to create final struct: %v", err)
 		return err
 	}
 
@@ -201,7 +201,7 @@ func (s *Server) streamProgressively(generator domain.Generator, request *domain
 	}
 
 	if err := stream.Send(finalResponse); err != nil {
-		log.Printf("Failed to send final response: %v", err)
+		logger.Printf("Failed to send final response: %v", err)
 		return err
 	}
 

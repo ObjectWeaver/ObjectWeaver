@@ -1,6 +1,7 @@
 package jobSubmitter
 
 import (
+	"context"
 	"objectweaver/llmManagement"
 	"objectweaver/llmManagement/LLM"
 	"objectweaver/llmManagement/domain"
@@ -11,8 +12,9 @@ import (
 
 type ChannelJobSubmitter struct{}
 
-func (js *ChannelJobSubmitter) SubmitJob(model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (any, *openai.Usage, error) {
+func (js *ChannelJobSubmitter) SubmitJob(ctx context.Context, model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (any, *openai.Usage, error) {
 	input := llmManagement.Inputs{
+		Ctx:          ctx,
 		Prompt:       newPrompt,
 		SystemPrompt: systemPrompt,
 		Def:          def,
@@ -21,7 +23,7 @@ func (js *ChannelJobSubmitter) SubmitJob(model string, def *jsonSchema.Definitio
 
 	job := &LLM.Job{
 		Inputs: &input,
-		Result: make(chan *domain.JobResult),
+		Result: make(chan *domain.JobResult, 1),
 		Tokens: 0,
 	}
 

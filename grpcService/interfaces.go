@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/objectweaver/go-sdk/client"
-	"github.com/objectweaver/go-sdk/jsonSchema"
 	pb "github.com/objectweaver/go-sdk/grpc"
+	"github.com/objectweaver/go-sdk/jsonSchema"
 
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/factory"

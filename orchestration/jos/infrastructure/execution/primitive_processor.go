@@ -3,7 +3,7 @@ package execution
 import (
 	"context"
 	"fmt"
-	"log"
+	"objectweaver/logger"
 	"objectweaver/orchestration/extractor"
 	"objectweaver/orchestration/jos/domain"
 	"os"
@@ -67,8 +67,12 @@ func (p *PrimitiveProcessor) Process(ctx context.Context, task *domain.FieldTask
 	// Check if Epstimic engine is being used
 	//if TRUE - then go into the Epstimic flow
 	if task.Definition().Epistemic.Active {
-		log.Printf("[PrimitiveProcessor] Epistemic validation is active for field '%s'", task.Key())
-		result, _, err := p.epstimicOrchestrator.EpstimicValidation(task, execContext, p.generateValue)
+		logger.Printf("[PrimitiveProcessor] Epistemic validation is active for field '%s'", task.Key())
+		// Wrap generateValue to match expected signature
+		generateFn := func(t *domain.FieldTask, ec *domain.ExecutionContext) (any, *domain.ProviderMetadata, error) {
+			return p.generateValue(ctx, t, ec)
+		}
+		result, _, err := p.epstimicOrchestrator.EpstimicValidation(task, execContext, generateFn)
 		if err != nil {
 			return nil, fmt.Errorf("failed to validate with Epstimic: %w", err)
 		}
@@ -76,7 +80,7 @@ func (p *PrimitiveProcessor) Process(ctx context.Context, task *domain.FieldTask
 	}
 
 	// else - go into the normal flow - below:
-	value, metadata, err := p.generateValue(task, execContext)
+	value, metadata, err := p.generateValue(ctx, task, execContext)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate value: %w", err)
 	}
@@ -110,18 +114,23 @@ func (p *PrimitiveProcessor) buildRequestPieces(task *domain.FieldTask, context 
 		// Add selected field values directly to the prompt
 		prompt += "\n\nContext from previous generation:\n"
 		for _, fieldPath := range task.Definition().SelectFields {
-			log.Printf("[PrimitiveProcessor] Looking for field '%s' in context", fieldPath)
+			logger.Printf("[PrimitiveProcessor] Looking for field '%s' in context", fieldPath)
 			if value, exists := context.GeneratedValues()[fieldPath]; exists {
 				prompt += fmt.Sprintf("\n%s:\n%v\n", fieldPath, value)
-				log.Printf("[PrimitiveProcessor] Added field '%s' to prompt (length: %d chars)", fieldPath, len(fmt.Sprintf("%v", value)))
+				logger.Printf("[PrimitiveProcessor] Added field '%s' to prompt (length: %d chars)", fieldPath, len(fmt.Sprintf("%v", value)))
 			} else {
-				log.Printf("[PrimitiveProcessor] Field '%s' not found in context", fieldPath)
+				logger.Printf("[PrimitiveProcessor] Field '%s' not found in context", fieldPath)
 			}
 		}
 	}
 
 	// Generate with LLM
-	config := context.GenerationConfig()
+	// Copy config to avoid race condition when multiple goroutines modify it
+	sharedConfig := context.GenerationConfig()
+	config := &domain.GenerationConfig{}
+	if sharedConfig != nil {
+		*config = *sharedConfig
+	}
 	config.Model = p.determineModel(task.Definition())
 	config.Definition = task.Definition() // Pass the full definition for SendImage support
 
@@ -143,7 +152,12 @@ func (p *PrimitiveProcessor) buildVectorRequest(task *domain.FieldTask, context 
 	// This is a request structure specifically for vector types - the aim is not to use the prompt builder etc
 	//the only prompt information being passed is in the prompt information passed from the user information
 
-	config := context.GenerationConfig()
+	// Copy config to avoid race condition when multiple goroutines modify it
+	sharedConfig := context.GenerationConfig()
+	config := &domain.GenerationConfig{}
+	if sharedConfig != nil {
+		*config = *sharedConfig
+	}
 	config.Model = p.determineModel(task.Definition())
 	config.Definition = task.Definition() // Pass the full definition for SendImage support
 
@@ -164,9 +178,9 @@ func (p *PrimitiveProcessor) buildVectorRequest(task *domain.FieldTask, context 
 		for _, fieldPath := range task.Definition().SelectFields {
 			if value, exists := context.GeneratedValues()[fieldPath]; exists {
 				prompt += fmt.Sprintf("%v\n", value)
-				log.Printf("[PrimitiveProcessor] Added field '%s' to prompt (length: %d chars)", fieldPath, len(fmt.Sprintf("%v", value)))
+				logger.Printf("[PrimitiveProcessor] Added field '%s' to prompt (length: %d chars)", fieldPath, len(fmt.Sprintf("%v", value)))
 			} else {
-				log.Printf("[PrimitiveProcessor] Field '%s' not found in context", fieldPath)
+				logger.Printf("[PrimitiveProcessor] Field '%s' not found in context", fieldPath)
 			}
 		}
 
@@ -177,27 +191,30 @@ func (p *PrimitiveProcessor) buildVectorRequest(task *domain.FieldTask, context 
 	return context.PromptContext().FirstPrompt(), config, nil
 }
 
-func (p *PrimitiveProcessor) generateValue(task *domain.FieldTask, context *domain.ExecutionContext) (any, *domain.ProviderMetadata, error) {
+func (p *PrimitiveProcessor) generateValue(ctx context.Context, task *domain.FieldTask, context *domain.ExecutionContext) (any, *domain.ProviderMetadata, error) {
 	prompt, config, err := p.buildRequestPieces(task, context)
 	if err != nil {
-		log.Printf("[TaskExecutor ERROR] Failed to build request pieces for property '%s': %v", task.Key(), err)
+		logger.Printf("[TaskExecutor ERROR] Failed to build request pieces for property '%s': %v", task.Key(), err)
 		return nil, nil, fmt.Errorf("failed to build request pieces: %w", err)
 	}
 
+	// Add context for cancellation support
+	config.Context = ctx
+
 	response, metadata, err := p.llmProvider.Generate(prompt, config)
 	if err != nil {
-		log.Printf("[TaskExecutor ERROR] Generation failed for property '%s': %v", task.Key(), err)
+		logger.Printf("[TaskExecutor ERROR] Generation failed for property '%s': %v", task.Key(), err)
 		return nil, nil, fmt.Errorf("LLM generation failed: %w", err)
 	}
 
-	log.Printf("[TaskExecutor] Received response for property '%s', parsing as %s",
+	logger.Printf("[TaskExecutor] Received response for property '%s', parsing as %s",
 		task.Key(), task.Definition().Type)
 
 	// Parse response based on type
 	value := p.parseValue(response, task.Definition().Type)
 	metadata.Prompt = prompt
 
-	log.Printf("[TaskExecutor] Parsed value for property '%s': %+v", task.Key(), value)
+	logger.Printf("[TaskExecutor] Parsed value for property '%s': %+v", task.Key(), value)
 	return value, metadata, nil
 }
 

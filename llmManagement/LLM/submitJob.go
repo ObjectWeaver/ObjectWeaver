@@ -3,42 +3,26 @@ package LLM
 import (
 	"errors"
 	"objectweaver/llmManagement/domain"
+	"sync"
 
+	"github.com/objectweaver/go-sdk/jsonSchema"
 	gogpt "github.com/sashabaranov/go-openai"
 )
 
 const blank = ""
 
-type VariedJobSubmitter struct{}
-
-func NewVariedJobSubmitter() *VariedJobSubmitter {
-	return &VariedJobSubmitter{}
-}
-
-func (v *VariedJobSubmitter) SubmitJob(job *Job, workerChannel chan *Job) (any, *gogpt.Usage, error) {
-	select {
-	case WorkerChannel <- job:
-	default:
-		return v.SubmitJob(job, workerChannel)
-	}
-
-	result := <-job.Result
-	close(job.Result)
-
-	//TODO have an option to return a different kind of result for the vector/embeddings types
-	if result.EmbeddingRes != nil {
-		// Return the embedding vector ([]float32) instead of the Embedding struct
-		// to avoid proto serialization issues
-		return result.EmbeddingRes.Data[0].Embedding, nil, nil
-	}
-
-	return validateResult(result)
-}
-
 type DefaultJobSubmitter struct{}
 
+var (
+	defaultJobSubmitterInstance *DefaultJobSubmitter
+	once                        sync.Once
+)
+
 func NewDefaultJobSubmitter() *DefaultJobSubmitter {
-	return &DefaultJobSubmitter{}
+	once.Do(func() {
+		defaultJobSubmitterInstance = &DefaultJobSubmitter{}
+	})
+	return defaultJobSubmitterInstance
 }
 
 func (d *DefaultJobSubmitter) SubmitJob(job *Job, workerChannel chan *Job) (any, *gogpt.Usage, error) {
@@ -51,9 +35,11 @@ func (d *DefaultJobSubmitter) SubmitJob(job *Job, workerChannel chan *Job) (any,
 	result := <-job.Result
 	close(job.Result)
 
-	if result.EmbeddingRes != nil {
-		// Return the embedding vector ([]float32) instead of the Embedding struct
-		// to avoid proto serialization issues
+	if job.Inputs.Def.Type == jsonSchema.Vector {
+		if len(result.EmbeddingRes.Data) == 0 {
+			return blank, nil, errors.New("embedding response data is empty")
+		}
+
 		return result.EmbeddingRes.Data[0].Embedding, nil, nil
 	}
 

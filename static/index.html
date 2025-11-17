@@ -259,18 +259,73 @@
     document.addEventListener('DOMContentLoaded', (event) => {
         const initialSchema = {
             "type": "object",
-            "instruction": "Defines the technological landscape of the world, including its level of advancement and notable innovations.",
+            "instruction": "Generate a multi-part analytical report on the world. Each field requires an independent, detailed summary.",
             "properties": {
-                "Level": {
-                    "type": "string",
-                    "instruction": "Categorize the overall technological sophistication of the world, such as medieval, industrial, or advanced futuristic."
+                "MacroAnalysis": {
+                    "type": "object",
+                    "instruction": "High-level strategic summaries of the world's state.",
+                    "properties": {
+                        "GeopoliticalSummary": {
+                            "type": "string",
+                            "instruction": "Analyze the primary political structure (e.g., empires, republics, factions) and describe the sources of tension or conflict between them."
+                        },
+                        "SocioEconomicAnalysis": {
+                            "type": "string",
+                            "instruction": "Summarize the economic system (e.g., agrarian, industrial, magical) and how it creates and reinforces the main social hierarchy or class structure."
+                        },
+                        "CulturalEthos": {
+                            "type": "string",
+                            "instruction": "Based on the text, synthesize a brief description of the dominant cultural values, beliefs, or philosophies. What do the inhabitants seem to prioritize?"
+                        }
+                    }
                 },
-                "Inventions": {
-                    "type": "string",
-                    "instruction": "Describe the most significant technological discoveries and their transformative impact on the society, economy, and daily life."
+                "DomainReports": {
+                    "type": "object",
+                    "instruction": "Specific reports on key sectors of the world.",
+                    "properties": {
+                        "TechnologyReport": {
+                            "type": "string",
+                            "instruction": "Summarize the overall technological era. Identify the most advanced and most common technologies, and explain their impact on daily life."
+                        },
+                        "MagicAndSupernaturalReport": {
+                            "type": "string",
+                            "instruction": "Analyze the world's magic system (if any). How is it accessed, what are its limits, and what role does it play in society? If none, explain what replaces it."
+                        },
+                        "EnvironmentalReport": {
+                            "type": "string",
+                            "instruction": "Describe the world's primary environment, climate, and geography. What is the relationship between the inhabitants and their natural world?"
+                        },
+                        "MilitaryDoctrine": {
+                            "type": "string",
+                            "instruction": "Based on the available technology and/or magic, describe how the inhabitants would likely wage war. What are their primary strengths and weaknesses?"
+                        }
+                    }
+                },
+                "FutureOutlook": {
+                    "type": "object",
+                    "instruction": "Extrapolate future trends based on the provided text.",
+                    "properties": {
+                        "PrimaryOpportunity": {
+                            "type": "string",
+                            "instruction": "Extrapolate the most significant potential 'breakthrough' or positive development the world is on the cusp of (technological, social, or magical)."
+                        },
+                        "PrimaryThreat": {
+                            "type": "string",
+                            "instruction": "Analyze the most significant internal or external threat to the world's stability (e.g., resource scarcity, war, magical cataclysm, technological risk)."
+                        },
+                        "LongTermPrognosis": {
+                            "type": "string",
+                            "instruction": "Combine all available information to write a 2-3 sentence summary of the world's likely future trajectory."
+                        }
+                    }
                 }
             }
         };
+
+        const initialPrompt = "Our World's Technological Level:\n\nOur world is in a period of rapid technological acceleration.\n\nMore specifically, many technologists and economists describe our current era as the **Fourth Industrial Revolution (4IR)**. This is a phase defined not just by digital technology, but by the *fusion* of technologies blurring the lines between the physical, digital, and biological spheres.\n\n---\n\n### Key Technological Pillars\n\nHere are the core technologies that define our current level and are actively transforming society:\n\n* **Pervasive Connectivity:** The **Internet** has become a global utility, connecting billions of people and devices. This is supercharged by:\n    * **Mobile Computing:** Powerful smartphones are in the hands of a majority of the global population.\n    * **High-Speed Networks:** 5G and expanding satellite internet (like Starlink) are aiming to make high-speed data access ubiquitous.\n    * **Cloud Computing:** Massive, centralized data centers (run by companies like Amazon, Google, and Microsoft) provide on-demand computing power and storage, forming the backbone of most modern applications.\n\n* **Artificial Intelligence (AI):** This is arguably the defining technology of the current moment.\n    * **Machine Learning (ML):** Algorithms that can learn from vast amounts of data to find patterns and make predictions. This powers everything from your Netflix recommendations to medical diagnostics.\n    * **Generative AI:** A recent breakthrough (e.g., ChatGPT, DALL-E) where AI can create novel, human-like text, images, code, and audio.\n\n* **Internet of Things (IoT):** The \"physical\" part of the revolution. This involves embedding sensors and internet connectivity into everyday objects—from smartwatches and home thermostats to factory machinery and city infrastructure—to collect real-time data and be controlled remotely.\n\n* **Biotechnology:** The \"biological\" fusion.\n    * **Gene Editing:** Technologies like **CRISPR** give us the ability to modify the DNA of living organisms with unprecedented precision, opening the door to curing genetic diseases.\n    * **Synthetic Biology:** Designing and building new biological parts, devices, and systems.\n    * **mRNA Vaccines:** A new type of vaccine, rapidly developed during the COVID-19 pandemic, that instructs the human body to build its own immune defense.\n\n* **Robotics & Automation:** Advanced robots, powered by AI, are moving beyond simple factory-line tasks. They are becoming more autonomous, capable of performing complex surgery, navigating warehouses, and even driving cars (autonomous vehicles).\n\n---\n\n### Broader Classifications\n\nIf you were to \"categorize\" our world on a more scientific or theoretical scale:\n\n* **Kardashev Scale:** This scale measures a civilization's technological level by its energy consumption. We are currently a **Type 0 civilization**. A **Type I civilization** would be able to harness all the energy available on its planet (e.g., all sunlight, geothermal, etc.). We are not yet at that level.\n* **Technosphere:** Some researchers describe our current state as an **\"immature technosphere.\"** This means we have created a complex, planet-altering technological system, but it is not yet self-sustaining. It relies on consuming the planet's resources (like fossil fuels) in a way that is harming the biosphere (our natural world), which in turn threatens the technosphere itself. A \"mature technosphere\" would be one that is fully integrated with the planet's natural cycles, such as a global energy grid run entirely on renewables.";
+
+        const promptTextArea = document.getElementById('prompt');
+        promptTextArea.value = initialPrompt; // Set the initial prompt
 
         const schemaTextArea = document.getElementById('schema');
         schemaTextArea.value = JSON.stringify(initialSchema, null, 2); // Set formatted JSON

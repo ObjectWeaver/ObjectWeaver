@@ -1,11 +1,10 @@
-
 package epstimic
 
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
+	"objectweaver/logger"
 	"objectweaver/orchestration/jos/domain"
 
 	"github.com/objectweaver/go-sdk/jsonSchema"
@@ -31,14 +30,14 @@ func NewKMeanEngine(model string, generator domain.Generator) EpstimicEngine {
 }
 
 func (k *KMeanEngine) Validate(results []TempResult) (TempResult, domain.ProviderMetadata, error) {
-	log.Printf("[KMeanEngine] Starting validation with %d results", len(results))
+	logger.Printf("[KMeanEngine] Starting validation with %d results", len(results))
 
 	kResults := make(chan *KMeanResult, len(results))
 
 	for _, res := range results {
 		go func(r TempResult) {
 			if r.Error != nil {
-				log.Printf("[KMeanEngine] Skipping result due to error: %v", r.Error)
+				logger.Printf("[KMeanEngine] Skipping result due to error: %v", r.Error)
 				kResults <- nil
 				return
 			}
@@ -55,11 +54,11 @@ func (k *KMeanEngine) Validate(results []TempResult) (TempResult, domain.Provide
 		}
 	}
 
-	log.Printf("[KMeanEngine] Successfully generated embeddings for %d out of %d results", len(kMeanResults), len(results))
+	logger.Printf("[KMeanEngine] Successfully generated embeddings for %d out of %d results", len(kMeanResults), len(results))
 
 	bestResult, metadata, err := k.calculateKMean(kMeanResults)
 	if err != nil {
-		log.Printf("[KMeanEngine ERROR] Failed to calculate k-mean: %v", err)
+		logger.Printf("[KMeanEngine ERROR] Failed to calculate k-mean: %v", err)
 		return TempResult{}, domain.ProviderMetadata{}, err
 	}
 
@@ -84,7 +83,7 @@ func (k *KMeanEngine) getEmbeddingForResult(result TempResult) *KMeanResult {
 	generationRequest := domain.NewGenerationRequest(result.Value.(string), embeddingDef)
 	genRes, err := k.generator.Generate(generationRequest)
 	if err != nil {
-		log.Printf("[KMeanEngine ERROR] Failed to generate embedding: %v", err)
+		logger.Printf("[KMeanEngine ERROR] Failed to generate embedding: %v", err)
 		return nil
 	}
 
@@ -94,18 +93,18 @@ func (k *KMeanEngine) getEmbeddingForResult(result TempResult) *KMeanResult {
 
 	jsonBytes, err := json.Marshal(genRes.Data())
 	if err != nil {
-		log.Printf("[KMeanEngine ERROR] Failed to marshal embedding response: %v", err)
+		logger.Printf("[KMeanEngine ERROR] Failed to marshal embedding response: %v", err)
 		return nil
 	}
 
 	var res EmbeddingResponse
 	err = json.Unmarshal(jsonBytes, &res)
 	if err != nil {
-		log.Printf("[KMeanEngine ERROR] Failed to unmarshal embedding response: %v", err)
+		logger.Printf("[KMeanEngine ERROR] Failed to unmarshal embedding response: %v", err)
 		return nil
 	}
 
-	log.Printf("[KMeanEngine] Generated embedding vector of size %d", len(res.Embedding))
+	logger.Printf("[KMeanEngine] Generated embedding vector of size %d", len(res.Embedding))
 
 	return &KMeanResult{
 		Completion: result.Value.(string),
@@ -121,12 +120,12 @@ func (k *KMeanEngine) calculateKMean(kMeanResults []KMeanResult) (TempResult, do
 		return TempResult{}, domain.ProviderMetadata{}, fmt.Errorf("no valid results to calculate k-mean")
 	}
 
-	log.Printf("[KMeanEngine] Calculating average embedding from %d results", len(kMeanResults))
+	logger.Printf("[KMeanEngine] Calculating average embedding from %d results", len(kMeanResults))
 
 	// Calculate the average embedding vector
 	avgEmbedding := k.calculateAverageEmbedding(kMeanResults)
 
-	log.Printf("[KMeanEngine] Comparing all results to find closest to average (embedding size: %d)", len(avgEmbedding))
+	logger.Printf("[KMeanEngine] Comparing all results to find closest to average (embedding size: %d)", len(avgEmbedding))
 
 	// Find the result closest to the average
 	bestIndex := 0
@@ -134,14 +133,14 @@ func (k *KMeanEngine) calculateKMean(kMeanResults []KMeanResult) (TempResult, do
 
 	for i := 1; i < len(kMeanResults); i++ {
 		distance := k.euclideanDistance(kMeanResults[i].Embedding, avgEmbedding)
-		log.Printf("[KMeanEngine] Result %d distance from average: %.6f", i, distance)
+		logger.Printf("[KMeanEngine] Result %d distance from average: %.6f", i, distance)
 		if distance < bestDistance {
 			bestDistance = distance
 			bestIndex = i
 		}
 	}
 
-	log.Printf("[KMeanEngine] Best result index: %d with distance: %.6f from average", bestIndex, bestDistance)
+	logger.Printf("[KMeanEngine] Best result index: %d with distance: %.6f from average", bestIndex, bestDistance)
 
 	bestResult := kMeanResults[bestIndex]
 
@@ -151,9 +150,9 @@ func (k *KMeanEngine) calculateKMean(kMeanResults []KMeanResult) (TempResult, do
 	// Store all results in metadata choices similar to LLM as judge
 	metadata.Choices = k.convertToChoices(kMeanResults, avgEmbedding)
 
-	log.Printf("[KMeanEngine] Selected completion (first 100 chars): %s...",
+	logger.Printf("[KMeanEngine] Selected completion (first 100 chars): %s...",
 		truncateString(bestResult.Completion, 100))
-	log.Printf("[KMeanEngine] Stored %d choices in metadata", len(metadata.Choices))
+	logger.Printf("[KMeanEngine] Stored %d choices in metadata", len(metadata.Choices))
 
 	// Create TempResult from the best KMeanResult
 	tempResult := TempResult{
@@ -219,7 +218,7 @@ func (k *KMeanEngine) convertToChoices(kMeanResults []KMeanResult, avgEmbedding 
 		}
 	}
 
-	log.Printf("[KMeanEngine] Converting %d results to choices (max distance: %.6f)", len(kMeanResults), maxDistance)
+	logger.Printf("[KMeanEngine] Converting %d results to choices (max distance: %.6f)", len(kMeanResults), maxDistance)
 
 	for i, result := range kMeanResults {
 		distance := k.euclideanDistance(result.Embedding, avgEmbedding)
@@ -234,7 +233,7 @@ func (k *KMeanEngine) convertToChoices(kMeanResults []KMeanResult, avgEmbedding 
 		// Score as integer (0-100 scale)
 		score := int(confidence * 100)
 
-		log.Printf("[KMeanEngine] Choice %d: distance=%.6f, confidence=%.2f, score=%d",
+		logger.Printf("[KMeanEngine] Choice %d: distance=%.6f, confidence=%.2f, score=%d",
 			i, distance, confidence, score)
 
 		// Convert float32 embeddings to float64 for domain.Choice

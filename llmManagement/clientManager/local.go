@@ -2,6 +2,7 @@ package clientManager
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,7 +21,6 @@ type LocalClientAdapter struct {
 	client                  *http.Client
 	requestBuilder          requestManagement.RequestBuilder
 	embeddingRequestBuilder requestManagement.EmbeddingRequestBuilder
-	requestConverter        requestManagement.RequestConverter
 	targetURL               string
 	authToken               string
 }
@@ -30,14 +30,12 @@ func NewLocalClientAdapter(
 	url, token string,
 	builder requestManagement.RequestBuilder,
 	embeddingBuilder requestManagement.EmbeddingRequestBuilder,
-	converter requestManagement.RequestConverter,
 	httpClient *http.Client,
 ) *LocalClientAdapter {
 	return &LocalClientAdapter{
 		client:                  httpClient,
 		requestBuilder:          builder,
 		embeddingRequestBuilder: embeddingBuilder,
-		requestConverter:        converter,
 		targetURL:               url,
 		authToken:               token,
 	}
@@ -68,10 +66,13 @@ func (h *LocalClientAdapter) processChat(inputs *llmManagement.Inputs) (*domain.
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	// Debug: Log the outgoing request
-
 	// 3. Create a standard *http.Request that the http.Client can send.
-	httpReq, err := http.NewRequest(http.MethodPost, h.targetURL, bytes.NewBuffer(reqBytes))
+	// Use context from inputs if available, otherwise use background
+	ctx := inputs.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, h.targetURL, bytes.NewBuffer(reqBytes))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new http request: %w", err)
 	}
@@ -87,11 +88,29 @@ func (h *LocalClientAdapter) processChat(inputs *llmManagement.Inputs) (*domain.
 	if err != nil {
 		return nil, fmt.Errorf("http client failed to process request: %w", err)
 	}
+	defer func() {
+		if response.Body != nil {
+			// Drain any remaining data to enable connection reuse
+			io.Copy(io.Discard, response.Body)
+			response.Body.Close()
+		}
+	}()
 
-	// 6. Convert the standard *http.Response back into the API-specific response type.
-	chatResponse, err := h.requestConverter.ToChatCompletionResponse(response)
+	// 6. Read response body once
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert http response: %w", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// 7. Check HTTP status code before attempting to unmarshal
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("chat api error (status %d): %s", response.StatusCode, string(body))
+	}
+
+	// 8. Directly unmarshal the OpenAI-formatted response
+	var chatResponse openai.ChatCompletionResponse
+	if err := json.Unmarshal(body, &chatResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal chat response: %w. Response body: %s", err, string(body))
 	}
 
 	return domain.CreateJobResult(&chatResponse, nil), nil
@@ -122,7 +141,12 @@ func (h *LocalClientAdapter) processEmbedding(inputs *llmManagement.Inputs) (*do
 		embeddingURL = embeddingURL[:len(embeddingURL)-len("/chat/completions")] + "/embeddings"
 	}
 
-	httpReq, err := http.NewRequest(http.MethodPost, embeddingURL, bytes.NewBuffer(reqBytes))
+	// Use context from inputs if available, otherwise use background
+	ctx := inputs.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, embeddingURL, bytes.NewBuffer(reqBytes))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new http request: %w", err)
 	}
@@ -138,7 +162,14 @@ func (h *LocalClientAdapter) processEmbedding(inputs *llmManagement.Inputs) (*do
 	if err != nil {
 		return nil, fmt.Errorf("http client failed to process embedding request: %w", err)
 	}
-	defer response.Body.Close()
+	// CRITICAL: Ensure body is ALWAYS closed and drained for connection reuse
+	defer func() {
+		if response.Body != nil {
+			// Drain any remaining data to enable connection reuse
+			io.Copy(io.Discard, response.Body)
+			response.Body.Close()
+		}
+	}()
 
 	// 6. Handle non-200 status codes
 	if response.StatusCode != http.StatusOK {

@@ -13,25 +13,14 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-// mockRequestConverter implements requestManagement.RequestConverter for testing
-type mockRequestConverter struct {
-	response openai.ChatCompletionResponse
-	err      error
-}
-
-func (m *mockRequestConverter) ToChatCompletionResponse(resp *http.Response) (openai.ChatCompletionResponse, error) {
-	return m.response, m.err
-}
-
 func TestNewLocalClientAdapter(t *testing.T) {
 	url := "http://example.com"
 	token := "test-token"
 	builder := &mockRequestBuilder{}
 	embeddingBuilder := &mockEmbeddingRequestBuilder{}
-	converter := &mockRequestConverter{}
 	httpClient := &http.Client{}
 
-	adapter := NewLocalClientAdapter(url, token, builder, embeddingBuilder, converter, httpClient)
+	adapter := NewLocalClientAdapter(url, token, builder, embeddingBuilder, httpClient)
 
 	if adapter.targetURL != url {
 		t.Errorf("expected targetURL %s, got %s", url, adapter.targetURL)
@@ -41,9 +30,6 @@ func TestNewLocalClientAdapter(t *testing.T) {
 	}
 	if adapter.requestBuilder != builder {
 		t.Error("requestBuilder not set correctly")
-	}
-	if adapter.requestConverter != converter {
-		t.Error("requestConverter not set correctly")
 	}
 	if adapter.client != httpClient {
 		t.Error("httpClient not set correctly")
@@ -88,10 +74,9 @@ func TestLocalClientAdapter_Process_Success(t *testing.T) {
 
 	builder := &mockRequestBuilder{request: mockReq}
 	embeddingBuilder := &mockEmbeddingRequestBuilder{}
-	converter := &mockRequestConverter{response: expectedResponse}
 	httpClient := server.Client()
 
-	adapter := NewLocalClientAdapter(server.URL, "test-token", builder, embeddingBuilder, converter, httpClient)
+	adapter := NewLocalClientAdapter(server.URL, "test-token", builder, embeddingBuilder, httpClient)
 
 	result, err := adapter.Process(inputs)
 	if err != nil {
@@ -108,10 +93,9 @@ func TestLocalClientAdapter_Process_Success(t *testing.T) {
 func TestLocalClientAdapter_Process_BuildRequestError(t *testing.T) {
 	builder := &mockRequestBuilder{err: errors.New("build error")}
 	embeddingBuilder := &mockEmbeddingRequestBuilder{}
-	converter := &mockRequestConverter{}
 	httpClient := &http.Client{}
 
-	adapter := NewLocalClientAdapter("http://example.com", "", builder, embeddingBuilder, converter, httpClient)
+	adapter := NewLocalClientAdapter("http://example.com", "", builder, embeddingBuilder, httpClient)
 
 	_, err := adapter.Process(&llmManagement.Inputs{})
 	if err == nil {
@@ -131,15 +115,13 @@ func TestLocalClientAdapter_Process_MarshalError(t *testing.T) {
 }
 
 func TestLocalClientAdapter_Process_HTTPRequestCreationError(t *testing.T) {
-	// http.NewRequest fails if method is invalid, but POST is valid.
-	// URL could be invalid, but let's use a bad URL.
+	// Invalid URL
 	builder := &mockRequestBuilder{request: openai.ChatCompletionRequest{}}
 	embeddingBuilder := &mockEmbeddingRequestBuilder{}
-	converter := &mockRequestConverter{}
 	httpClient := &http.Client{}
 
 	// Invalid URL
-	adapter := NewLocalClientAdapter("http://invalid url", "", builder, embeddingBuilder, converter, httpClient)
+	adapter := NewLocalClientAdapter("http://invalid url", "", builder, embeddingBuilder, httpClient)
 
 	_, err := adapter.Process(&llmManagement.Inputs{})
 	if err == nil {
@@ -155,10 +137,9 @@ func TestLocalClientAdapter_Process_HTTPClientError(t *testing.T) {
 	// For simplicity, use a non-existent server.
 	builder := &mockRequestBuilder{request: openai.ChatCompletionRequest{}}
 	embeddingBuilder := &mockEmbeddingRequestBuilder{}
-	converter := &mockRequestConverter{}
 	httpClient := &http.Client{Timeout: 0} // No timeout, but still.
 
-	adapter := NewLocalClientAdapter("http://nonexistent", "", builder, embeddingBuilder, converter, httpClient)
+	adapter := NewLocalClientAdapter("http://nonexistent", "", builder, embeddingBuilder, httpClient)
 
 	_, err := adapter.Process(&llmManagement.Inputs{})
 	if err == nil {
@@ -169,26 +150,25 @@ func TestLocalClientAdapter_Process_HTTPClientError(t *testing.T) {
 	}
 }
 
-func TestLocalClientAdapter_Process_ConversionError(t *testing.T) {
+func TestLocalClientAdapter_Process_UnmarshalError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("{}")) // Valid JSON
+		w.Write([]byte("invalid json")) // Invalid JSON
 	}))
 	defer server.Close()
 
 	builder := &mockRequestBuilder{request: openai.ChatCompletionRequest{}}
 	embeddingBuilder := &mockEmbeddingRequestBuilder{}
-	converter := &mockRequestConverter{err: errors.New("conversion error")}
 	httpClient := server.Client()
 
-	adapter := NewLocalClientAdapter(server.URL, "", builder, embeddingBuilder, converter, httpClient)
+	adapter := NewLocalClientAdapter(server.URL, "", builder, embeddingBuilder, httpClient)
 
 	_, err := adapter.Process(&llmManagement.Inputs{})
 	if err == nil {
-		t.Error("expected error from ToChatCompletionResponse")
+		t.Error("expected error from unmarshaling")
 	}
-	if !bytes.Contains([]byte(err.Error()), []byte("failed to convert http response")) {
-		t.Errorf("expected error message containing 'failed to convert http response', got %s", err.Error())
+	if !bytes.Contains([]byte(err.Error()), []byte("failed to unmarshal")) {
+		t.Errorf("expected error message containing 'failed to unmarshal', got %s", err.Error())
 	}
 }
 
@@ -204,10 +184,9 @@ func TestLocalClientAdapter_Process_NoAuthToken(t *testing.T) {
 
 	builder := &mockRequestBuilder{request: openai.ChatCompletionRequest{}}
 	embeddingBuilder := &mockEmbeddingRequestBuilder{}
-	converter := &mockRequestConverter{response: openai.ChatCompletionResponse{}}
 	httpClient := server.Client()
 
-	adapter := NewLocalClientAdapter(server.URL, "", builder, embeddingBuilder, converter, httpClient) // No token
+	adapter := NewLocalClientAdapter(server.URL, "", builder, embeddingBuilder, httpClient) // No token
 
 	_, err := adapter.Process(&llmManagement.Inputs{})
 	if err != nil {

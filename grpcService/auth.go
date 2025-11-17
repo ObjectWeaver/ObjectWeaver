@@ -23,9 +23,6 @@ func AuthInterceptor(
 		return nil, errors.New("missing metadata")
 	}
 
-	// Log the metadata for debugging purposes
-	fmt.Printf("Metadata received: %v\n", md)
-
 	// Get the API key from the metadata, using a custom header (e.g., "x-api-key")
 	apiKey, ok := md["x-api-key"]
 	if !ok || len(apiKey) == 0 {

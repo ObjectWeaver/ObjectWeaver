@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // Define custom metrics
@@ -141,4 +142,9 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 		httpResponseSize.WithLabelValues(r.Method, r.URL.Path).Observe(float64(rw.Size))
 		httpRequestSize.WithLabelValues(r.Method, r.URL.Path).Observe(float64(requestSize))
 	})
+}
+
+// PrometheusMetricsHandler exposes the /metrics endpoint for Prometheus scraping
+func PrometheusMetricsHandler(w http.ResponseWriter, r *http.Request) {
+	promhttp.Handler().ServeHTTP(w, r)
 }

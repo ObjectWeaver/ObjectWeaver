@@ -32,7 +32,7 @@ func TestGeneratorConfig_WithCache(t *testing.T) {
 	}
 }
 
-type mockPlugin struct {}
+type mockPlugin struct{}
 
 func (m *mockPlugin) Name() string {
 	return "mockPlugin"
@@ -42,7 +42,7 @@ func (m *mockPlugin) Version() string {
 	return "1.0.0"
 }
 
-func (m *mockPlugin) Initialize(config map[string]interface{}) (error) {
+func (m *mockPlugin) Initialize(config map[string]interface{}) error {
 	return nil
 }
 

@@ -62,7 +62,7 @@ func TestOpenAiModelConverter_Convert(t *testing.T) {
 func TestOpenAiModelConverterDirectUsage(t *testing.T) {
 	// Test direct struct usage
 	converter := &OpenAiModelConverter{}
-	
+
 	result := converter.Convert("test-model")
 	if result != "gpt-4-turbo" {
 		t.Errorf("Expected 'gpt-4-turbo', got '%s'", result)
@@ -72,7 +72,7 @@ func TestOpenAiModelConverterDirectUsage(t *testing.T) {
 func TestOpenAiModelConverterInterface(t *testing.T) {
 	// Verify the struct implements the interface correctly
 	var converter ModelConverter = &OpenAiModelConverter{}
-	
+
 	models := []string{"gpt-3.5-turbo", "gpt-4", "claude-3", ""}
 	for _, model := range models {
 		result := converter.Convert(model)
@@ -84,7 +84,7 @@ func TestOpenAiModelConverterInterface(t *testing.T) {
 
 func TestOpenAiModelConverterConsistency(t *testing.T) {
 	converter := NewOpenAiModelConverter()
-	
+
 	// Call multiple times with different inputs to verify consistency
 	inputs := []string{"model1", "model2", "model3", ""}
 	for _, input := range inputs {

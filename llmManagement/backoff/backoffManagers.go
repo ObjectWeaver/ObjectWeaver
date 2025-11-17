@@ -1,8 +1,8 @@
 package backoff
 
 import (
-	"log"
 	"math/rand"
+	"objectweaver/logger"
 	"sync"
 	"time"
 )
@@ -18,7 +18,7 @@ func (b *NoBackoff) ActivateBackoff(workerID int, retryAfter time.Duration) {
 	jitter := time.Duration(rand.Intn(250))
 	pauseDuration := 200*time.Millisecond + jitter
 	if b.Verbose {
-		log.Printf("WARN: Rate limit hit. Worker %d pausing for %v before retry.", workerID, pauseDuration)
+		logger.Printf("WARN: Rate limit hit. Worker %d pausing for %v before retry.", workerID, pauseDuration)
 	}
 	time.Sleep(pauseDuration)
 }
@@ -49,7 +49,7 @@ func (b *GlobalExponentialBackoff) ApplyBackoff(workerID int) {
 
 	if sleepDuration > 0 {
 		if b.Verbose {
-			log.Printf("Global backoff active. Worker %d pausing for %v.", workerID, sleepDuration.Round(time.Millisecond))
+			logger.Printf("Global backoff active. Worker %d pausing for %v.", workerID, sleepDuration.Round(time.Millisecond))
 		}
 		time.Sleep(sleepDuration)
 	}
@@ -79,7 +79,7 @@ func (b *GlobalExponentialBackoff) ActivateBackoff(workerID int, retryAfter time
 	b.backoffUntil = time.Now().Add(totalPause)
 
 	if b.Verbose {
-		log.Printf("Rate limit hit by worker %d. Activating GLOBAL backoff for %v.", workerID, totalPause.Round(time.Millisecond))
+		logger.Printf("Rate limit hit by worker %d. Activating GLOBAL backoff for %v.", workerID, totalPause.Round(time.Millisecond))
 	}
 }
 

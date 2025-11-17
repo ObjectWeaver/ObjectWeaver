@@ -10,7 +10,7 @@ type EmbeddingRequestBuilder interface {
 	BuildRequest(inputs *llmManagement.Inputs) (openai.EmbeddingRequest, error)
 }
 
-type embeddingOpenAIReqBuilder struct {}
+type embeddingOpenAIReqBuilder struct{}
 
 func NewEmbeddingOpenAIReqBuilder() EmbeddingRequestBuilder {
 	return &embeddingOpenAIReqBuilder{}

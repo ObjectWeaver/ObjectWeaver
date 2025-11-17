@@ -3,25 +3,63 @@ package execution
 import (
 	"context"
 	"fmt"
-	"log"
+	"objectweaver/logger"
 	"objectweaver/orchestration/jos/domain"
+	"sync"
+	"time"
 
 	"github.com/objectweaver/go-sdk/jsonSchema"
 )
 
-// FieldProcessor handles processing of object properties (fields)
-// This is the main orchestrator for recursive field generation
 type FieldProcessor struct {
 	llmProvider          domain.LLMProvider
 	promptBuilder        domain.PromptBuilder
-	generator            domain.Generator // For recursive loops and decision points
+	generator            domain.Generator
 	decisionProcessor    *DecisionProcessor
 	epstimicOrchestrator EpstimicOrchestrator
 }
 
-// EpstimicOrchestrator is an interface to avoid import cycle
 type EpstimicOrchestrator interface {
 	EpstimicValidation(task *domain.FieldTask, context *domain.ExecutionContext, generateFn func(*domain.FieldTask, *domain.ExecutionContext) (any, *domain.ProviderMetadata, error)) (*domain.TaskResult, *domain.ProviderMetadata, error)
+}
+
+type ResultCollector interface {
+	Collect(ctx context.Context, results []*domain.TaskResult) error
+}
+
+type ChannelCollector struct {
+	ch chan<- []*domain.TaskResult
+}
+
+func (c *ChannelCollector) Collect(ctx context.Context, results []*domain.TaskResult) error {
+	select {
+	case c.ch <- results:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+type MapCollector struct {
+	results  map[string]interface{}
+	metadata *domain.ResultMetadata
+	mu       sync.Mutex
+}
+
+func (c *MapCollector) Collect(ctx context.Context, results []*domain.TaskResult) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for _, result := range results {
+		if result != nil {
+			c.results[result.Key()] = result.Value()
+			if result.Metadata() != nil && c.metadata != nil {
+				c.metadata.AddCost(result.Metadata().Cost)
+				c.metadata.AddTokens(result.Metadata().TokensUsed)
+			}
+		}
+	}
+	return nil
 }
 
 func NewFieldProcessor(llmProvider domain.LLMProvider, promptBuilder domain.PromptBuilder) *FieldProcessor {
@@ -31,112 +69,136 @@ func NewFieldProcessor(llmProvider domain.LLMProvider, promptBuilder domain.Prom
 	}
 }
 
-// SetGenerator sets the generator for recursive processing (circular dependency resolution)
 func (fp *FieldProcessor) SetGenerator(generator domain.Generator) {
 	fp.generator = generator
-	// Create decision processor now that we have the generator
 	fp.decisionProcessor = NewDecisionProcessor(generator)
 }
 
-// SetEpstimicOrchestrator sets the epstimic orchestrator for validation
 func (fp *FieldProcessor) SetEpstimicOrchestrator(orchestrator EpstimicOrchestrator) {
 	fp.epstimicOrchestrator = orchestrator
 }
 
-// ProcessFields processes all properties of an object definition
-// Returns a channel of results for concurrent processing
-func (fp *FieldProcessor) ProcessFields(ctx context.Context, schema *jsonSchema.Definition, parentTask *domain.FieldTask, execContext *domain.ExecutionContext) <-chan *domain.TaskResult {
-	ch := make(chan *domain.TaskResult)
+func (fp *FieldProcessor) ProcessFieldsStart(ctx context.Context, schema *jsonSchema.Definition, parentTask *domain.FieldTask, execContext *domain.ExecutionContext) <-chan []*domain.TaskResult {
+	bufferSize := 50 // Reasonable default for most cases
+	if schema != nil && schema.Properties != nil {
+		propertyCount := len(schema.Properties)
+		if propertyCount > 100 {
+			bufferSize = 100
+		} else if propertyCount > 10 {
+			bufferSize = propertyCount
+		}
+	}
+	ch := make(chan []*domain.TaskResult, bufferSize)
 
 	go func() {
 		defer close(ch)
-
-		if schema == nil || schema.Properties == nil {
-			log.Printf("Schema or Properties is nil")
-			return
-		}
-
-		// Get ordered and remaining keys (for sequential vs concurrent processing)
-		orderedKeys, remainingKeys := getOrderedKeys(schema)
-
-		// Process ordered keys sequentially (dependencies)
-		currentGen := make(map[string]interface{})
-		fp.processSequentialFields(ctx, ch, schema, parentTask, execContext, currentGen, orderedKeys)
-
-		// Process remaining keys concurrently
-		fp.processConcurrentFields(ctx, ch, schema, parentTask, execContext, currentGen, remainingKeys)
+		collector := &ChannelCollector{ch: ch}
+		fp.ProcessFields(ctx, schema, parentTask, execContext, collector)
 	}()
 
 	return ch
 }
 
-// processSequentialFields handles fields that must be processed in order
+func (fp *FieldProcessor) ProcessFields(ctx context.Context, schema *jsonSchema.Definition, parentTask *domain.FieldTask, execContext *domain.ExecutionContext, collector ResultCollector) {
+	if schema == nil || schema.Properties == nil {
+		logger.Printf("Schema or Properties is nil")
+		return
+	}
+
+	orderedKeys, remainingKeys := getOrderedKeys(schema)
+
+	currentGen := make(map[string]interface{})
+	fp.processSequentialFields(ctx, collector, schema, parentTask, execContext, currentGen, orderedKeys)
+
+	fp.processConcurrentFieldsAndWait(ctx, collector, schema, parentTask, execContext, currentGen, remainingKeys)
+}
+
+type fieldContinuation struct {
+	ctx         context.Context
+	collector   ResultCollector
+	wg          sync.WaitGroup
+	mu          sync.Mutex
+	fieldCount  int
+	completedAt time.Time
+}
+
+func (fc *fieldContinuation) waitForCompletion() {
+	start := time.Now()
+	fc.wg.Wait()
+	fc.mu.Lock()
+	fc.completedAt = time.Now()
+	fc.mu.Unlock()
+	waitDuration := time.Since(start)
+	logger.Printf("[FieldProcessor] Continuation completed: %d fields processed in %v", fc.fieldCount, waitDuration)
+}
+
 func (fp *FieldProcessor) processSequentialFields(
 	ctx context.Context,
-	ch chan<- *domain.TaskResult,
+	collector ResultCollector,
 	schema *jsonSchema.Definition,
 	parentTask *domain.FieldTask,
 	execContext *domain.ExecutionContext,
 	currentGen map[string]interface{},
 	orderedKeys []string,
 ) {
-	for _, key := range orderedKeys {
-		// Check if context is cancelled
+	batches := fp.analyzeFieldDependencies(orderedKeys, schema)
+	logger.Printf("[FieldProcessor] ProcessingOrder analysis: %d fields split into %d batches", len(orderedKeys), len(batches))
+
+	for batchIdx, batch := range batches {
 		select {
 		case <-ctx.Done():
-			log.Printf("[FieldProcessor] Context cancelled during sequential processing: %v", ctx.Err())
+			logger.Printf("[FieldProcessor] Context cancelled during batch %d/%d", batchIdx+1, len(batches))
 			return
 		default:
 		}
 
-		childDef := schema.Properties[key]
-		childDefCopy := childDef // Copy for goroutine safety
+		logger.Printf("[FieldProcessor] Processing batch %d/%d with %d independent fields", batchIdx+1, len(batches), len(batch))
 
-		// Create field task
-		task := domain.NewFieldTask(key, &childDefCopy, parentTask)
+		if len(batch) == 1 {
+			// Process single field synchronously
+			key := batch[0]
+			childDef := schema.Properties[key]
+			childDefCopy := childDef
+			task := domain.NewFieldTask(key, &childDefCopy, parentTask)
 
-		// Process the field and get all results (original + decision branches)
-		results := fp.processField(ctx, task, execContext)
+			results := fp.processField(ctx, task, execContext)
 
-		// Add all results to current generation and send to channel
-		for _, result := range results {
-			if result != nil {
-				currentGen[result.Key()] = result.Value()
-				execContext.SetGeneratedValue(result.Key(), result.Value())
-				ch <- result
+			if len(results) > 0 {
+				for _, result := range results {
+					if result != nil {
+						currentGen[result.Key()] = result.Value()
+						execContext.SetGeneratedValue(result.Key(), result.Value())
+					}
+				}
+				if err := collector.Collect(ctx, results); err != nil {
+					logger.Printf("[FieldProcessor] Context cancelled during collect in sequential processing")
+					return
+				}
 			}
+		} else {
+			// Process multiple independent fields concurrently
+			fp.processSpeculativeBatch(ctx, collector, schema, parentTask, execContext, currentGen, batch)
 		}
 	}
 }
 
-// processField processes a field and handles decision points
-// Returns multiple results if decision point creates additional fields
 func (fp *FieldProcessor) processField(ctx context.Context, task *domain.FieldTask, execContext *domain.ExecutionContext) []*domain.TaskResult {
-	// Check if context is cancelled
 	select {
 	case <-ctx.Done():
-		log.Printf("[FieldProcessor] Context cancelled during processField: %v", ctx.Err())
+		logger.Printf("[FieldProcessor] Context cancelled during processField: %v", ctx.Err())
 		return nil
 	default:
 	}
 
-	// Special case: Object types are processed by recursively calling ProcessFields
-	// This maintains the concurrent/sequential ordering logic at every level
 	if task.Definition().Type == jsonSchema.Object {
 		return fp.processObjectField(ctx, task, execContext)
 	}
 
-	// Get appropriate processor for non-object types
 	processor := fp.getProcessorForType(task.Definition())
-	if processor == nil {
-		log.Printf("No processor found for type %s", task.Definition().Type)
-		return nil
-	}
 
-	// Process the field
 	result, err := processor.Process(ctx, task, execContext)
 	if err != nil {
-		log.Printf("Error processing field %s: %v", task.Key(), err)
+		logger.Printf("Error processing field %s: %v", task.Key(), err)
 		return nil
 	}
 
@@ -144,160 +206,181 @@ func (fp *FieldProcessor) processField(ctx context.Context, task *domain.FieldTa
 		return nil
 	}
 
-	// Add result to context so decision points can reference it
 	execContext.SetGeneratedValue(result.Key(), result.Value())
-	log.Printf("[FieldProcessor] Generated field '%s', value: %v", result.Key(), result.Value())
+	logger.Printf("[FieldProcessor] Generated field '%s', value: %v", result.Key(), result.Value())
 
-	// Score if criteria exist
-	log.Printf("[FieldProcessor] Checking scoring criteria for field '%s': %v", task.Key(), task.Definition().ScoringCriteria != nil)
+	logger.Printf("[FieldProcessor] Checking scoring criteria for field '%s': %v", task.Key(), task.Definition().ScoringCriteria != nil)
 	if task.Definition().ScoringCriteria != nil {
-		log.Printf("[FieldProcessor] Evaluating scores for field '%s'", task.Key())
+		logger.Printf("[FieldProcessor] Evaluating scores for field '%s'", task.Key())
 		scores, err := fp.evaluateScores(ctx, result, task.Definition().ScoringCriteria, execContext)
 		if err != nil {
-			log.Printf("[FieldProcessor] Warning: scoring failed for field %s: %v", task.Key(), err)
+			logger.Printf("[FieldProcessor] Warning: scoring failed for field %s: %v", task.Key(), err)
 		} else {
-			// Attach scores to result metadata
 			fp.attachScoresToResult(result, scores)
-			log.Printf("[FieldProcessor] Field '%s' scores: %v", result.Key(), scores)
+			logger.Printf("[FieldProcessor] Field '%s' scores: %v", result.Key(), scores)
 		}
 	}
 
-	// Check for decision point
-	log.Printf("[FieldProcessor] Checking decision point for field '%s': %v", task.Key(), task.Definition().DecisionPoint != nil)
+	logger.Printf("[FieldProcessor] Checking decision point for field '%s': %v", task.Key(), task.Definition().DecisionPoint != nil)
 	if task.Definition().DecisionPoint != nil {
-		log.Printf("[FieldProcessor] Processing decision point for field %s", task.Key())
+		logger.Printf("[FieldProcessor] Processing decision point for field %s", task.Key())
 
 		results, err := fp.decisionProcessor.ProcessDecisionPoint(ctx, task, result, execContext)
 		if err != nil {
-			log.Printf("[FieldProcessor] Decision point processing failed: %v", err)
-			return []*domain.TaskResult{result} // Return original result on error
+			logger.Printf("[FieldProcessor] Decision point processing failed: %v", err)
+			return []*domain.TaskResult{result}
 		}
 
-		// Update context with branch results
 		if len(results) > 1 {
-			log.Printf("[FieldProcessor] Decision point created %d additional fields", len(results)-1)
+			logger.Printf("[FieldProcessor] Decision point created %d additional fields", len(results)-1)
 			for _, branchResult := range results[1:] {
 				execContext.SetGeneratedValue(branchResult.Key(), branchResult.Value())
-				log.Printf("[FieldProcessor] Added branch field to context: %s = %v", branchResult.Key(), branchResult.Value())
+				logger.Printf("[FieldProcessor] Added branch field to context: %s = %v", branchResult.Key(), branchResult.Value())
 			}
 		}
 
 		return results
 	}
 
-	// No decision point - return single result
 	return []*domain.TaskResult{result}
 }
 
-// processObjectField handles object-type fields by recursively processing their properties
 func (fp *FieldProcessor) processObjectField(ctx context.Context, task *domain.FieldTask, execContext *domain.ExecutionContext) []*domain.TaskResult {
-	// Process nested fields recursively using the same FieldProcessor logic
-	// This ensures concurrent/sequential ordering is maintained at every nesting level
-	resultsCh := fp.ProcessFields(ctx, task.Definition(), task, execContext)
+	logger.Printf("[FieldProcessor] Processing nested object field '%s'", task.Key())
 
-	// Collect all nested results into a map
 	nestedResults := make(map[string]interface{})
+	aggregatedMetadata := domain.NewResultMetadata()
 
-	for result := range resultsCh {
-		// Check if context is cancelled
-		select {
-		case <-ctx.Done():
-			log.Printf("[FieldProcessor] Context cancelled during object field processing: %v", ctx.Err())
-			return nil
-		default:
-		}
-
-		if result != nil {
-			nestedResults[result.Key()] = result.Value()
-		}
+	collector := &MapCollector{
+		results:  nestedResults,
+		metadata: aggregatedMetadata,
 	}
 
-	// Create result containing the nested object
-	metadata := domain.NewResultMetadata()
+	// Process nested fields synchronously to reuse stack
+	fp.ProcessFields(ctx, task.Definition(), task, execContext, collector)
 
-	result := domain.NewTaskResult(task.ID(), task.Key(), nestedResults, metadata)
+	result := domain.NewTaskResult(task.ID(), task.Key(), nestedResults, aggregatedMetadata)
 	result = result.WithPath(task.Path())
 
 	return []*domain.TaskResult{result}
 }
 
-// processConcurrentFields handles fields that can be processed in parallel
-func (fp *FieldProcessor) processConcurrentFields(
+func (fp *FieldProcessor) processConcurrentFieldsAndWait(
 	ctx context.Context,
-	ch chan<- *domain.TaskResult,
+	collector ResultCollector,
 	schema *jsonSchema.Definition,
 	parentTask *domain.FieldTask,
 	execContext *domain.ExecutionContext,
 	currentGen map[string]interface{},
 	remainingKeys []string,
 ) {
-	// Use a result channel to collect concurrent results
-	resultCh := make(chan []*domain.TaskResult, len(remainingKeys))
+	if len(remainingKeys) == 0 {
+		return
+	}
 
-	for _, key := range remainingKeys {
-		childDef := schema.Properties[key]
-		childDefCopy := childDef // Copy for goroutine safety
+	wp := execContext.WorkerPool()
+	availableWorkers := wp.AvailableWorkers()
 
-		go func(k string, def jsonSchema.Definition) {
-			// Check if context is cancelled
+	// If less than 10% of workers are available, run sequentially to avoid deadlock
+	lowWorkerThreshold := wp.MaxWorkers() / 10
+	if lowWorkerThreshold < 10 {
+		lowWorkerThreshold = 10
+	}
+
+	if availableWorkers < lowWorkerThreshold {
+		logger.Printf("[FieldProcessor] Low worker availability (%d < %d), processing %d fields sequentially to avoid deadlock",
+			availableWorkers, lowWorkerThreshold, len(remainingKeys))
+
+		for _, key := range remainingKeys {
 			select {
 			case <-ctx.Done():
-				log.Printf("[FieldProcessor] Context cancelled, skipping field: %s", k)
-				resultCh <- []*domain.TaskResult{}
 				return
 			default:
 			}
 
-			// Create field task
-			task := domain.NewFieldTask(k, &def, parentTask)
+			childDef := schema.Properties[key]
+			childDefCopy := childDef
+			task := domain.NewFieldTask(key, &childDefCopy, parentTask)
 
-			// Process the field with decision point support
 			results := fp.processField(ctx, task, execContext)
 
-			if results != nil {
-				resultCh <- results
-			} else {
-				resultCh <- []*domain.TaskResult{}
-			}
-		}(key, childDefCopy)
-	}
-
-	// Collect all results
-	for i := 0; i < len(remainingKeys); i++ {
-		// Check if context is cancelled
-		select {
-		case <-ctx.Done():
-			log.Printf("[FieldProcessor] Context cancelled during concurrent result collection: %v", ctx.Err())
-			return
-		case results := <-resultCh:
-			for _, result := range results {
-				if result != nil {
-					ch <- result
+			if len(results) > 0 {
+				if err := collector.Collect(ctx, results); err != nil {
+					return
 				}
 			}
 		}
+		return
 	}
+
+	continuation := &fieldContinuation{
+		ctx:        ctx,
+		collector:  collector,
+		fieldCount: len(remainingKeys),
+	}
+
+	logger.Printf("[FieldProcessor] Starting work continuation for %d concurrent fields", len(remainingKeys))
+
+	for _, key := range remainingKeys {
+		childDef := schema.Properties[key]
+		childDefCopy := childDef
+
+		fieldKey := key
+		fieldDef := childDefCopy
+
+		continuation.wg.Add(1)
+
+		submitted := execContext.WorkerPool().SubmitWithContext(ctx, func() {
+			defer continuation.wg.Done()
+
+			select {
+			case <-ctx.Done():
+				logger.Printf("[FieldProcessor] Context cancelled, skipping field: %s", fieldKey)
+				return
+			default:
+			}
+
+			task := domain.NewFieldTask(fieldKey, &fieldDef, parentTask)
+			results := fp.processField(ctx, task, execContext)
+
+			select {
+			case <-ctx.Done():
+				logger.Printf("[FieldProcessor] Context cancelled after processing field: %s", fieldKey)
+				return
+			default:
+			}
+
+			if len(results) > 0 {
+				if err := collector.Collect(ctx, results); err != nil {
+					logger.Printf("[FieldProcessor] Context cancelled during collect for field: %s", fieldKey)
+					return
+				}
+			}
+		})
+
+		if !submitted {
+			logger.Printf("[FieldProcessor] Failed to submit field %s, marking as complete", fieldKey)
+			continuation.wg.Done()
+		}
+	}
+
+	continuation.waitForCompletion()
 }
 
-// getProcessorForType returns the appropriate processor for a given type
 func (fp *FieldProcessor) getProcessorForType(def *jsonSchema.Definition) domain.TypeProcessor {
-	// Check for byte operations first (TTS, Image, STT)
 	if def.TextToSpeech != nil || def.Image != nil || def.SpeechToText != nil {
 		return NewByteProcessor(fp.llmProvider, fp.promptBuilder)
 	}
 
-	// Check for recursive loop
 	if def.RecursiveLoop != nil && fp.generator != nil {
 		baseProcessor := fp.getBaseProcessorForType(def.Type)
 		decisionProcessor := NewDecisionProcessor(fp.generator)
 		return NewRecursiveLoopProcessor(baseProcessor, fp.generator, decisionProcessor)
 	}
 
-	// Route by type
 	return fp.getBaseProcessorForType(def.Type)
 }
 
-// getBaseProcessorForType returns the base processor for a type (without special handling)
 func (fp *FieldProcessor) getBaseProcessorForType(schemaType jsonSchema.DataType) domain.TypeProcessor {
 	switch schemaType {
 	case jsonSchema.Array:
@@ -306,21 +389,18 @@ func (fp *FieldProcessor) getBaseProcessorForType(schemaType jsonSchema.DataType
 		return NewMapProcessorWithFieldProcessor(fp.llmProvider, fp.promptBuilder, fp)
 	case jsonSchema.Boolean:
 		processor := NewBooleanProcessor(fp.llmProvider, fp.promptBuilder)
-		// Propagate epstimic orchestrator if set
 		if fp.epstimicOrchestrator != nil {
 			processor.SetEpstimicOrchestrator(fp.epstimicOrchestrator)
 		}
 		return processor
 	case jsonSchema.Number, jsonSchema.Integer:
 		processor := NewNumberProcessor(fp.llmProvider, fp.promptBuilder)
-		// Propagate epstimic orchestrator if set
 		if fp.epstimicOrchestrator != nil {
 			processor.SetEpstimicOrchestrator(fp.epstimicOrchestrator)
 		}
 		return processor
 	default:
 		processor := NewPrimitiveProcessor(fp.llmProvider, fp.promptBuilder)
-		// Propagate epstimic orchestrator if set
 		if fp.epstimicOrchestrator != nil {
 			processor.SetEpstimicOrchestrator(fp.epstimicOrchestrator)
 		}
@@ -328,7 +408,6 @@ func (fp *FieldProcessor) getBaseProcessorForType(schemaType jsonSchema.DataType
 	}
 }
 
-// getOrderedKeys returns keys that need sequential processing and keys that can be parallel
 func getOrderedKeys(schema *jsonSchema.Definition) ([]string, []string) {
 	var remainingKeys []string
 	allKeys := make(map[string]struct{})
@@ -349,14 +428,177 @@ func getOrderedKeys(schema *jsonSchema.Definition) ([]string, []string) {
 	return schema.ProcessingOrder, remainingKeys
 }
 
-// evaluateScores uses the generator to score the generated content
+func (fp *FieldProcessor) analyzeFieldDependencies(orderedKeys []string, schema *jsonSchema.Definition) [][]string {
+	if len(orderedKeys) == 0 {
+		return nil
+	}
+
+	// Map each field to its dependencies via SelectFields
+	dependencies := make(map[string]map[string]bool)
+	for _, key := range orderedKeys {
+		fieldDef := schema.Properties[key]
+		if len(fieldDef.SelectFields) > 0 {
+			deps := make(map[string]bool)
+			for _, fieldPath := range fieldDef.SelectFields {
+				// Extract root field name from path (e.g., "car.color" -> "car")
+				rootField := extractRootFieldName(fieldPath)
+				if rootField != "" && rootField != key {
+					deps[rootField] = true
+				}
+			}
+			if len(deps) > 0 {
+				dependencies[key] = deps
+			}
+		}
+	}
+
+	batches := make([][]string, 0)
+	processed := make(map[string]bool)
+
+	for len(processed) < len(orderedKeys) {
+		currentBatch := make([]string, 0)
+
+		for _, key := range orderedKeys {
+			if processed[key] {
+				continue
+			}
+
+			// Check if all dependencies are satisfied
+			canProcess := true
+			if deps, hasDeps := dependencies[key]; hasDeps {
+				for dep := range deps {
+					if !processed[dep] {
+						canProcess = false
+						break
+					}
+				}
+			}
+
+			if !canProcess {
+				continue
+			}
+
+			fieldDef := schema.Properties[key]
+
+			// Avoid batching objects as they're complex
+			if fieldDef.Type == jsonSchema.Object {
+				if len(currentBatch) > 0 {
+					// Flush current batch, process object alone
+					break
+				}
+				currentBatch = append(currentBatch, key)
+				break
+			}
+
+			// Limit batch size to avoid overwhelming the worker pool
+			if len(currentBatch) >= 5 {
+				break
+			}
+
+			currentBatch = append(currentBatch, key)
+		}
+
+		for _, key := range currentBatch {
+			processed[key] = true
+		}
+
+		if len(currentBatch) > 0 {
+			batches = append(batches, currentBatch)
+		} else {
+			// If we can't make progress, force the next unprocessed field
+			for _, key := range orderedKeys {
+				if !processed[key] {
+					logger.Printf("[FieldProcessor] Warning: circular or unresolvable dependency detected for field '%s', processing anyway", key)
+					batches = append(batches, []string{key})
+					processed[key] = true
+					break
+				}
+			}
+		}
+	}
+
+	return batches
+}
+
+func extractRootFieldName(fieldPath string) string {
+	if fieldPath == "" {
+		return ""
+	}
+
+	// Split by dot and return first part
+	for i, char := range fieldPath {
+		if char == '.' {
+			return fieldPath[:i]
+		}
+	}
+
+	return fieldPath
+}
+
+func (fp *FieldProcessor) processSpeculativeBatch(
+	ctx context.Context,
+	collector ResultCollector,
+	schema *jsonSchema.Definition,
+	parentTask *domain.FieldTask,
+	execContext *domain.ExecutionContext,
+	currentGen map[string]interface{},
+	batch []string,
+) {
+	continuation := &fieldContinuation{
+		ctx:        ctx,
+		collector:  collector,
+		fieldCount: len(batch),
+	}
+
+	logger.Printf("[FieldProcessor] Processing speculative batch: %d fields", len(batch))
+
+	for _, key := range batch {
+		childDef := schema.Properties[key]
+		childDefCopy := childDef
+
+		fieldKey := key
+		fieldDef := childDefCopy
+
+		continuation.wg.Add(1)
+
+		submitted := execContext.WorkerPool().SubmitWithContext(ctx, func() {
+			defer continuation.wg.Done()
+
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			task := domain.NewFieldTask(fieldKey, &fieldDef, parentTask)
+			results := fp.processField(ctx, task, execContext)
+
+			if len(results) > 0 {
+				for _, result := range results {
+					if result != nil {
+						execContext.SetGeneratedValue(result.Key(), result.Value())
+					}
+				}
+				if err := collector.Collect(ctx, results); err != nil {
+					return
+				}
+			}
+		})
+
+		if !submitted {
+			continuation.wg.Done()
+		}
+	}
+
+	continuation.waitForCompletion()
+}
+
 func (fp *FieldProcessor) evaluateScores(
 	ctx context.Context,
 	result *domain.TaskResult,
 	criteria *jsonSchema.ScoringCriteria,
 	execContext *domain.ExecutionContext,
 ) (map[string]float64, error) {
-	// Check if context is cancelled
 	select {
 	case <-ctx.Done():
 		return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
@@ -367,7 +609,6 @@ func (fp *FieldProcessor) evaluateScores(
 		return nil, fmt.Errorf("generator not set, cannot evaluate scores")
 	}
 
-	// Build scoring schema
 	properties := make(map[string]jsonSchema.Definition)
 	for dimensionName, dimension := range criteria.Dimensions {
 		var fieldType jsonSchema.DataType
@@ -397,24 +638,20 @@ func (fp *FieldProcessor) evaluateScores(
 		Instruction: "Evaluate the content according to the specified dimensions",
 	}
 
-	// Build evaluation prompt
 	prompt := "Evaluate the following content:\n\n"
 	prompt += fmt.Sprintf("%v\n\n", result.Value())
 	prompt += "Provide scores for each dimension as requested."
 
-	// Override model if specified
 	if criteria.EvaluationModel != "" {
 		scoringSchema.Model = criteria.EvaluationModel
 	}
 
-	// Generate scores
 	request := domain.NewGenerationRequest(prompt, scoringSchema)
 	scoreResult, err := fp.generator.Generate(request)
 	if err != nil {
 		return nil, fmt.Errorf("score generation failed: %w", err)
 	}
 
-	// Extract scores
 	scoreData := scoreResult.Data()
 	scores := make(map[string]float64)
 	for key, value := range scoreData {
@@ -423,7 +660,6 @@ func (fp *FieldProcessor) evaluateScores(
 		}
 	}
 
-	// Calculate aggregate if needed
 	if criteria.AggregationMethod != "" {
 		aggregate := fp.calculateAggregate(scores, criteria)
 		scores["_aggregate"] = aggregate
@@ -432,7 +668,6 @@ func (fp *FieldProcessor) evaluateScores(
 	return scores, nil
 }
 
-// calculateAggregate computes the aggregate score
 func (fp *FieldProcessor) calculateAggregate(scores map[string]float64, criteria *jsonSchema.ScoringCriteria) float64 {
 	switch criteria.AggregationMethod {
 	case jsonSchema.AggregateWeightedAverage:
@@ -471,7 +706,6 @@ func (fp *FieldProcessor) calculateAggregate(scores map[string]float64, criteria
 		return max
 
 	default:
-		// Default to average
 		var sum float64
 		for _, score := range scores {
 			sum += score
@@ -480,14 +714,11 @@ func (fp *FieldProcessor) calculateAggregate(scores map[string]float64, criteria
 	}
 }
 
-// attachScoresToResult attaches scores to the result's metadata
 func (fp *FieldProcessor) attachScoresToResult(result *domain.TaskResult, scores map[string]float64) {
 	if result == nil || result.Metadata() == nil {
 		return
 	}
 
-	// Convert scores to Choice format for storage in metadata
-	// We use a single Choice with the aggregate score
 	if aggregateScore, hasAggregate := scores["_aggregate"]; hasAggregate {
 		choice := domain.Choice{
 			Score: int(aggregateScore),

@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"context"
+
 	"github.com/objectweaver/go-sdk/jsonSchema"
 )
 
@@ -89,6 +91,7 @@ type Choice struct {
 
 // GenerationConfig configures LLM generation
 type GenerationConfig struct {
+	Context       context.Context // Context for request cancellation
 	Model         string
 	Temperature   float64
 	MaxTokens     int

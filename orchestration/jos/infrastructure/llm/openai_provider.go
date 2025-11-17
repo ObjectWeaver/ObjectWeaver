@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
+	"objectweaver/logger"
 	"os"
 	"strings"
 
@@ -25,7 +25,7 @@ type OpenAIProvider struct {
 func NewOpenAIProvider() *OpenAIProvider {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
-		log.Printf("[OpenAIProvider WARNING] OPENAI_API_KEY not set, byte operations (image/audio) will fail")
+		logger.Printf("[OpenAIProvider WARNING] OPENAI_API_KEY not set, byte operations (image/audio) will fail")
 	}
 
 	// Create OpenAI client configuration
@@ -75,12 +75,21 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 	}
 
 	// Log the request details in development mode
-	log.Printf("[LLM] Submitting job with model: %s, prompt length: %d chars", model, len(prompt))
+	logger.Printf("[LLM] Submitting job with model: %s, prompt length: %d chars", model, len(prompt))
+
+	// Pass context through to job submitter for cancellation support
+	ctx := config.Context
+	if ctx == nil {
+		ctx = context.Background()
+		logger.Printf("[LLM] No context provided, using background context")
+	} else {
+		logger.Printf("[LLM] Using provided context for cancellation support")
+	}
 
 	// Submit job with Definition (includes SendImage if present)
-	completion, _, err := p.submitter.SubmitJob(model, config.Definition, prompt, config.SystemPrompt, nil)
+	completion, _, err := p.submitter.SubmitJob(ctx, model, config.Definition, prompt, config.SystemPrompt, nil)
 	if err != nil {
-		log.Printf("[LLM ERROR] Job submission failed: %v", err)
+		logger.Printf("[LLM ERROR] Job submission failed: %v", err)
 		return "", nil, fmt.Errorf("job submission failed: %w", err)
 	}
 
@@ -182,10 +191,10 @@ func (p *StreamingOpenAIProvider) SupportsStreaming() bool {
 
 // GenerateAudio implements text-to-speech functionality
 func (p *OpenAIProvider) GenerateAudio(request *domain.AudioGenerationRequest) ([]byte, *domain.ProviderMetadata, error) {
-	log.Printf("[OpenAIProvider] Generating audio with TTS...")
-	log.Printf("[OpenAIProvider] Input: %s", request.Input)
-	log.Printf("[OpenAIProvider] Voice: %s", request.Voice)
-	log.Printf("[OpenAIProvider] Model: %s", request.Model)
+	logger.Printf("[OpenAIProvider] Generating audio with TTS...")
+	logger.Printf("[OpenAIProvider] Input: %s", request.Input)
+	logger.Printf("[OpenAIProvider] Voice: %s", request.Voice)
+	logger.Printf("[OpenAIProvider] Model: %s", request.Model)
 
 	// Create OpenAI TTS request
 	ttsReq := gogpt.CreateSpeechRequest{
@@ -200,7 +209,7 @@ func (p *OpenAIProvider) GenerateAudio(request *domain.AudioGenerationRequest) (
 	ctx := context.Background()
 	response, err := p.client.CreateSpeech(ctx, ttsReq)
 	if err != nil {
-		log.Printf("[OpenAIProvider ERROR] TTS generation failed: %v", err)
+		logger.Printf("[OpenAIProvider ERROR] TTS generation failed: %v", err)
 		return nil, nil, fmt.Errorf("TTS generation failed: %w", err)
 	}
 	defer response.Close()
@@ -208,11 +217,11 @@ func (p *OpenAIProvider) GenerateAudio(request *domain.AudioGenerationRequest) (
 	// Read the audio data
 	audioBytes, err := io.ReadAll(response)
 	if err != nil {
-		log.Printf("[OpenAIProvider ERROR] Failed to read TTS audio: %v", err)
+		logger.Printf("[OpenAIProvider ERROR] Failed to read TTS audio: %v", err)
 		return nil, nil, fmt.Errorf("failed to read TTS audio: %w", err)
 	}
 
-	log.Printf("[OpenAIProvider] TTS generated successfully: %d bytes", len(audioBytes))
+	logger.Printf("[OpenAIProvider] TTS generated successfully: %d bytes", len(audioBytes))
 
 	// Create metadata
 	metadata := &domain.ProviderMetadata{
@@ -227,10 +236,10 @@ func (p *OpenAIProvider) GenerateAudio(request *domain.AudioGenerationRequest) (
 
 // GenerateImage implements image generation functionality
 func (p *OpenAIProvider) GenerateImage(request *domain.ImageGenerationRequest) ([]byte, *domain.ProviderMetadata, error) {
-	log.Printf("[OpenAIProvider] Generating image with DALL-E...")
-	log.Printf("[OpenAIProvider] Prompt: %s", request.Prompt)
-	log.Printf("[OpenAIProvider] Model: %s", request.Model)
-	log.Printf("[OpenAIProvider] Size: %s", request.Size)
+	logger.Printf("[OpenAIProvider] Generating image with DALL-E...")
+	logger.Printf("[OpenAIProvider] Prompt: %s", request.Prompt)
+	logger.Printf("[OpenAIProvider] Model: %s", request.Model)
+	logger.Printf("[OpenAIProvider] Size: %s", request.Size)
 
 	// Convert string model to string
 	modelType := string(request.Model)
@@ -239,11 +248,11 @@ func (p *OpenAIProvider) GenerateImage(request *domain.ImageGenerationRequest) (
 	byteops := byteoperations.NewImageGenerator(p.client)
 	imageBytes, err := byteops.GenerateImage(request.Prompt, modelType, request.Size)
 	if err != nil {
-		log.Printf("[OpenAIProvider ERROR] Image generation failed: %v", err)
+		logger.Printf("[OpenAIProvider ERROR] Image generation failed: %v", err)
 		return nil, nil, fmt.Errorf("image generation failed: %w", err)
 	}
 
-	log.Printf("[OpenAIProvider] Image generated successfully: %d bytes", len(imageBytes))
+	logger.Printf("[OpenAIProvider] Image generated successfully: %d bytes", len(imageBytes))
 
 	// Create metadata
 	metadata := &domain.ProviderMetadata{
@@ -258,10 +267,10 @@ func (p *OpenAIProvider) GenerateImage(request *domain.ImageGenerationRequest) (
 
 // TranscribeAudio implements speech-to-text functionality
 func (p *OpenAIProvider) TranscribeAudio(request *domain.AudioTranscriptionRequest) (string, *domain.ProviderMetadata, error) {
-	log.Printf("[OpenAIProvider] Transcribing audio with Whisper...")
-	log.Printf("[OpenAIProvider] Model: %s", request.Model)
-	log.Printf("[OpenAIProvider] Language: %s", request.Language)
-	log.Printf("[OpenAIProvider] Audio data size: %d bytes", len(request.AudioData))
+	logger.Printf("[OpenAIProvider] Transcribing audio with Whisper...")
+	logger.Printf("[OpenAIProvider] Model: %s", request.Model)
+	logger.Printf("[OpenAIProvider] Language: %s", request.Language)
+	logger.Printf("[OpenAIProvider] Audio data size: %d bytes", len(request.AudioData))
 
 	// Create a reader from the audio bytes
 	audioReader := strings.NewReader(string(request.AudioData))
@@ -280,11 +289,11 @@ func (p *OpenAIProvider) TranscribeAudio(request *domain.AudioTranscriptionReque
 	ctx := context.Background()
 	response, err := p.client.CreateTranscription(ctx, whisperReq)
 	if err != nil {
-		log.Printf("[OpenAIProvider ERROR] Audio transcription failed: %v", err)
+		logger.Printf("[OpenAIProvider ERROR] Audio transcription failed: %v", err)
 		return "", nil, fmt.Errorf("audio transcription failed: %w", err)
 	}
 
-	log.Printf("[OpenAIProvider] Audio transcribed successfully: %s", response.Text)
+	logger.Printf("[OpenAIProvider] Audio transcribed successfully: %s", response.Text)
 
 	// Create metadata
 	metadata := &domain.ProviderMetadata{

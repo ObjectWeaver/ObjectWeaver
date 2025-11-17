@@ -3,7 +3,7 @@ package execution
 import (
 	"context"
 	"fmt"
-	"log"
+	"objectweaver/logger"
 	"objectweaver/orchestration/jos/domain"
 	"os"
 
@@ -53,7 +53,7 @@ func (r *RecursiveLoopProcessor) Process(ctx context.Context, task *domain.Field
 	verboseLogs := os.Getenv("VERBOSE") == "true"
 
 	if verboseLogs {
-		log.Printf("[RecursiveLoop] Starting for task %s (max iterations: %d)", task.Key(), loop.MaxIterations)
+		logger.Printf("[RecursiveLoop] Starting for task %s (max iterations: %d)", task.Key(), loop.MaxIterations)
 	}
 
 	var results []iterationResult
@@ -62,7 +62,7 @@ func (r *RecursiveLoopProcessor) Process(ctx context.Context, task *domain.Field
 		// Check if context is cancelled at each iteration
 		select {
 		case <-ctx.Done():
-			log.Printf("[RecursiveLoop] Context cancelled at iteration %d: %v", i+1, ctx.Err())
+			logger.Printf("[RecursiveLoop] Context cancelled at iteration %d: %v", i+1, ctx.Err())
 			if len(results) > 0 {
 				// Return best result so far
 				return r.selectResult(results, loop.Selection, task.Key())
@@ -72,7 +72,7 @@ func (r *RecursiveLoopProcessor) Process(ctx context.Context, task *domain.Field
 		}
 
 		if verboseLogs {
-			log.Printf("[RecursiveLoop] Iteration %d/%d for task %s", i+1, loop.MaxIterations, task.Key())
+			logger.Printf("[RecursiveLoop] Iteration %d/%d for task %s", i+1, loop.MaxIterations, task.Key())
 		}
 
 		// Generate iteration
@@ -90,11 +90,11 @@ func (r *RecursiveLoopProcessor) Process(ctx context.Context, task *domain.Field
 		if task.Definition().ScoringCriteria != nil {
 			scores, err := r.evaluateScores(result, task.Definition().ScoringCriteria, execContext)
 			if err != nil {
-				log.Printf("[RecursiveLoop] Warning: scoring failed for iteration %d: %v", i+1, err)
+				logger.Printf("[RecursiveLoop] Warning: scoring failed for iteration %d: %v", i+1, err)
 			} else {
 				iterResult.scores = scores
 				if verboseLogs {
-					log.Printf("[RecursiveLoop] Iteration %d scores: %v", i+1, scores)
+					logger.Printf("[RecursiveLoop] Iteration %d scores: %v", i+1, scores)
 				}
 			}
 		}
@@ -105,10 +105,10 @@ func (r *RecursiveLoopProcessor) Process(ctx context.Context, task *domain.Field
 		if loop.TerminationPoint != nil {
 			shouldStop, err := r.shouldTerminate(ctx, loop.TerminationPoint, result, execContext, task)
 			if err != nil {
-				log.Printf("[RecursiveLoop] Warning: termination check failed: %v", err)
+				logger.Printf("[RecursiveLoop] Warning: termination check failed: %v", err)
 			} else if shouldStop {
 				if verboseLogs {
-					log.Printf("[RecursiveLoop] Termination condition met at iteration %d", i+1)
+					logger.Printf("[RecursiveLoop] Termination condition met at iteration %d", i+1)
 				}
 				break
 			}
@@ -121,7 +121,7 @@ func (r *RecursiveLoopProcessor) Process(ctx context.Context, task *domain.Field
 	}
 
 	if verboseLogs {
-		log.Printf("[RecursiveLoop] Completed %d iterations for task %s", len(results), task.Key())
+		logger.Printf("[RecursiveLoop] Completed %d iterations for task %s", len(results), task.Key())
 	}
 
 	// Select best result based on strategy

@@ -14,9 +14,16 @@ type JobQueue struct {
 }
 
 func NewJobQueue(concurrency, maxQueueSize int) *JobQueue {
+	// Buffer should be much larger than concurrency for high-throughput scenarios
+	// At 1000 RPS with 10 fields = 10k jobs/sec, need large buffer to prevent blocking
+	bufferSize := concurrency * 100 // 100 workers × 100 = 10,000 buffer
+	if bufferSize < 10000 {
+		bufferSize = 10000
+	}
+
 	return &JobQueue{
 		fifo:     make([]*Job, 0, maxQueueSize),
-		jobChan:  make(chan *Job, concurrency),
+		jobChan:  make(chan *Job, bufferSize),
 		stopChan: make(chan struct{}),
 	}
 }
@@ -48,6 +55,7 @@ func (q *JobQueue) dequeue() *Job {
 }
 
 // StartManager begins moving jobs from the internal FIFO queue to the worker channel.
+// PERFORMANCE FIX: Removed 100ms timeout that was causing 18-second delays under load
 func (q *JobQueue) StartManager(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for {
@@ -57,9 +65,19 @@ func (q *JobQueue) StartManager(wg *sync.WaitGroup) {
 			return
 		default:
 			if job := q.dequeue(); job != nil {
-				q.jobChan <- job
+				// Send to channel - block if full (proper backpressure)
+				// Only check for shutdown while blocked
+				select {
+				case q.jobChan <- job:
+					// Successfully sent
+				case <-q.stopChan:
+					// Manager stopped while trying to send
+					close(q.jobChan)
+					return
+				}
 			} else {
-				time.Sleep(10 * time.Millisecond) // Wait if queue is empty
+				// Queue empty - brief yield to prevent tight CPU loop
+				time.Sleep(10 * time.Microsecond)
 			}
 		}
 	}

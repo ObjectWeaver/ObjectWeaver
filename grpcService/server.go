@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"log"
+	"objectweaver/logger"
 	"os"
 
 	pb "github.com/objectweaver/go-sdk/grpc"
@@ -70,7 +71,7 @@ func NewGRPCServer() *grpc.Server {
 	grpcServer := &grpc.Server{}
 	if os.Getenv("GRPC_UNSECURE") != "true" {
 		if certFile == "" || keyFile == "" {
-			log.Println("CERT_FILE and KEY_FILE environment variables must be set")
+			logger.Println("CERT_FILE and KEY_FILE environment variables must be set")
 			return nil
 		}
 

@@ -95,7 +95,7 @@ func NewClientAdapter(config AdapterConfig) (ClientAdapter, error) {
 		if config.APIKey == "" {
 			return nil, fmt.Errorf("openAI API key is required (set LLM_API_KEY)")
 		}
-		return NewOpenAIClientAdapter(config.APIKey, reqBuilder, embeddingReqBuilder), nil
+		return NewOpenAIClientAdapter(config.APIKey, reqBuilder, embeddingReqBuilder, httpClient), nil
 
 	case ProviderGemini:
 		if config.APIKey == "" {
@@ -107,8 +107,7 @@ func NewClientAdapter(config AdapterConfig) (ClientAdapter, error) {
 		if config.URL == "" {
 			return nil, fmt.Errorf("local API URL is required (set LLM_API_URL)")
 		}
-		converter := requestManagement.NewLocalConverter()
-		return NewLocalClientAdapter(config.URL, config.APIKey, reqBuilder, embeddingReqBuilder, converter, httpClient), nil
+		return NewLocalClientAdapter(config.URL, config.APIKey, reqBuilder, embeddingReqBuilder, httpClient), nil
 
 	default:
 		return nil, fmt.Errorf("unknown provider: %s (supported: local, openai, gemini)", config.Provider)

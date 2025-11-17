@@ -47,15 +47,25 @@ func (o *Orchestrator) EpstimicValidation(
 	// start a loop of n values using the fan-out pattern to process the functions independently
 	for i := 0; i < o.workerCount; i++ {
 		go func(workerIndex int) {
+			// Create a local copy of the task to avoid race conditions
+			localTask := task
 			// For workers after the first, generate a new random seed
 			if workerIndex != 0 {
-				task.Definition().ModelConfig.Seed = infrastructure.GenerateSeed()
+				// Create a copy of the definition to avoid modifying shared state
+				defCopy := *task.Definition()
+				if defCopy.ModelConfig != nil {
+					modelConfigCopy := *defCopy.ModelConfig
+					modelConfigCopy.Seed = infrastructure.GenerateSeed()
+					defCopy.ModelConfig = &modelConfigCopy
+				}
+				// Create a new task with the copied definition
+				localTask = domain.NewFieldTask(task.Key(), &defCopy, task.Parent())
 			}
 
-			value, metadata, err := generate(task, context)
+			value, metadata, err := generate(localTask, context)
 			if err != nil {
 				resultsChan <- TempResult{
-					Task:     task,
+					Task:     localTask,
 					Value:    nil,
 					Metadata: nil,
 					Error:    err,
@@ -63,7 +73,7 @@ func (o *Orchestrator) EpstimicValidation(
 				return
 			}
 			resultsChan <- TempResult{
-				Task:     task,
+				Task:     localTask,
 				Value:    value,
 				Metadata: metadata,
 				Error:    nil,

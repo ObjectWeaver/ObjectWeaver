@@ -1,10 +1,10 @@
 package LLM
 
 import (
-	"log"
 	"objectweaver/llmManagement/backoff"
 	"objectweaver/llmManagement/client"
 	"objectweaver/llmManagement/clientManager"
+	"objectweaver/logger"
 	"os"
 	"strconv"
 	"strings"
@@ -60,7 +60,15 @@ func NewOrchestrationService(
 	maxQueueSize := maxRequestsPerMinute // A reasonable default
 
 	// Determine the number of concurrent workers.
-	concurrency := maxRequestsPerMinute / 4
+	// Use environment variable if set, otherwise use a sensible default
+	concurrency := getIntFromEnvWithDefault("LLM_CONCURRENCY", 100)
+
+	// Cap concurrency at a reasonable maximum to prevent resource exhaustion
+	maxConcurrency := 500
+	if concurrency > maxConcurrency {
+		logger.Printf("[WARNING] LLM_CONCURRENCY (%d) exceeds maximum (%d), capping at %d", concurrency, maxConcurrency, maxConcurrency)
+		concurrency = maxConcurrency
+	}
 	if concurrency < 1 {
 		concurrency = 1 // Ensure at least one worker.
 	}
@@ -82,7 +90,10 @@ func NewOrchestrationService(
 	jobQueue := NewJobQueueByType(QueueTypePriority)
 	jobQueueManager := NewJobQueueManager(concurrency, maxQueueSize, jobQueue)
 	errorClassifier := backoff.NewErrorClassifier()
-	retryHandler := NewRetryHandler(3, verbose) // Max 3 retries for transient errors
+
+	// Make max retries configurable via environment variable
+	maxRetries := getIntFromEnvWithDefault("LLM_MAX_RETRIES", 3)
+	retryHandler := NewRetryHandler(maxRetries, verbose)
 
 	// 3. Select and instantiate the backoff strategy
 	var backoffManager BackoffManager
@@ -114,15 +125,15 @@ func NewOrchestrationService(
 		if client.BatchAiClient != nil {
 			batchManager, err := NewBatchReqManager(client.BatchAiClient)
 			if err != nil {
-				log.Printf("[WARNING] Failed to initialize batch manager: %v. Batch processing will be disabled.", err)
+				logger.Printf("[WARNING] Failed to initialize batch manager: %v. Batch processing will be disabled.", err)
 			} else {
 				orchestrator.SetBatchManager(batchManager)
 				if verbose {
-					log.Printf("[BatchProcessing] Batch processing enabled with priority threshold: %d", config.BatchPriorityThreshold)
+					logger.Printf("[BatchProcessing] Batch processing enabled with priority threshold: %d", config.BatchPriorityThreshold)
 				}
 			}
 		} else {
-			log.Println("[WARNING] Batch processing enabled but BatchAiClient is nil. Batch processing will be disabled.")
+			logger.Println("[WARNING] Batch processing enabled but BatchAiClient is nil. Batch processing will be disabled.")
 		}
 	}
 

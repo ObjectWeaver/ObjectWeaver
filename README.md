@@ -1,20 +1,16 @@
 <div align="center">
 
-# ObjectWeaver
+# <span style="font-family: 'Roboto', sans-serif;">ObjectWeaver</span>
 
 [![License](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/objectweaver/objectweaver/blob/main/LICENSE.txt)
 [![Docker](https://img.shields.io/badge/Docker-Ready-brightgreen.svg)](https://hub.docker.com/r/objectweaver/objectweaver)
-[![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8.svg)](https://golang.org/)
 [![Documentation](https://img.shields.io/badge/Docs-objectweaver.dev-orange.svg)](https://objectweaver.dev/docs)
-
 ![Coverage](https://img.shields.io/badge/Coverage-45.5%25-red)
-
-[Website](https://objectweaver.dev) • [Documentation](https://objectweaver.dev/docs) • [API Reference](https://objectweaver.dev/api)
+[![Codeleft Checks](https://github.com/ObjectWeaver/ObjectWeaver/actions/workflows/codeleft-test.yaml/badge.svg)](https://github.com/ObjectWeaver/ObjectWeaver/actions/workflows/codeleft-test.yaml)
 
 </div>
 
-
-ObjectWeaver is an AI Orchestration Service for generating structured objects in JSON format. It guarantees 100% valid JSON output by decomposing schemas into field-level tasks, routing them to optimal language models, and processing them in parallel. This approach not only ensures reliability but also significantly reduces costs and improves performance by using the best model for each task.
+ObjectWeaver is an "AI" Orchestration Service for generating structured objects in JSON format. It guarantees 100% valid JSON output by decomposing schemas into field-level tasks, routing them to optimal language models, and processing them in parallel. This approach not only ensures reliability but can also reduces costs and improves performance by using the best model for each task.
 
 For complete documentation, examples, and guides, visit [our documentation](https://objectweaver.dev/docs/intro).
 
@@ -22,11 +18,11 @@ For complete documentation, examples, and guides, visit [our documentation](http
 
 Traditional JSON generation with LLMs often fails, with success rates as low as 35-65%. While grammar-constrained alternatives can guarantee syntax, they force a one-size-fits-all approach, using a single model and prompt for all fields. ObjectWeaver solves this by providing intelligent, field-level orchestration that offers several key advantages:
 
-- **Guaranteed JSON Output**: Field-level type validation and compositional assembly ensure 100% valid JSON every time.
-- **Parallel Generation**: Independent fields are generated concurrently, leading to significantly faster processing times.
-- **Model Specialization**: Route simple tasks to efficient models and complex reasoning to more powerful ones, reducing costs by 10-20x.
-- **Break Context Limits**: Generate massive datasets and comprehensive documents that exceed the context window of a single model.
-- **Field Dependencies**: Create complex workflows where the output of one field can be used as input for another.
+- <img src="https://api.iconify.design/lucide/circle-check-big.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Guaranteed JSON Output**: Field-level type validation and compositional assembly ensure 100% valid JSON every time.
+- <img src="https://api.iconify.design/lucide/zap.svg?color=%23006329" width="16" height="16" style="vertical-align: text-bottom;" /> **Parallel Generation**: Independent fields are generated concurrently, leading to significantly faster processing times.
+- <img src="https://api.iconify.design/lucide/sparkles.svg?color=%23007431" width="16" height="16" style="vertical-align: text-bottom;" /> **Model Specialization**: Route simple tasks to efficient models and complex reasoning to more powerful ones, reducing costs by 10-20x.
+- <img src="https://api.iconify.design/lucide/expand.svg?color=%2300943d" width="16" height="16" style="vertical-align: text-bottom;" /> **Break Context Limits**: Generate massive datasets and comprehensive documents that exceed the context window of a single model.
+- <img src="https://api.iconify.design/lucide/workflow.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Field Dependencies**: Create complex workflows where the output of one field can be used as input for another.
 
 ## Getting Started
 
@@ -88,11 +84,11 @@ Find more different language examples here[https://objectweaver.dev/docs/api-ref
 
 ObjectWeaver is designed for production use and includes several powerful features to handle real-world complexity:
 
--   **Batch Processing & Priority System**: Optimize costs by up to 50% by routing non-urgent requests to OpenAI's Batch API. You can assign priorities to different fields to balance speed and cost.
--   **Decision Points**: Embed adaptive intelligence in your schemas to dynamically alter the generation process based on the output of other fields.
--   **Streaming Requests**: Stream data as it's generated for real-time applications.
--   **Epistemic Validation**: Implement validation and retry logic to ensure the quality and accuracy of the generated data.
--   **Data Fetching**: Fetch data from external sources and use it as context for generation.
+-   <img src="https://api.iconify.design/lucide/layers.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Batch Processing & Priority System**: Optimize costs by up to 50% by routing non-urgent requests to OpenAI's Batch API. You can assign priorities to different fields to balance speed and cost.
+-   <img src="https://api.iconify.design/lucide/git-branch.svg?color=%23006329" width="16" height="16" style="vertical-align: text-bottom;" /> **Decision Points**: Embed adaptive intelligence in your schemas to dynamically alter the generation process based on the output of other fields.
+-   <img src="https://api.iconify.design/lucide/radio.svg?color=%23007431" width="16" height="16" style="vertical-align: text-bottom;" /> **Streaming Requests**: Stream data as it's generated for real-time applications.
+-   <img src="https://api.iconify.design/lucide/shield-check.svg?color=%2300943d" width="16" height="16" style="vertical-align: text-bottom;" /> **Epistemic Validation**: Implement validation and retry logic to ensure the quality and accuracy of the generated data.
+-   <img src="https://api.iconify.design/lucide/download.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Data Fetching**: Fetch data from external sources and use it as context for generation.
 
 ## Configuration
 

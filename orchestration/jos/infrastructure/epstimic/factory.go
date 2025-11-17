@@ -1,7 +1,7 @@
 package epstimic
 
 import (
-	"log"
+	"objectweaver/logger"
 	"objectweaver/orchestration/jos/domain"
 	"os"
 	"strconv"
@@ -25,7 +25,7 @@ func GetEpstimicEngine(generator domain.Generator) EpstimicEngine {
 		if model == "" {
 			model = "text-embedding-3-small" // Default embedding model
 		}
-		log.Printf("[EpstimicFactory] Using K-Mean engine with model: %s", model)
+		logger.Printf("[EpstimicFactory] Using K-Mean engine with model: %s", model)
 		return NewKMeanEngine(model, generator)
 	}
 
@@ -34,7 +34,7 @@ func GetEpstimicEngine(generator domain.Generator) EpstimicEngine {
 		if model == "" {
 			model = "gpt-4o-mini" // Default judge model
 		}
-		log.Printf("[EpstimicFactory] Using LLM as Judge engine with model: %s", model)
+		logger.Printf("[EpstimicFactory] Using LLM as Judge engine with model: %s", model)
 		return NewLLMAsJudge(model, generator)
 	}
 
@@ -43,7 +43,7 @@ func GetEpstimicEngine(generator domain.Generator) EpstimicEngine {
 	if model == "" {
 		model = "gpt-4o-mini"
 	}
-	log.Printf("[EpstimicFactory] Using default LLM as Judge engine with model: %s", model)
+	logger.Printf("[EpstimicFactory] Using default LLM as Judge engine with model: %s", model)
 	return NewLLMAsJudge(model, generator)
 }
 

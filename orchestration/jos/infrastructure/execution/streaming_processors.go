@@ -55,45 +55,88 @@ func (p *StreamingPrimitiveProcessor) Process(task *domain.FieldTask, context *d
 func (p *StreamingPrimitiveProcessor) ProcessStreaming(task *domain.FieldTask, context *domain.ExecutionContext) (<-chan *domain.TokenStreamChunk, error) {
 	out := make(chan *domain.TokenStreamChunk, 100)
 
-	go func() {
-		defer close(out)
+	// Use worker pool if available, otherwise spawn goroutine directly
+	if context.WorkerPool() != nil {
+		context.WorkerPool().Submit(func() {
+			defer close(out)
 
-		// Build prompt
-		prompt, err := p.promptBuilder.Build(task, context.PromptContext())
-		if err != nil {
-			return
-		}
-
-		// Get token stream from LLM
-		config := context.GenerationConfig()
-		tokenStream, err := p.llmProvider.GenerateTokenStream(prompt, config)
-		if err != nil {
-			return
-		}
-
-		accumulated := ""
-
-		for token := range tokenStream {
-			accumulated += token.Token
-
-			// Emit based on granularity
-			if p.shouldEmit(token) {
-				chunk := domain.NewTokenStreamChunk(task.Key(), token.Token)
-				chunk.Partial = accumulated
-				chunk.Complete = token.IsFinal
-				chunk.Path = task.Path()
-
-				out <- chunk
+			// Build prompt
+			prompt, err := p.promptBuilder.Build(task, context.PromptContext())
+			if err != nil {
+				return
 			}
-		}
 
-		// Emit final
-		final := domain.NewTokenStreamChunk(task.Key(), "")
-		final.Partial = accumulated
-		final.MarkComplete()
-		final.Path = task.Path()
-		out <- final
-	}()
+			// Get token stream from LLM
+			config := context.GenerationConfig()
+			tokenStream, err := p.llmProvider.GenerateTokenStream(prompt, config)
+			if err != nil {
+				return
+			}
+
+			accumulated := ""
+
+			for token := range tokenStream {
+				accumulated += token.Token
+
+				// Emit based on granularity
+				if p.shouldEmit(token) {
+					chunk := domain.NewTokenStreamChunk(task.Key(), token.Token)
+					chunk.Partial = accumulated
+					chunk.Complete = token.IsFinal
+					chunk.Path = task.Path()
+
+					out <- chunk
+				}
+			}
+
+			// Emit final
+			final := domain.NewTokenStreamChunk(task.Key(), "")
+			final.Partial = accumulated
+			final.MarkComplete()
+			final.Path = task.Path()
+			out <- final
+		})
+	} else {
+		go func() {
+			defer close(out)
+
+			// Build prompt
+			prompt, err := p.promptBuilder.Build(task, context.PromptContext())
+			if err != nil {
+				return
+			}
+
+			// Get token stream from LLM
+			config := context.GenerationConfig()
+			tokenStream, err := p.llmProvider.GenerateTokenStream(prompt, config)
+			if err != nil {
+				return
+			}
+
+			accumulated := ""
+
+			for token := range tokenStream {
+				accumulated += token.Token
+
+				// Emit based on granularity
+				if p.shouldEmit(token) {
+					chunk := domain.NewTokenStreamChunk(task.Key(), token.Token)
+					chunk.Partial = accumulated
+					chunk.Complete = token.IsFinal
+					chunk.Path = task.Path()
+
+					out <- chunk
+				}
+			}
+
+			// Emit final
+			final := domain.NewTokenStreamChunk(task.Key(), "")
+			final.Partial = accumulated
+			final.MarkComplete()
+			final.Path = task.Path()
+			out <- final
+		}()
+	}
 
 	return out, nil
 }
@@ -172,34 +215,69 @@ func (p *StreamingObjectProcessor) mergeFieldStreams(
 ) <-chan *domain.TokenStreamChunk {
 	out := make(chan *domain.TokenStreamChunk, 100)
 
-	go func() {
-		defer close(out)
+	// Use worker pool if available, otherwise spawn goroutine directly
+	if context.WorkerPool() != nil {
+		context.WorkerPool().Submit(func() {
+			defer close(out)
 
-		var wg sync.WaitGroup
+			var wg sync.WaitGroup
 
-		for key, def := range fields {
-			wg.Add(1)
+			for key, def := range fields {
+				wg.Add(1)
 
-			go func(k string, d *jsonSchema.Definition) {
-				defer wg.Done()
+				// Use worker pool for nested goroutines too
+				context.WorkerPool().Submit(func(k string, d *jsonSchema.Definition) func() {
+					return func() {
+						defer wg.Done()
 
-				task := domain.NewFieldTask(k, d, parentTask)
+						task := domain.NewFieldTask(k, d, parentTask)
 
-				processor := NewStreamingPrimitiveProcessor(p.llmProvider, p.promptBuilder, p.granularity)
-				tokenStream, err := processor.ProcessStreaming(task, context)
-				if err != nil {
-					return
-				}
+						processor := NewStreamingPrimitiveProcessor(p.llmProvider, p.promptBuilder, p.granularity)
+						tokenStream, err := processor.ProcessStreaming(task, context)
+						if err != nil {
+							return
+						}
 
-				// Forward tokens
-				for token := range tokenStream {
-					out <- token
-				}
-			}(key, def)
-		}
+						// Forward tokens
+						for token := range tokenStream {
+							out <- token
+						}
+					}
+				}(key, def))
+			}
 
-		wg.Wait()
-	}()
+			wg.Wait()
+		})
+	} else {
+		go func() {
+			defer close(out)
+
+			var wg sync.WaitGroup
+
+			for key, def := range fields {
+				wg.Add(1)
+
+				go func(k string, d *jsonSchema.Definition) {
+					defer wg.Done()
+
+					task := domain.NewFieldTask(k, d, parentTask)
+
+					processor := NewStreamingPrimitiveProcessor(p.llmProvider, p.promptBuilder, p.granularity)
+					tokenStream, err := processor.ProcessStreaming(task, context)
+					if err != nil {
+						return
+					}
+
+					// Forward tokens
+					for token := range tokenStream {
+						out <- token
+					}
+				}(key, def)
+			}
+
+			wg.Wait()
+		}()
+	}
 
 	return out
 }
@@ -262,30 +340,58 @@ func (p *StreamingArrayProcessor) Process(task *domain.FieldTask, context *domai
 func (p *StreamingArrayProcessor) ProcessStreaming(task *domain.FieldTask, context *domain.ExecutionContext) (<-chan *domain.TokenStreamChunk, error) {
 	out := make(chan *domain.TokenStreamChunk, 100)
 
-	go func() {
-		defer close(out)
+	// Use worker pool if available, otherwise spawn goroutine directly
+	if context.WorkerPool() != nil {
+		context.WorkerPool().Submit(func() {
+			defer close(out)
 
-		itemDef := task.Definition().Items
-		if itemDef == nil {
-			return
-		}
-
-		arraySize := 3 // Default
-
-		for i := 0; i < arraySize; i++ {
-			itemTask := domain.NewFieldTask(fmt.Sprintf("%s[%d]", task.Key(), i), itemDef, task)
-
-			processor := NewStreamingPrimitiveProcessor(p.llmProvider, p.promptBuilder, p.granularity)
-			tokenStream, err := processor.ProcessStreaming(itemTask, context)
-			if err != nil {
-				continue
+			itemDef := task.Definition().Items
+			if itemDef == nil {
+				return
 			}
 
-			for token := range tokenStream {
-				out <- token
+			arraySize := 3 // Default
+
+			for i := 0; i < arraySize; i++ {
+				itemTask := domain.NewFieldTask(fmt.Sprintf("%s[%d]", task.Key(), i), itemDef, task)
+
+				processor := NewStreamingPrimitiveProcessor(p.llmProvider, p.promptBuilder, p.granularity)
+				tokenStream, err := processor.ProcessStreaming(itemTask, context)
+				if err != nil {
+					continue
+				}
+
+				for token := range tokenStream {
+					out <- token
+				}
 			}
-		}
-	}()
+		})
+	} else {
+		go func() {
+			defer close(out)
+
+			itemDef := task.Definition().Items
+			if itemDef == nil {
+				return
+			}
+
+			arraySize := 3 // Default
+
+			for i := 0; i < arraySize; i++ {
+				itemTask := domain.NewFieldTask(fmt.Sprintf("%s[%d]", task.Key(), i), itemDef, task)
+
+				processor := NewStreamingPrimitiveProcessor(p.llmProvider, p.promptBuilder, p.granularity)
+				tokenStream, err := processor.ProcessStreaming(itemTask, context)
+				if err != nil {
+					continue
+				}
+
+				for token := range tokenStream {
+					out <- token
+				}
+			}
+		}()
+	}
 
 	return out, nil
 }

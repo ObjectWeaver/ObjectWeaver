@@ -3,9 +3,9 @@ package LLM
 import (
 	"context"
 	"errors"
-	"log"
 	"objectweaver/llmManagement/backoff"
 	"objectweaver/llmManagement/clientManager"
+	"objectweaver/logger"
 	"sync"
 	"time"
 
@@ -102,22 +102,35 @@ func (o *Orchestrator) StartProcessing() {
 // orchestrationJob is the core logic for processing a single job.
 // It replaces the old processJob method.
 func (o *Orchestrator) orchestrationJob(job *Job, workerID int) {
+	if o.config.Verbose {
+		logger.Printf("[Orchestrator] Worker %d processing job", workerID)
+	}
+
 	// 1. Honor any active backoff period.
 	o.backoffManager.ApplyBackoff(workerID)
 
 	// 2. Wait for token-bucket limiters.
 	ctx := context.Background()
 	if err := o.requestLimiter.Wait(ctx); err != nil {
+		logger.Printf("[Orchestrator] Worker %d: request limiter error, re-queuing: %v", workerID, err)
 		o.jobQueue.Enqueue(job)
 		return
 	}
 	if err := o.tokenLimiter.WaitN(ctx, job.Tokens); err != nil {
-		log.Printf("CRITICAL: Job dropped. It requires %d tokens, but the burst limit is %d.", job.Tokens, o.tokenLimiter.Burst())
-		job.Result <- nil
+		logger.Printf("[Orchestrator] Worker %d CRITICAL: Job dropped. Requires %d tokens, burst limit is %d.", workerID, job.Tokens, o.tokenLimiter.Burst())
+		// Use select to prevent blocking on Result send
+		select {
+		case job.Result <- nil:
+		default:
+			logger.Printf("[Orchestrator] Worker %d: Result channel full, dropping nil result", workerID)
+		}
 		return
 	}
 
 	// 3. Process the job.
+	if o.config.Verbose {
+		logger.Printf("[Orchestrator] Worker %d calling clientAdapter.Process", workerID)
+	}
 	resp, err := o.clientAdapter.Process(job.Inputs)
 
 	// 4. Handle the result (error or success).
@@ -144,7 +157,16 @@ func (o *Orchestrator) orchestrationJob(job *Job, workerID int) {
 
 	// 5. On success, reset backoff and send result.
 	o.backoffManager.ResetBackoff(workerID)
-	job.Result <- resp
+
+	// Use select to prevent blocking on Result send (even though it's buffered)
+	select {
+	case job.Result <- resp:
+		if o.config.Verbose {
+			logger.Printf("[Orchestrator] Worker %d sent result successfully", workerID)
+		}
+	default:
+		logger.Printf("[Orchestrator] Worker %d ERROR: Result channel full, cannot send response!", workerID)
+	}
 }
 
 // Stop gracefully shuts down the orchestrator and waits for workers to finish.
@@ -173,17 +195,17 @@ func (o *Orchestrator) SubmitJobWithRouting(job *Job) error {
 		job.Inputs.Priority < o.config.BatchPriorityThreshold {
 		// Route to batch manager for eventual/batch processing
 		if o.config.Verbose {
-			log.Printf("Routing job to batch processing (priority: %d, threshold: %d)",
+			logger.Printf("Routing job to batch processing (priority: %d, threshold: %d)",
 				job.Inputs.Priority, o.config.BatchPriorityThreshold)
 		}
-		log.Printf("Routing job to batch processing (priority: %d, threshold: %d)",
+		logger.Printf("Routing job to batch processing (priority: %d, threshold: %d)",
 			job.Inputs.Priority, o.config.BatchPriorityThreshold)
 		return o.batchManager.AddJob(job)
 	}
 
 	// Route to orchestrator for real-time processing
 	if o.config.Verbose {
-		log.Printf("Routing job to real-time processing (priority: %d)", job.Inputs.Priority)
+		logger.Printf("Routing job to real-time processing (priority: %d)", job.Inputs.Priority)
 	}
 	o.GetJobQueueManager().Enqueue(job)
 	return nil

@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -20,6 +22,78 @@ func TestServeIndexHTML_FileNotFound(t *testing.T) {
 
 	if !contains(w.Body.String(), "File not found") {
 		t.Errorf("Expected 'File not found' error message")
+	}
+}
+
+func TestServeIndexHTML_Success(t *testing.T) {
+	// Create the static directory and file in the expected absolute location
+	staticDir := "/static"
+	err := os.MkdirAll(staticDir, 0755)
+	if err != nil && !os.IsExist(err) {
+		// Skip if we can't create /static (permission issue)
+		t.Skip("Cannot create /static directory - skipping test")
+	}
+
+	// Create test HTML file
+	content := "<html><body>Token: {{.AuthToken}}</body></html>"
+	filePath := filepath.Join(staticDir, "index.html")
+	err = os.WriteFile(filePath, []byte(content), 0644)
+	if err != nil {
+		t.Skip("Cannot write to /static/index.html - skipping test")
+	}
+	defer os.Remove(filePath)
+
+	// Set environment variable
+	os.Setenv("PASSWORD", "test-token-123")
+	defer os.Unsetenv("PASSWORD")
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	ServeIndexHTML(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	if contentType := w.Header().Get("Content-Type"); contentType != "text/html" {
+		t.Errorf("Expected Content-Type text/html, got %s", contentType)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "test-token-123") {
+		t.Errorf("Expected body to contain auth token, got: %s", body)
+	}
+}
+
+func TestServeIndexHTML_InvalidTemplate(t *testing.T) {
+	// Create the static directory and file with invalid template syntax
+	staticDir := "/static"
+	err := os.MkdirAll(staticDir, 0755)
+	if err != nil && !os.IsExist(err) {
+		t.Skip("Cannot create /static directory - skipping test")
+	}
+
+	// Create test HTML file with invalid template
+	content := "<html><body>{{.InvalidField</body></html>"
+	filePath := filepath.Join(staticDir, "index.html")
+	err = os.WriteFile(filePath, []byte(content), 0644)
+	if err != nil {
+		t.Skip("Cannot write to /static/index.html - skipping test")
+	}
+	defer os.Remove(filePath)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	ServeIndexHTML(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("Expected status %d, got %d", http.StatusInternalServerError, w.Code)
+	}
+
+	if !contains(w.Body.String(), "Error parsing template") {
+		t.Errorf("Expected 'Error parsing template' error message")
 	}
 }
 

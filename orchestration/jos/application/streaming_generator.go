@@ -81,24 +81,28 @@ func (g *StreamingGenerator) GenerateStream(request *domain.GenerationRequest) (
 			return
 		}
 
-		// Create execution context
+		// Create execution context with worker pool
 		execContext := domain.NewExecutionContext(processedRequest)
+		workerPool := execution.NewWorkerPool(-1)
+		execContext.SetWorkerPool(workerPool)
 		execContext.PromptContext().AddPrompt(processedRequest.Prompt())
 
 		// Process all fields recursively using FieldProcessor
-		resultsCh := g.fieldProcessor.ProcessFields(ctx, processedRequest.Schema(), nil, execContext)
+		resultsCh := g.fieldProcessor.ProcessFieldsStart(ctx, processedRequest.Schema(), nil, execContext)
 
 		// Stream results as they come in
-		for result := range resultsCh {
-			if result != nil {
-				// Convert TaskResult to StreamChunk
-				chunk := &domain.StreamChunk{
-					Key:     result.Key(),
-					Value:   result.Value(),
-					Path:    result.Path(),
-					IsFinal: false,
+		for results := range resultsCh {
+			for _, result := range results {
+				if result != nil {
+					// Convert TaskResult to StreamChunk
+					chunk := &domain.StreamChunk{
+						Key:     result.Key(),
+						Value:   result.Value(),
+						Path:    result.Path(),
+						IsFinal: false,
+					}
+					out <- chunk
 				}
-				out <- chunk
 			}
 		}
 
