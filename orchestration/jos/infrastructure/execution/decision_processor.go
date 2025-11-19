@@ -200,8 +200,12 @@ func (d *DecisionProcessor) evaluateCondition(
 	var lhs interface{}
 
 	if condition.FieldPath != "" {
-		// Extract from context using field path
-		lhs = context.GeneratedValues()[condition.FieldPath]
+		// Extract from context using field path (supports nested paths like "car.color")
+		if value, exists := ResolveFieldPath(condition.FieldPath, context.GeneratedValues()); exists {
+			lhs = value
+		} else {
+			lhs = nil
+		}
 	} else {
 		// Get from evaluation data
 		lhs = evaluationData[condition.Field]
@@ -245,9 +249,10 @@ func (d *DecisionProcessor) executeBranch(
 		prompt += "\n\nContext from previous generation:\n"
 		for _, fieldPath := range branchDef.SelectFields {
 			logger.Printf("[DecisionProcessor] Looking for field '%s' in context", fieldPath)
-			if value, exists := execContext.GeneratedValues()[fieldPath]; exists {
-				prompt += fmt.Sprintf("\n%s:\n%v\n", fieldPath, value)
-				logger.Printf("[DecisionProcessor] Added field '%s' to branch prompt (length: %d chars)", fieldPath, len(fmt.Sprintf("%v", value)))
+			if value, exists := ResolveFieldPath(fieldPath, execContext.GeneratedValues()); exists {
+				formattedValue := FormatFieldValue(value)
+				prompt += fmt.Sprintf("\n%s:\n%s\n", fieldPath, formattedValue)
+				logger.Printf("[DecisionProcessor] Added field '%s' to branch prompt (length: %d chars)", fieldPath, len(formattedValue))
 			} else {
 				logger.Printf("[DecisionProcessor] Field '%s' not found in context", fieldPath)
 			}

@@ -600,3 +600,103 @@ func TestExecuteBranch_ContextCancelled(t *testing.T) {
 		t.Error("Expected context cancellation error")
 	}
 }
+
+// TestEvaluateCondition_NestedFieldPath tests that conditions can evaluate nested field paths
+func TestEvaluateCondition_NestedFieldPath(t *testing.T) {
+	gen := &mockGenerator{}
+	processor := NewDecisionProcessor(gen)
+
+	fieldDef := &jsonSchema.Definition{Type: jsonSchema.String}
+	req := domain.NewGenerationRequest("test", fieldDef)
+	execContext := domain.NewExecutionContext(req)
+
+	// Set up nested data in context
+	execContext.SetGeneratedValue("car", map[string]interface{}{
+		"specs": map[string]interface{}{
+			"hp": 280,
+		},
+		"color": "red",
+	})
+
+	t.Run("NestedPath_GreaterThan", func(t *testing.T) {
+		condition := jsonSchema.Condition{
+			FieldPath: "car.specs.hp",
+			Operator:  jsonSchema.OpGreaterThan,
+			Value:     250,
+		}
+
+		result, err := processor.evaluateCondition(condition, nil, execContext)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if !result {
+			t.Error("Expected condition to be true (280 > 250)")
+		}
+	})
+
+	t.Run("NestedPath_Equal", func(t *testing.T) {
+		condition := jsonSchema.Condition{
+			FieldPath: "car.color",
+			Operator:  jsonSchema.OpEqual,
+			Value:     "red",
+		}
+
+		result, err := processor.evaluateCondition(condition, nil, execContext)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if !result {
+			t.Error("Expected condition to be true (color == red)")
+		}
+	})
+
+	t.Run("NonExistentPath", func(t *testing.T) {
+		condition := jsonSchema.Condition{
+			FieldPath: "car.missing.field",
+			Operator:  jsonSchema.OpEqual,
+			Value:     "test",
+		}
+
+		result, err := processor.evaluateCondition(condition, nil, execContext)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if result {
+			t.Error("Expected condition to be false for non-existent path")
+		}
+	})
+}
+
+// TestEvaluateCondition_ArrayFieldPath tests conditions with array field extraction
+func TestEvaluateCondition_ArrayFieldPath(t *testing.T) {
+	gen := &mockGenerator{}
+	processor := NewDecisionProcessor(gen)
+
+	fieldDef := &jsonSchema.Definition{Type: jsonSchema.String}
+	req := domain.NewGenerationRequest("test", fieldDef)
+	execContext := domain.NewExecutionContext(req)
+
+	// Set up array data in context
+	execContext.SetGeneratedValue("reviews", []interface{}{
+		map[string]interface{}{"rating": 5, "comment": "Great"},
+		map[string]interface{}{"rating": 4, "comment": "Good"},
+		map[string]interface{}{"rating": 5, "comment": "Excellent"},
+	})
+
+	t.Run("ArrayPath_Contains", func(t *testing.T) {
+		// Check if the ratings array contains 5
+		condition := jsonSchema.Condition{
+			FieldPath: "reviews.rating",
+			Operator:  jsonSchema.OpContains,
+			Value:     5,
+		}
+
+		result, err := processor.evaluateCondition(condition, nil, execContext)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if !result {
+			t.Error("Expected condition to be true (ratings contain 5)")
+		}
+	})
+}

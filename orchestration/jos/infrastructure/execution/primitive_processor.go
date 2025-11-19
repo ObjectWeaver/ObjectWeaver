@@ -115,9 +115,10 @@ func (p *PrimitiveProcessor) buildRequestPieces(task *domain.FieldTask, context 
 		prompt += "\n\nContext from previous generation:\n"
 		for _, fieldPath := range task.Definition().SelectFields {
 			logger.Printf("[PrimitiveProcessor] Looking for field '%s' in context", fieldPath)
-			if value, exists := context.GeneratedValues()[fieldPath]; exists {
-				prompt += fmt.Sprintf("\n%s:\n%v\n", fieldPath, value)
-				logger.Printf("[PrimitiveProcessor] Added field '%s' to prompt (length: %d chars)", fieldPath, len(fmt.Sprintf("%v", value)))
+			if value, exists := ResolveFieldPath(fieldPath, context.GeneratedValues()); exists {
+				formattedValue := FormatFieldValue(value)
+				prompt += fmt.Sprintf("\n%s:\n%s\n", fieldPath, formattedValue)
+				logger.Printf("[PrimitiveProcessor] Added field '%s' to prompt (length: %d chars)", fieldPath, len(formattedValue))
 			} else {
 				logger.Printf("[PrimitiveProcessor] Field '%s' not found in context", fieldPath)
 			}
@@ -176,9 +177,10 @@ func (p *PrimitiveProcessor) buildVectorRequest(task *domain.FieldTask, context 
 	if len(task.Definition().SelectFields) > 0 {
 		prompt := ""
 		for _, fieldPath := range task.Definition().SelectFields {
-			if value, exists := context.GeneratedValues()[fieldPath]; exists {
-				prompt += fmt.Sprintf("%v\n", value)
-				logger.Printf("[PrimitiveProcessor] Added field '%s' to prompt (length: %d chars)", fieldPath, len(fmt.Sprintf("%v", value)))
+			if value, exists := ResolveFieldPath(fieldPath, context.GeneratedValues()); exists {
+				formattedValue := FormatFieldValue(value)
+				prompt += fmt.Sprintf("%s\n", formattedValue)
+				logger.Printf("[PrimitiveProcessor] Added field '%s' to prompt (length: %d chars)", fieldPath, len(formattedValue))
 			} else {
 				logger.Printf("[PrimitiveProcessor] Field '%s' not found in context", fieldPath)
 			}
