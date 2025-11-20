@@ -490,7 +490,6 @@ func (fp *FieldProcessor) analyzeFieldDependencies(orderedKeys []string, schema 
 				break
 			}
 
-			// Limit batch size to avoid overwhelming the worker pool
 			if len(currentBatch) >= 5 {
 				break
 			}
@@ -505,7 +504,6 @@ func (fp *FieldProcessor) analyzeFieldDependencies(orderedKeys []string, schema 
 		if len(currentBatch) > 0 {
 			batches = append(batches, currentBatch)
 		} else {
-			// If we can't make progress, force the next unprocessed field
 			for _, key := range orderedKeys {
 				if !processed[key] {
 					logger.Printf("[FieldProcessor] Warning: circular or unresolvable dependency detected for field '%s', processing anyway", key)
@@ -520,6 +518,8 @@ func (fp *FieldProcessor) analyzeFieldDependencies(orderedKeys []string, schema 
 	return batches
 }
 
+// extractRootFieldName extracts the root field name from a field path
+// Examples: "car" -> "car", "car.color" -> "car", "cars.color" -> "cars"
 func extractRootFieldName(fieldPath string) string {
 	if fieldPath == "" {
 		return ""
@@ -535,6 +535,7 @@ func extractRootFieldName(fieldPath string) string {
 	return fieldPath
 }
 
+// processSpeculativeBatch processes a batch of independent fields concurrently
 func (fp *FieldProcessor) processSpeculativeBatch(
 	ctx context.Context,
 	collector ResultCollector,
