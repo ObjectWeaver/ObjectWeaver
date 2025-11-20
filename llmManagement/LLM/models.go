@@ -25,9 +25,10 @@ type BackoffManager interface {
 }
 
 type Job struct {
-	Result  chan *domain.JobResult
-	Tokens  int
-	Inputs  *llmManagement.Inputs
-	Error   chan error
-	Retries int // Tracks the number of retry attempts for transient errors.
+	Result   chan *domain.JobResult
+	Tokens   int
+	Inputs   *llmManagement.Inputs
+	Error    chan error
+	Retries  int   // Tracks the number of retry attempts for transient errors.
+	Priority int32 // For batch processing: <0 = send to batch queue, >=0 = direct processing
 }

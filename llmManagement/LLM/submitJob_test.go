@@ -1,9 +1,11 @@
 package LLM
 
 import (
+	"objectweaver/llmManagement"
 	"objectweaver/llmManagement/domain"
 	"testing"
 
+	"github.com/objectweaver/go-sdk/jsonSchema"
 	gogpt "github.com/sashabaranov/go-openai"
 )
 
@@ -90,6 +92,11 @@ func TestDefaultJobSubmitter_SubmitJob(t *testing.T) {
 		workerChannel := make(chan *Job, 1)
 		job := &Job{
 			Result: make(chan *domain.JobResult, 1),
+			Inputs: &llmManagement.Inputs{
+				Def: &jsonSchema.Definition{
+					Type: jsonSchema.String,
+				},
+			},
 		}
 		expectedContent := "Test response"
 		expectedUsage := gogpt.Usage{
@@ -115,54 +122,6 @@ func TestDefaultJobSubmitter_SubmitJob(t *testing.T) {
 		}()
 
 		content, usage, err := submitter.SubmitJob(job, workerChannel)
-		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
-		}
-		if content != expectedContent {
-			t.Errorf("Expected content %s, got %s", expectedContent, content)
-		}
-		if usage == nil || *usage != expectedUsage {
-			t.Errorf("Expected usage %v, got %v", expectedUsage, usage)
-		}
-	})
-}
-
-func TestVariedJobSubmitter_SubmitJob(t *testing.T) {
-	submitter := NewVariedJobSubmitter()
-
-	t.Run("valid job", func(t *testing.T) {
-		// Mock the global WorkerChannel
-		originalWorkerChannel := WorkerChannel
-		WorkerChannel = make(chan *Job, 1)
-		defer func() { WorkerChannel = originalWorkerChannel }()
-
-		job := &Job{
-			Result: make(chan *domain.JobResult, 1),
-		}
-		expectedContent := "Varied response"
-		expectedUsage := gogpt.Usage{
-			PromptTokens:     3,
-			CompletionTokens: 7,
-			TotalTokens:      10,
-		}
-		result := &gogpt.ChatCompletionResponse{
-			Choices: []gogpt.ChatCompletionChoice{
-				{
-					Message: gogpt.ChatCompletionMessage{
-						Content: expectedContent,
-					},
-				},
-			},
-			Usage: expectedUsage,
-		}
-
-		// Simulate worker
-		go func() {
-			receivedJob := <-WorkerChannel
-			receivedJob.Result <- domain.CreateJobResult(result, nil)
-		}()
-
-		content, usage, err := submitter.SubmitJob(job, nil) // workerChannel param not used
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}

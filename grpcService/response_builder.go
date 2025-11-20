@@ -2,7 +2,7 @@ package grpcService
 
 import (
 	"errors"
-	"log"
+	"objectweaver/logger"
 
 	"github.com/objectweaver/go-sdk/converison"
 	pb "github.com/objectweaver/go-sdk/grpc"
@@ -31,7 +31,7 @@ func (b *DefaultResponseBuilder) BuildResponse(result *domain.GenerationResult) 
 	// Convert map to protobuf struct
 	toStruct, err := converison.ConvertMapToStruct(data)
 	if err != nil {
-		log.Printf("Failed to convert to protobuf struct: %v", err)
+		logger.Printf("Failed to convert to protobuf struct: %v", err)
 		return nil, err
 	}
 
@@ -52,7 +52,7 @@ func (b *DefaultResponseBuilder) BuildResponse(result *domain.GenerationResult) 
 				"value": fieldResult.Value,
 			})
 			if err != nil {
-				log.Printf("Warning: Failed to convert field %s value to struct: %v", key, err)
+				logger.Printf("Warning: Failed to convert field %s value to struct: %v", key, err)
 				continue
 			}
 

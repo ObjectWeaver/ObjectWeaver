@@ -2,3 +2,6 @@
 .env
 /.env.local
 /.env
+objectweaver
+objectweaver
+integration-test/results/*

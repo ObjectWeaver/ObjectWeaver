@@ -17,8 +17,13 @@ func TestNewJobQueue(t *testing.T) {
 	if cap(q.fifo) != maxQueueSize {
 		t.Errorf("Expected fifo cap %d, got %d", maxQueueSize, cap(q.fifo))
 	}
-	if cap(q.jobChan) != concurrency {
-		t.Errorf("Expected jobChan cap %d, got %d", concurrency, cap(q.jobChan))
+	// jobChan buffer is max(concurrency * 100, 10000) for high throughput
+	expectedJobChanCap := concurrency * 100
+	if expectedJobChanCap < 10000 {
+		expectedJobChanCap = 10000
+	}
+	if cap(q.jobChan) != expectedJobChanCap {
+		t.Errorf("Expected jobChan cap %d, got %d", expectedJobChanCap, cap(q.jobChan))
 	}
 	if q.stopChan == nil {
 		t.Error("stopChan should not be nil")

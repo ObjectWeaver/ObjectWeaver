@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 5s      # Scrape metrics every 5 seconds
+  evaluation_interval: 5s   # Evaluate rules every 5 seconds
+  scrape_timeout: 4s       # Timeout after 4 seconds
+
+# Scrape configurations
+scrape_configs:
+  # ObjectWeaver server metrics
+  - job_name: 'objectweaver'
+    static_configs:
+      - targets: ['objectweaver:2008']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"objectweaver/llmManagement"
 	"objectweaver/llmManagement/domain"
 	"objectweaver/llmManagement/requestManagement"
@@ -25,8 +26,14 @@ func NewOpenAIClientAdapter(
 	apiKey string,
 	builder requestManagement.RequestBuilder,
 	embeddingBuilder requestManagement.EmbeddingRequestBuilder,
+	httpClient *http.Client,
 ) *OpenAIClientAdapter {
-	client := openai.NewClient(apiKey)
+	config := openai.DefaultConfig(apiKey)
+	if httpClient != nil {
+		config.HTTPClient = httpClient
+	}
+	client := openai.NewClientWithConfig(config)
+
 	return &OpenAIClientAdapter{
 		client:                  client,
 		requestBuilder:          builder,

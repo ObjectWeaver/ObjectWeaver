@@ -3,8 +3,9 @@ package grpcService
 import (
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
 	"objectweaver/orchestration/jos/factory"
+
+	"github.com/objectweaver/go-sdk/jsonSchema"
 )
 
 func TestDefaultConfigFactory_CreateConfig(t *testing.T) {

@@ -241,13 +241,9 @@ func TestArrayProcessor_Process_ItemProcessingError(t *testing.T) {
 func TestArrayProcessor_determineArraySize_Success(t *testing.T) {
 	llmProvider := &mockLLMProvider{
 		generateFunc: func(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
-			if strings.Contains(prompt, "listString") {
-				return "1. Apple\n2. Banana\n3. Cherry", &domain.ProviderMetadata{Cost: 0.1}, nil
-			}
-			if strings.Contains(prompt, "numItems") {
-				return "3", &domain.ProviderMetadata{Cost: 0.05}, nil
-			}
-			return "", &domain.ProviderMetadata{Cost: 0.1}, nil
+			// Return the combined format that the array processor expects
+			response := "LIST:\n1. Apple\n2. Banana\n3. Cherry\nCOUNT: 3"
+			return response, &domain.ProviderMetadata{Cost: 0.1}, nil
 		},
 	}
 	promptBuilder := &mockPromptBuilder{}

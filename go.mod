@@ -6,12 +6,14 @@ require (
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/objectweaver/go-sdk v0.0.0-20251110180655-46f1bd34e930
 	github.com/sashabaranov/go-openai v1.40.5
+	golang.org/x/sync v0.18.0
 	google.golang.org/genai v1.18.0
 )
 
 require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 )
 

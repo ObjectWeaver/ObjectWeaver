@@ -78,7 +78,10 @@ func BenchmarkProcessFields(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				// Process fields and collect results
 				ctx := stdcontext.Background()
-				resultsCh := processor.ProcessFields(ctx, tt.schema, nil, context)
+				if context.WorkerPool() == nil {
+					context.SetWorkerPool(NewWorkerPool(0))
+				}
+				resultsCh := processor.ProcessFieldsStart(ctx, tt.schema, nil, context)
 				count := 0
 				for range resultsCh {
 					count++
@@ -113,7 +116,10 @@ func BenchmarkProcessConcurrentFields(b *testing.B) {
 
 			for i := 0; i < b.N; i++ {
 				ctx := stdcontext.Background()
-				resultsCh := processor.ProcessFields(ctx, schema, nil, context)
+				if context.WorkerPool() == nil {
+					context.SetWorkerPool(NewWorkerPool(0))
+				}
+				resultsCh := processor.ProcessFieldsStart(ctx, schema, nil, context)
 				for range resultsCh {
 					// Consume results
 				}
@@ -142,12 +148,13 @@ func BenchmarkSequentialVsParallel(b *testing.B) {
 
 		request := domain.NewGenerationRequest("test", schema)
 		context := domain.NewExecutionContext(request)
+		context.SetWorkerPool(NewWorkerPool(0))
 		b.ResetTimer()
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
 			ctx := stdcontext.Background()
-			resultsCh := processor.ProcessFields(ctx, schema, nil, context)
+			resultsCh := processor.ProcessFieldsStart(ctx, schema, nil, context)
 			for range resultsCh {
 			}
 		}
@@ -160,12 +167,13 @@ func BenchmarkSequentialVsParallel(b *testing.B) {
 
 		request := domain.NewGenerationRequest("test", schema)
 		context := domain.NewExecutionContext(request)
+		context.SetWorkerPool(NewWorkerPool(0))
 		b.ResetTimer()
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
 			ctx := stdcontext.Background()
-			resultsCh := processor.ProcessFields(ctx, schema, nil, context)
+			resultsCh := processor.ProcessFieldsStart(ctx, schema, nil, context)
 			for range resultsCh {
 			}
 		}
@@ -185,19 +193,18 @@ func BenchmarkSequentialVsParallel(b *testing.B) {
 
 		request := domain.NewGenerationRequest("test", schema)
 		context := domain.NewExecutionContext(request)
+		context.SetWorkerPool(NewWorkerPool(0))
 		b.ResetTimer()
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
 			ctx := stdcontext.Background()
-			resultsCh := processor.ProcessFields(ctx, schema, nil, context)
+			resultsCh := processor.ProcessFieldsStart(ctx, schema, nil, context)
 			for range resultsCh {
 			}
 		}
 	})
-}
-
-// BenchmarkNestedObjectProcessing tests nested object field processing
+} // BenchmarkNestedObjectProcessing tests nested object field processing
 func BenchmarkNestedObjectProcessing(b *testing.B) {
 	mockProvider := llm.NewMockProvider()
 	promptBuilder := prompt.NewDefaultPromptBuilder()
@@ -208,13 +215,14 @@ func BenchmarkNestedObjectProcessing(b *testing.B) {
 		schema := createSchemaWithFields(10)
 		request := domain.NewGenerationRequest("test", schema)
 		context := domain.NewExecutionContext(request)
+		context.SetWorkerPool(NewWorkerPool(0))
 
 		b.ResetTimer()
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
 			ctx := stdcontext.Background()
-			resultsCh := processor.ProcessFields(ctx, schema, nil, context)
+			resultsCh := processor.ProcessFieldsStart(ctx, schema, nil, context)
 			for range resultsCh {
 			}
 		}
@@ -236,13 +244,14 @@ func BenchmarkNestedObjectProcessing(b *testing.B) {
 		}
 		request := domain.NewGenerationRequest("test", schema)
 		context := domain.NewExecutionContext(request)
+		context.SetWorkerPool(NewWorkerPool(0))
 
 		b.ResetTimer()
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
 			ctx := stdcontext.Background()
-			resultsCh := processor.ProcessFields(ctx, schema, nil, context)
+			resultsCh := processor.ProcessFieldsStart(ctx, schema, nil, context)
 			for range resultsCh {
 			}
 		}

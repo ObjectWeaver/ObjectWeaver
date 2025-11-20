@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"objectweaver/llmManagement"
 	"objectweaver/llmManagement/domain"
 	"objectweaver/llmManagement/modelConverter"
 	"objectweaver/llmManagement/requestManagement"
+	"objectweaver/logger"
 
 	"github.com/objectweaver/go-sdk/jsonSchema"
 	"github.com/sashabaranov/go-openai"
@@ -90,8 +90,8 @@ func (a *GeminiClientAdapter) processChat(inputs *llmManagement.Inputs) (*domain
 	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s",
 		a.baseURL, openaiReq.Model, a.apiKey)
 
-	log.Printf("[Gemini DEBUG] Using model: %s", openaiReq.Model)
-	log.Printf("[Gemini DEBUG] API URL: %s", url)
+	logger.Printf("[Gemini DEBUG] Using model: %s", openaiReq.Model)
+	logger.Printf("[Gemini DEBUG] API URL: %s", url)
 
 	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqBytes))
 	if err != nil {
@@ -141,8 +141,8 @@ func (a *GeminiClientAdapter) processEmbedding(inputs *llmManagement.Inputs) (*d
 	url := fmt.Sprintf("%s/models/%s:embedContent?key=%s",
 		a.baseURL, openaiReq.Model, a.apiKey)
 
-	log.Printf("[Gemini DEBUG] Using embedding model: %s", openaiReq.Model)
-	log.Printf("[Gemini DEBUG] Embedding API URL: %s", url)
+	logger.Printf("[Gemini DEBUG] Using embedding model: %s", openaiReq.Model)
+	logger.Printf("[Gemini DEBUG] Embedding API URL: %s", url)
 
 	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqBytes))
 	if err != nil {
@@ -206,8 +206,8 @@ func (a *GeminiClientAdapter) convertToGeminiFormat(req openai.ChatCompletionReq
 						imageData := part.ImageURL.URL
 						mimeType := "image/jpeg"
 
-						log.Printf("[Gemini DEBUG] Original imageData length: %d", len(imageData))
-						log.Printf("[Gemini DEBUG] First 100 chars: %s", imageData[:min(100, len(imageData))])
+						logger.Printf("[Gemini DEBUG] Original imageData length: %d", len(imageData))
+						logger.Printf("[Gemini DEBUG] First 100 chars: %s", imageData[:min(100, len(imageData))])
 
 						// Check if it's a data URL and extract the base64 part
 						if len(imageData) > 0 {
@@ -219,10 +219,10 @@ func (a *GeminiClientAdapter) convertToGeminiFormat(req openai.ChatCompletionReq
 								}
 								// Extract base64 data (skip ";base64,")
 								imageData = imageData[idx+8:]
-								log.Printf("[Gemini DEBUG] After extraction - mimeType: %s, data length: %d", mimeType, len(imageData))
-								log.Printf("[Gemini DEBUG] First 50 chars of base64: %s", imageData[:min(50, len(imageData))])
+								logger.Printf("[Gemini DEBUG] After extraction - mimeType: %s, data length: %d", mimeType, len(imageData))
+								logger.Printf("[Gemini DEBUG] First 50 chars of base64: %s", imageData[:min(50, len(imageData))])
 							} else {
-								log.Printf("[Gemini DEBUG] No ';base64,' found in imageData, using as-is")
+								logger.Printf("[Gemini DEBUG] No ';base64,' found in imageData, using as-is")
 							}
 						}
 

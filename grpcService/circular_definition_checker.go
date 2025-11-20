@@ -1,8 +1,9 @@
 package grpcService
 
 import (
-	"github.com/objectweaver/go-sdk/jsonSchema"
 	"objectweaver/checks"
+
+	"github.com/objectweaver/go-sdk/jsonSchema"
 )
 
 // DefaultCircularDefinitionChecker is the default implementation

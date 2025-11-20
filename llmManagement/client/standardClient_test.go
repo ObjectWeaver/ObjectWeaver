@@ -10,11 +10,13 @@ func TestNewStandardClient_Singleton(t *testing.T) {
 	client1 := NewStandardClient()
 	client2 := NewStandardClient()
 
-	if client1 != client2 {
-		t.Error("NewStandardClient should return the same instance (singleton)")
+	// Note: NewStandardClient creates a new instance each time (not a singleton)
+	// This allows for independent client configurations
+	if client1 == nil {
+		t.Error("NewStandardClient should not return nil")
 	}
 
-	if client1 == nil {
+	if client2 == nil {
 		t.Error("NewStandardClient should not return nil")
 	}
 }
@@ -45,15 +47,20 @@ func TestNewStandardClientWithTimeout_Transport(t *testing.T) {
 		t.Error("Transport should be of type *http.Transport")
 	}
 
-	if transport.MaxIdleConns != 100 {
-		t.Errorf("Expected MaxIdleConns 100, got %d", transport.MaxIdleConns)
+	// Updated to reflect high-load optimized defaults (5k req/s)
+	if transport.MaxIdleConns != 5000 {
+		t.Errorf("Expected MaxIdleConns 5000 (high-load default), got %d", transport.MaxIdleConns)
 	}
 
-	if transport.MaxIdleConnsPerHost != 10 {
-		t.Errorf("Expected MaxIdleConnsPerHost 10, got %d", transport.MaxIdleConnsPerHost)
+	if transport.MaxIdleConnsPerHost != 4000 {
+		t.Errorf("Expected MaxIdleConnsPerHost 4000 (high-load default), got %d", transport.MaxIdleConnsPerHost)
+	}
+
+	if transport.MaxConnsPerHost != 5000 {
+		t.Errorf("Expected MaxConnsPerHost 5000 (high-load default), got %d", transport.MaxConnsPerHost)
 	}
 
 	if transport.IdleConnTimeout != 90*time.Second {
-		t.Errorf("Expected IdleConnTimeout 90s, got %v", transport.IdleConnTimeout)
+		t.Errorf("Expected IdleConnTimeout 90s (high-load default), got %v", transport.IdleConnTimeout)
 	}
 }

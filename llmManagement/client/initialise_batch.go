@@ -37,9 +37,22 @@ func init() {
 		return
 	}
 
-	// Create HTTP client with timeout
+	// Create HTTP client with timeout and optimized transport for high concurrency
+	transport := &http.Transport{
+		MaxIdleConns:          1000,             // Increased from default 100
+		MaxIdleConnsPerHost:   200,              // Increased from default 2
+		MaxConnsPerHost:       0,                // 0 = unlimited
+		IdleConnTimeout:       90 * time.Second, // Keep connections alive longer
+		DisableKeepAlives:     false,            // Enable connection reuse
+		DisableCompression:    false,            // Enable compression
+		ForceAttemptHTTP2:     true,             // Use HTTP/2 when available
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
 	httpClient := &http.Client{
-		Timeout: time.Duration(settings.Timeout) * time.Second,
+		Timeout:   time.Duration(settings.Timeout) * time.Second,
+		Transport: transport,
 	}
 
 	// Apply gzip if enabled
@@ -47,6 +60,11 @@ func init() {
 		baseClient := NewStandardClient()
 		httpClient = NewGenericGzipClient(baseClient)
 		httpClient.Timeout = time.Duration(settings.Timeout) * time.Second
+
+		// Ensure gzip client also has optimized transport
+		if httpClient.Transport == nil {
+			httpClient.Transport = transport
+		}
 	}
 
 	// Create batch client with settings

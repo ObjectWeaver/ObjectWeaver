@@ -1,6 +1,7 @@
 package jobSubmitter
 
 import (
+	"context"
 	"testing"
 
 	"objectweaver/llmManagement/LLM"
@@ -48,7 +49,7 @@ func TestChannelJobSubmitter_SubmitJob(t *testing.T) {
 		job.Result <- domain.CreateJobResult(response, nil)
 	}()
 
-	response, usage, err := submitter.SubmitJob(model, def, newPrompt, systemPrompt, outStream)
+	response, usage, err := submitter.SubmitJob(context.Background(), model, def, newPrompt, systemPrompt, outStream)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -94,7 +95,7 @@ func TestChannelJobSubmitter_SubmitJob_InitializesSendImage(t *testing.T) {
 		job.Result <- domain.CreateJobResult(response, nil)
 	}()
 
-	_, _, err := submitter.SubmitJob(model, def, newPrompt, systemPrompt, outStream)
+	_, _, err := submitter.SubmitJob(context.Background(), model, def, newPrompt, systemPrompt, outStream)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

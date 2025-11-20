@@ -3,10 +3,10 @@ package requestManagement
 import (
 	"encoding/base64"
 	"fmt"
-	"log"
 	"net/http"
 	"objectweaver/llmManagement"
 	"objectweaver/llmManagement/modelConverter"
+	"objectweaver/logger"
 	"os"
 	"strconv"
 	"strings"
@@ -62,8 +62,9 @@ func (b *defaultOpenAIReqBuilder) BuildRequest(inputs *llmManagement.Inputs) (go
 	}
 
 	// 2. Extract parameters from the Inputs struct
-	prompt := inputs.Prompt
-	systemPrompt := inputs.SystemPrompt
+	// Create defensive copies of strings to prevent race conditions during concurrent access
+	prompt := string([]byte(inputs.Prompt))
+	systemPrompt := string([]byte(inputs.SystemPrompt))
 	model := b.modelConverter.Convert(inputs.Def.Model) // Cast ModelType to string
 
 	// Set defaults for ModelConfig fields
@@ -104,15 +105,15 @@ func (b *defaultOpenAIReqBuilder) BuildRequest(inputs *llmManagement.Inputs) (go
 	var imagesData [][]byte
 	if inputs.Def.SendImage != nil {
 		imagesData = inputs.Def.SendImage.ImagesData
-		log.Printf("[CreateOpenAIReq DEBUG] Found %d images in SendImage", len(imagesData))
+		logger.Printf("[CreateOpenAIReq DEBUG] Found %d images in SendImage", len(imagesData))
 		for i, img := range imagesData {
-			log.Printf("[CreateOpenAIReq DEBUG] Image %d: %d bytes", i, len(img))
+			logger.Printf("[CreateOpenAIReq DEBUG] Image %d: %d bytes", i, len(img))
 			if len(img) > 0 {
-				log.Printf("[CreateOpenAIReq DEBUG] Image %d first 20 bytes: %v", i, img[:min(20, len(img))])
+				logger.Printf("[CreateOpenAIReq DEBUG] Image %d first 20 bytes: %v", i, img[:min(20, len(img))])
 			}
 		}
 	} else {
-		log.Printf("[CreateOpenAIReq DEBUG] No SendImage data found")
+		logger.Printf("[CreateOpenAIReq DEBUG] No SendImage data found")
 	}
 
 	var url *gogpt.ChatMessageImageURL
@@ -197,9 +198,9 @@ func toBase64DataURL(imageData []byte, mimeType string) string {
 // Function to determine MIME type
 func detectMimeType(imageData []byte) string {
 	mimeType := http.DetectContentType(imageData)
-	log.Println("the mime type found: ", mimeType)
+	logger.Println("the mime type found: ", mimeType)
 	if !strings.HasPrefix(mimeType, "image/") {
-		log.Println("returning the value of image/jpeg")
+		logger.Println("returning the value of image/jpeg")
 		return "image/jpeg"
 	}
 	return mimeType

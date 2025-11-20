@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
+	"objectweaver/logger"
 
 	"github.com/objectweaver/go-sdk/jsonSchema"
 	"github.com/sashabaranov/go-openai"
@@ -26,8 +26,8 @@ func NewImageGenerator(client *openai.Client) *ImageGenerator {
 
 // GenerateImage creates an image using DALL-E and returns the raw bytes
 func (g *ImageGenerator) GenerateImage(prompt string, model string, size string) ([]byte, error) {
-	log.Printf("[ImageGenerator] Generating image with model: %s, size: %s", model, size)
-	log.Printf("[ImageGenerator] Prompt: %s", prompt)
+	logger.Printf("[ImageGenerator] Generating image with model: %s, size: %s", model, size)
+	logger.Printf("[ImageGenerator] Prompt: %s", prompt)
 
 	// Build the image request
 	req := openai.ImageRequest{
@@ -48,18 +48,18 @@ func (g *ImageGenerator) GenerateImage(prompt string, model string, size string)
 		req.Model = openai.CreateImageModelDallE2 // Default fallback
 	}
 
-	log.Printf("[ImageGenerator] Calling OpenAI CreateImage API...")
+	logger.Printf("[ImageGenerator] Calling OpenAI CreateImage API...")
 
 	// Call OpenAI API
 	resp, err := g.client.CreateImage(context.Background(), req)
 	if err != nil {
-		log.Printf("[ImageGenerator ERROR] Failed to create image: %v", err)
+		logger.Printf("[ImageGenerator ERROR] Failed to create image: %v", err)
 		return nil, fmt.Errorf("failed to create image: %w", err)
 	}
 
 	// Check if we got a response
 	if len(resp.Data) == 0 {
-		log.Printf("[ImageGenerator ERROR] No image data in response")
+		logger.Printf("[ImageGenerator ERROR] No image data in response")
 		return nil, fmt.Errorf("no image data returned from API")
 	}
 
@@ -72,35 +72,35 @@ func (g *ImageGenerator) GenerateImage(prompt string, model string, size string)
 	// We should return the raw image bytes, NOT the base64 string
 	// The ByteProcessor will handle base64 encoding for JSON
 	if imageData.B64JSON != "" {
-		log.Printf("[ImageGenerator] Received base64 image, decoding to raw bytes...")
+		logger.Printf("[ImageGenerator] Received base64 image, decoding to raw bytes...")
 		imgBytes, err = base64.StdEncoding.DecodeString(imageData.B64JSON)
 		if err != nil {
-			log.Printf("[ImageGenerator ERROR] Failed to decode base64: %v", err)
+			logger.Printf("[ImageGenerator ERROR] Failed to decode base64: %v", err)
 			return nil, fmt.Errorf("failed to decode base64 image: %w", err)
 		}
-		log.Printf("[ImageGenerator] Successfully decoded image: %d bytes", len(imgBytes))
+		logger.Printf("[ImageGenerator] Successfully decoded image: %d bytes", len(imgBytes))
 		return imgBytes, nil
 	}
 
 	// If we got a URL instead (shouldn't happen with B64JSON format, but handle it)
 	if imageData.URL != "" {
-		log.Printf("[ImageGenerator] Received image URL, downloading: %s", imageData.URL)
+		logger.Printf("[ImageGenerator] Received image URL, downloading: %s", imageData.URL)
 		httpResp, err := http.Get(imageData.URL)
 		if err != nil {
-			log.Printf("[ImageGenerator ERROR] Failed to download image: %v", err)
+			logger.Printf("[ImageGenerator ERROR] Failed to download image: %v", err)
 			return nil, fmt.Errorf("failed to download image from URL: %w", err)
 		}
 		defer httpResp.Body.Close()
 
 		imgBytes, err = io.ReadAll(httpResp.Body)
 		if err != nil {
-			log.Printf("[ImageGenerator ERROR] Failed to read image data: %v", err)
+			logger.Printf("[ImageGenerator ERROR] Failed to read image data: %v", err)
 			return nil, fmt.Errorf("failed to read image data: %w", err)
 		}
-		log.Printf("[ImageGenerator] Downloaded image: %d bytes", len(imgBytes))
+		logger.Printf("[ImageGenerator] Downloaded image: %d bytes", len(imgBytes))
 		return imgBytes, nil
 	}
 
-	log.Printf("[ImageGenerator ERROR] No image data (neither base64 nor URL)")
+	logger.Printf("[ImageGenerator ERROR] No image data (neither base64 nor URL)")
 	return nil, fmt.Errorf("no image data in response")
 }

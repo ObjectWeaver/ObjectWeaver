@@ -1,8 +1,8 @@
 package backoff
 
 import (
-	"log"
 	"math/rand"
+	"objectweaver/logger"
 	"sync"
 	"time"
 )
@@ -61,7 +61,7 @@ func (b *PerWorkerExponentialBackoff) ApplyBackoff(workerID int) {
 
 	if sleepDuration > 0 {
 		if b.Verbose {
-			log.Printf("Per-worker backoff active. Worker %d pausing for %v.", workerID, sleepDuration.Round(time.Millisecond))
+			logger.Printf("Per-worker backoff active. Worker %d pausing for %v.", workerID, sleepDuration.Round(time.Millisecond))
 		}
 		time.Sleep(sleepDuration)
 	}
@@ -92,7 +92,7 @@ func (b *PerWorkerExponentialBackoff) ActivateBackoff(workerID int, retryAfter t
 	state.backoffUntil = time.Now().Add(totalPause)
 
 	if b.Verbose {
-		log.Printf("Rate limit hit by worker %d. Activating PER-WORKER backoff for %v.", workerID, totalPause.Round(time.Millisecond))
+		logger.Printf("Rate limit hit by worker %d. Activating PER-WORKER backoff for %v.", workerID, totalPause.Round(time.Millisecond))
 	}
 }
 

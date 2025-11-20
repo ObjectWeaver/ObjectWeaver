@@ -32,12 +32,9 @@ services:
       KEY_FILE: ${KEY_FILE}
     networks:
       - monitoring
-      - my-shared-network
 
 networks:
   monitoring:
-  my-shared-network:
-    external: true
 
 volumes:
   grafana-storage:

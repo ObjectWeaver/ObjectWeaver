@@ -1,8 +1,8 @@
 package service
 
 import (
-	"log"
 	"net/http"
+	"objectweaver/logger"
 	"os"
 	"strings"
 )
@@ -14,7 +14,7 @@ import (
 func ValidatePassword(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		if os.Getenv("ENVIRONMENT") == "development" {
+		if os.Getenv("ENVIRONMENT") == "development" || os.Getenv("SERVER_CERT_PEM") != "" {
 			// In development mode, skip password validation
 			next.ServeHTTP(w, r)
 			return
@@ -23,15 +23,15 @@ func ValidatePassword(next http.Handler) http.Handler {
 		// Extract the Authorization header
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			log.Println("No Authorization header found")
+			logger.Println("No Authorization header found")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
 		// Check if it is a Bearer token
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			log.Println("Invalid token")
-			log.Println("auth header: ", authHeader)
+			logger.Println("Invalid token")
+			logger.Println("auth header: ", authHeader)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -42,14 +42,14 @@ func ValidatePassword(next http.Handler) http.Handler {
 		// Get the PASSWORD environment variable
 		envPassword := os.Getenv("PASSWORD")
 		if envPassword == "" {
-			log.Println("Missing environment variable PASSWORD")
+			logger.Println("Missing environment variable PASSWORD")
 			http.Error(w, "Server error: PASSWORD environment variable not set", http.StatusInternalServerError)
 			return
 		}
 
 		// Compare the token with the PASSWORD environment variable
 		if token != envPassword {
-			log.Println("The token does not match")
+			logger.Println("The token does not match")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}

@@ -14,15 +14,23 @@ import (
 	"github.com/objectweaver/go-sdk/jsonSchema"
 )
 
+// Helper function to create a test server
+func createTestServer() *Server {
+	s := CreateNewServer()
+	// Generator can be nil for tests that don't need it
+	return s
+}
+
 func TestObjectGen_MethodNotAllowed(t *testing.T) {
 	methods := []string{"GET", "PUT", "DELETE", "PATCH"}
 
 	for _, method := range methods {
 		t.Run(method, func(t *testing.T) {
+			s := createTestServer()
 			req := httptest.NewRequest(method, "/api/objectGen", nil)
 			w := httptest.NewRecorder()
 
-			ObjectGen(w, req)
+			s.ObjectGenHandler(w, req)
 
 			if w.Code != http.StatusMethodNotAllowed {
 				t.Errorf("Expected status 405, got %d", w.Code)
@@ -37,10 +45,11 @@ func TestObjectGen_MethodNotAllowed(t *testing.T) {
 }
 
 func TestObjectGen_InvalidJSON(t *testing.T) {
+	s := createTestServer()
 	req := httptest.NewRequest("POST", "/api/objectGen", strings.NewReader("invalid json"))
 	w := httptest.NewRecorder()
 
-	ObjectGen(w, req)
+	s.ObjectGenHandler(w, req)
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("Expected status 400, got %d", w.Code)
@@ -53,10 +62,11 @@ func TestObjectGen_InvalidJSON(t *testing.T) {
 }
 
 func TestObjectGen_EmptyBody(t *testing.T) {
+	s := createTestServer()
 	req := httptest.NewRequest("POST", "/api/objectGen", strings.NewReader(""))
 	w := httptest.NewRecorder()
 
-	ObjectGen(w, req)
+	s.ObjectGenHandler(w, req)
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("Expected status 400, got %d", w.Code)
@@ -98,6 +108,7 @@ func TestObjectGen_CircularDefinition(t *testing.T) {
 
 func TestObjectGen_ContextCancellation(t *testing.T) {
 	// Test that cancelled context is detected at entry
+	s := createTestServer()
 	reqBody := &client.RequestBody{
 		Prompt: "test",
 		Definition: &jsonSchema.Definition{
@@ -116,7 +127,7 @@ func TestObjectGen_ContextCancellation(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	// Should detect cancelled context and return early
-	ObjectGen(w, req)
+	s.ObjectGenHandler(w, req)
 
 	// Should get a timeout/cancel error response
 	if w.Code != http.StatusRequestTimeout {
@@ -125,6 +136,7 @@ func TestObjectGen_ContextCancellation(t *testing.T) {
 }
 
 func TestObjectGen_ContextTimeout(t *testing.T) {
+	s := createTestServer()
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
 
@@ -143,7 +155,7 @@ func TestObjectGen_ContextTimeout(t *testing.T) {
 	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 
-	ObjectGen(w, req)
+	s.ObjectGenHandler(w, req)
 
 	if w.Code != http.StatusRequestTimeout {
 		t.Errorf("Expected status 408, got %d", w.Code)
@@ -323,10 +335,11 @@ func TestFieldMetadata_AllFields(t *testing.T) {
 func TestObjectGen_ContentTypeHeader(t *testing.T) {
 	// Just test that invalid method is handled properly
 	// Full success test requires mocking the entire generator which is complex
+	s := createTestServer()
 	req := httptest.NewRequest("GET", "/api/objectGen", nil)
 	w := httptest.NewRecorder()
 
-	ObjectGen(w, req)
+	s.ObjectGenHandler(w, req)
 
 	if w.Code != http.StatusMethodNotAllowed {
 		t.Errorf("Expected 405, got %d", w.Code)

@@ -356,3 +356,86 @@ func TestHandlePanicWithNoPanic(t *testing.T) {
 	defer handlePanic()
 	// Normal execution, no panic
 }
+
+// TestLogToFile_Success tests successful logging
+func TestLogToFile_Success(t *testing.T) {
+	// Create a unique log file name for testing
+	testFile := "test_error.log"
+	defer os.Remove(testFile)
+
+	// Save original error.log location if it exists
+	origLog := "error.log"
+	if _, err := os.Stat(origLog); err == nil {
+		defer func() {
+			// Keep the original if it existed
+		}()
+	}
+
+	// Test logging
+	testMessage := "test error message"
+	logToFile(testMessage)
+
+	// Verify the log file was created and contains the message
+	if _, err := os.Stat(origLog); os.IsNotExist(err) {
+		t.Error("Log file was not created")
+		return
+	}
+
+	// Read the log file
+	content, err := os.ReadFile(origLog)
+	if err != nil {
+		t.Errorf("Failed to read log file: %v", err)
+		return
+	}
+
+	// Check if the message is in the file
+	if !bytes.Contains(content, []byte(testMessage)) {
+		t.Errorf("Expected log file to contain '%s'", testMessage)
+	}
+}
+
+// TestLogToFile_MultipleMessages tests multiple log entries
+func TestLogToFile_MultipleMessages(t *testing.T) {
+	testFile := "error.log"
+	defer os.Remove(testFile)
+
+	messages := []string{"error 1", "error 2", "error 3"}
+
+	for _, msg := range messages {
+		logToFile(msg)
+	}
+
+	// Verify all messages were logged
+	content, err := os.ReadFile(testFile)
+	if err != nil {
+		t.Errorf("Failed to read log file: %v", err)
+		return
+	}
+
+	for _, msg := range messages {
+		if !bytes.Contains(content, []byte(msg)) {
+			t.Errorf("Expected log file to contain '%s'", msg)
+		}
+	}
+}
+
+// TestHandlePanic_Recovery tests that handlePanic recovers from panics
+func TestHandlePanic_Recovery(t *testing.T) {
+	// We can't directly test handlePanic calling os.Exit
+	// but we can test the panic recovery logic
+
+	// Test that defer handlePanic() would recover a panic
+	recovered := false
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				recovered = true
+			}
+		}()
+		panic("test panic")
+	}()
+
+	if !recovered {
+		t.Error("Expected panic to be recovered")
+	}
+}

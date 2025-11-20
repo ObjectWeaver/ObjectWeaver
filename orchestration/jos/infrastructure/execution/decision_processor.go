@@ -3,7 +3,7 @@ package execution
 import (
 	"context"
 	"fmt"
-	"log"
+	"objectweaver/logger"
 	"objectweaver/orchestration/jos/domain"
 	"sort"
 	"strings"
@@ -44,17 +44,17 @@ func (d *DecisionProcessor) ProcessDecisionPoint(
 
 	// No decision point - return original result only
 	if decisionPoint == nil {
-		log.Printf("[DecisionProcessor] No decision point for task %s, skipping", task.Key())
+		logger.Printf("[DecisionProcessor] No decision point for task %s, skipping", task.Key())
 		return []*domain.TaskResult{result}, nil
 	}
 
 	// Generator not set - log warning and return original
 	if d.generator == nil {
-		log.Printf("[DecisionProcessor] Warning: generator not set, skipping decision point for %s", task.Key())
+		logger.Printf("[DecisionProcessor] Warning: generator not set, skipping decision point for %s", task.Key())
 		return []*domain.TaskResult{result}, nil
 	}
 
-	log.Printf("[DecisionProcessor] Evaluating decision point '%s' for task %s", decisionPoint.Name, task.Key())
+	logger.Printf("[DecisionProcessor] Evaluating decision point '%s' for task %s", decisionPoint.Name, task.Key())
 
 	// Sort branches by priority (highest first)
 	sortedBranches := make([]jsonSchema.ConditionalBranch, len(decisionPoint.Branches))
@@ -71,7 +71,7 @@ func (d *DecisionProcessor) ProcessDecisionPoint(
 		}
 
 		if matched {
-			log.Printf("[DecisionProcessor] Branch '%s' matched, executing Then definition", branch.Name)
+			logger.Printf("[DecisionProcessor] Branch '%s' matched, executing Then definition", branch.Name)
 			branchResults, err := d.executeBranch(ctx, task, branch.Then, execContext)
 			if err != nil {
 				return nil, err
@@ -82,7 +82,7 @@ func (d *DecisionProcessor) ProcessDecisionPoint(
 		}
 	}
 
-	log.Printf("[DecisionProcessor] No branch matched, using original result")
+	logger.Printf("[DecisionProcessor] No branch matched, using original result")
 	return []*domain.TaskResult{result}, nil
 }
 
@@ -121,7 +121,7 @@ func (d *DecisionProcessor) evaluateBranch(
 
 	// Extract evaluation data
 	evaluationData := result.Data()
-	log.Println("[DecisionProcessor] Evaluation data:", evaluationData)
+	logger.Println("[DecisionProcessor] Evaluation data:", evaluationData)
 	if evaluationData == nil {
 		return false, fmt.Errorf("evaluation result data is nil")
 	}
@@ -133,7 +133,7 @@ func (d *DecisionProcessor) evaluateBranch(
 			return false, fmt.Errorf("condition evaluation error: %w", err)
 		}
 		if !conditionMet {
-			log.Printf("[DecisionProcessor] Branch '%s' condition failed: %s %s %v",
+			logger.Printf("[DecisionProcessor] Branch '%s' condition failed: %s %s %v",
 				branch.Name, condition.Field, condition.Operator, condition.Value)
 			return false, nil
 		}
@@ -200,8 +200,12 @@ func (d *DecisionProcessor) evaluateCondition(
 	var lhs interface{}
 
 	if condition.FieldPath != "" {
-		// Extract from context using field path
-		lhs = context.GeneratedValues()[condition.FieldPath]
+		// Extract from context using field path (supports nested paths like "car.color")
+		if value, exists := ResolveFieldPath(condition.FieldPath, context.GeneratedValues()); exists {
+			lhs = value
+		} else {
+			lhs = nil
+		}
 	} else {
 		// Get from evaluation data
 		lhs = evaluationData[condition.Field]
@@ -230,8 +234,8 @@ func (d *DecisionProcessor) executeBranch(
 	}
 
 	// Enhance context with SelectFields if specified
-	log.Printf("BranchDef: %v", branchDef)
-	log.Printf("Context %v", execContext.GeneratedValues()) //this is empty ie it doesn't contain the previsouly generated information
+	logger.Printf("BranchDef: %v", branchDef)
+	logger.Printf("Context %v", execContext.GeneratedValues()) //this is empty ie it doesn't contain the previsouly generated information
 
 	// Build the prompt starting with the instruction
 	prompt := branchDef.Instruction
@@ -244,12 +248,13 @@ func (d *DecisionProcessor) executeBranch(
 		// Add selected field values directly to the prompt
 		prompt += "\n\nContext from previous generation:\n"
 		for _, fieldPath := range branchDef.SelectFields {
-			log.Printf("[DecisionProcessor] Looking for field '%s' in context", fieldPath)
-			if value, exists := execContext.GeneratedValues()[fieldPath]; exists {
-				prompt += fmt.Sprintf("\n%s:\n%v\n", fieldPath, value)
-				log.Printf("[DecisionProcessor] Added field '%s' to branch prompt (length: %d chars)", fieldPath, len(fmt.Sprintf("%v", value)))
+			logger.Printf("[DecisionProcessor] Looking for field '%s' in context", fieldPath)
+			if value, exists := ResolveFieldPath(fieldPath, execContext.GeneratedValues()); exists {
+				formattedValue := FormatFieldValue(value)
+				prompt += fmt.Sprintf("\n%s:\n%s\n", fieldPath, formattedValue)
+				logger.Printf("[DecisionProcessor] Added field '%s' to branch prompt (length: %d chars)", fieldPath, len(formattedValue))
 			} else {
-				log.Printf("[DecisionProcessor] Field '%s' not found in context", fieldPath)
+				logger.Printf("[DecisionProcessor] Field '%s' not found in context", fieldPath)
 			}
 		}
 	}
@@ -284,11 +289,11 @@ func (d *DecisionProcessor) executeBranch(
 			taskResult = taskResult.WithPath([]string{key})
 			taskResults = append(taskResults, taskResult)
 
-			log.Printf("[DecisionProcessor] Created branch result for field '%s'", key)
+			logger.Printf("[DecisionProcessor] Created branch result for field '%s'", key)
 		}
 	} else {
 		// Empty result - return empty array
-		log.Printf("[DecisionProcessor] Branch returned empty result")
+		logger.Printf("[DecisionProcessor] Branch returned empty result")
 	}
 
 	return taskResults, nil

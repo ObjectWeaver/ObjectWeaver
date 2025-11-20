@@ -28,7 +28,9 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Run tests with coverage
-        run: go test ./... -coverprofile=coverage.out -covermode=atomic
+        run: |
+          # Run tests excluding auto-generated gRPC files
+          go test $(go list ./... | grep -v '/grpc$') -coverprofile=coverage.out -covermode=atomic
 
       - name: Calculate and update coverage badge
         run: |

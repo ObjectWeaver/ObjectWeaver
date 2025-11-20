@@ -1,12 +1,17 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"objectweaver/grpcService"
+	"objectweaver/logger"
 	"os"
+	"runtime"
 
 	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
@@ -42,10 +47,68 @@ func startServers(httpReady, grpcReady chan bool) {
 	if port == "" {
 		port = defaultPort
 	}
-	lis, err := net.Listen("tcp", ":"+port)
-	if err != nil {
-		log.Fatalf("Failed to listen on port %s: %v", port, err)
+
+	// Check if TLS is enabled via environment variables
+	certPEM := os.Getenv("SERVER_CERT_PEM")
+	keyPEM := os.Getenv("SERVER_KEY_PEM")
+	caCertPEM := os.Getenv("CA_CERT_PEM")
+
+	var lis net.Listener
+	var err error
+
+	// If TLS environment variables are set, use TLS
+	if certPEM != "" && keyPEM != "" && caCertPEM != "" {
+		logger.Println("Starting server with TLS enabled")
+
+		// Load server certificate and key with support for negative serial numbers
+		cert, err := loadX509KeyPairWithNegativeSerial([]byte(certPEM), []byte(keyPEM))
+		if err != nil {
+			log.Fatalf("Failed to create key pair: %v", err)
+		}
+
+		// Load CA certificate pool
+		caCertPool := x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM([]byte(caCertPEM)) {
+			log.Fatal("Failed to add CA cert to pool.")
+		}
+
+		// Configure TLS with mTLS support
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			ClientAuth:   tls.RequireAndVerifyClientCert,
+			ClientCAs:    caCertPool,
+			VerifyConnection: func(cs tls.ConnectionState) error {
+				// Custom verification that allows certificates with negative serial numbers
+				// This is needed for compatibility with Go 1.23+ on Windows
+				opts := x509.VerifyOptions{
+					Roots:         caCertPool,
+					Intermediates: x509.NewCertPool(),
+					KeyUsages:     []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+				}
+
+				for _, cert := range cs.PeerCertificates[1:] {
+					opts.Intermediates.AddCert(cert)
+				}
+
+				_, err := cs.PeerCertificates[0].Verify(opts)
+				return err
+			},
+		}
+
+		// Create TLS listener
+		lis, err = tls.Listen("tcp", ":"+port, tlsConfig)
+		if err != nil {
+			log.Fatalf("Failed to listen on port %s with TLS: %v", port, err)
+		}
+	} else {
+		log.Println("Starting server without TLS (plain TCP)")
+		// Create plain TCP listener
+		lis, err = net.Listen("tcp", ":"+port)
+		if err != nil {
+			log.Fatalf("Failed to listen on port %s: %v", port, err)
+		}
 	}
+
 	m := cmux.New(lis)
 	grpcL := m.Match(cmux.HTTP2())
 	httpL := m.Match(cmux.HTTP1Fast())
@@ -70,6 +133,9 @@ func startServers(httpReady, grpcReady chan bool) {
 
 func main() {
 	defer handlePanic()
+
+	intialThreads := runtime.GOMAXPROCS(0)
+	runtime.GOMAXPROCS(intialThreads * 2)
 
 	// Channels to signal when servers are ready
 	httpReady := make(chan bool)

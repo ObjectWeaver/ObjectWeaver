@@ -1,8 +1,9 @@
 package grpcService
 
 import (
-	"github.com/objectweaver/go-sdk/jsonSchema"
 	"objectweaver/orchestration/jos/factory"
+
+	"github.com/objectweaver/go-sdk/jsonSchema"
 )
 
 // DefaultConfigFactory is the default implementation of ConfigFactory

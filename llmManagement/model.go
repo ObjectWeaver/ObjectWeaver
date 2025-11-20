@@ -1,8 +1,13 @@
 package llmManagement
 
-import "github.com/objectweaver/go-sdk/jsonSchema"
+import (
+	"context"
+
+	"github.com/objectweaver/go-sdk/jsonSchema"
+)
 
 type Inputs struct {
+	Ctx          context.Context // Context for request cancellation
 	Def          *jsonSchema.Definition
 	Prompt       string
 	SystemPrompt string

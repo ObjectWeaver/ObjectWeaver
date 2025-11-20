@@ -61,7 +61,7 @@ func TestNewJobQueueByType_InterfaceCompliance(t *testing.T) {
 	for _, queueType := range queueTypes {
 		t.Run(string(queueType), func(t *testing.T) {
 			queue := NewJobQueueByType(queueType)
-			
+
 			// Test that basic interface methods are available
 			size := queue.Size()
 			if size != 0 {

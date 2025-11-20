@@ -2,7 +2,6 @@ package grpcService
 
 import (
 	"context"
-	"log"
 
 	"github.com/objectweaver/go-sdk/jsonSchema"
 
@@ -23,7 +22,6 @@ func (s *DefaultGeneratorService) CreateGenerator(config *factory.GeneratorConfi
 	generatorFactory := factory.NewGeneratorFactory(config)
 	generator, err := generatorFactory.Create()
 	if err != nil {
-		log.Printf("Failed to create generator: %v", err)
 		return nil, err
 	}
 	return generator, nil
@@ -37,7 +35,6 @@ func (s *DefaultGeneratorService) Generate(ctx context.Context, generator domain
 	// Generate the object
 	result, err := generator.Generate(request)
 	if err != nil {
-		log.Printf("Generation failed: %v", err)
 		return nil, err
 	}
 

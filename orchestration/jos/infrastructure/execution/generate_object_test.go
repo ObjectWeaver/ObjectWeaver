@@ -3,6 +3,7 @@ package execution
 import (
 	"context"
 	"errors"
+	"math"
 	"objectweaver/orchestration/jos/domain"
 	"testing"
 	"time"
@@ -67,8 +68,9 @@ func TestProcessFields_NilSchema(t *testing.T) {
 	ctx := context.Background()
 	request := domain.NewGenerationRequest("test", &jsonSchema.Definition{})
 	execContext := domain.NewExecutionContext(request)
+	execContext.SetWorkerPool(NewWorkerPool(0))
 
-	resultsCh := processor.ProcessFields(ctx, nil, nil, execContext)
+	resultsCh := processor.ProcessFieldsStart(ctx, nil, nil, execContext)
 
 	count := 0
 	for range resultsCh {
@@ -91,8 +93,9 @@ func TestProcessFields_NilProperties(t *testing.T) {
 	}
 	request := domain.NewGenerationRequest("test", schema)
 	execContext := domain.NewExecutionContext(request)
+	execContext.SetWorkerPool(NewWorkerPool(0))
 
-	resultsCh := processor.ProcessFields(ctx, schema, nil, execContext)
+	resultsCh := processor.ProcessFieldsStart(ctx, schema, nil, execContext)
 
 	count := 0
 	for range resultsCh {
@@ -124,12 +127,15 @@ func TestProcessFields_SimpleFields(t *testing.T) {
 	}
 	request := domain.NewGenerationRequest("test", schema)
 	execContext := domain.NewExecutionContext(request)
+	execContext.SetWorkerPool(NewWorkerPool(0))
 
-	resultsCh := processor.ProcessFields(ctx, schema, nil, execContext)
+	resultsCh := processor.ProcessFieldsStart(ctx, schema, nil, execContext)
 
 	results := make(map[string]*domain.TaskResult)
-	for result := range resultsCh {
-		results[result.Key()] = result
+	for resultSlice := range resultsCh {
+		for _, result := range resultSlice {
+			results[result.Key()] = result
+		}
 	}
 
 	if len(results) != 3 {
@@ -174,22 +180,35 @@ func TestProcessFields_SequentialProcessing(t *testing.T) {
 	}
 	request := domain.NewGenerationRequest("test", schema)
 	execContext := domain.NewExecutionContext(request)
+	execContext.SetWorkerPool(NewWorkerPool(0))
 
-	resultsCh := processor.ProcessFields(ctx, schema, nil, execContext)
+	resultsCh := processor.ProcessFieldsStart(ctx, schema, nil, execContext)
 
 	for range resultsCh {
 		// Consume results
 	}
 
-	// First two should be processed first in order
+	// First two should be processed first (may be in either order since they're batched concurrently)
 	if len(callOrder) < 2 {
 		t.Fatal("Expected at least 2 calls")
 	}
-	if callOrder[0] != "first" {
-		t.Errorf("Expected 'first' to be processed first, got %s", callOrder[0])
+	// Check that first and second were processed before third and fourth
+	firstTwoProcessed := make(map[string]bool)
+	for i := 0; i < 2; i++ {
+		firstTwoProcessed[callOrder[i]] = true
 	}
-	if callOrder[1] != "second" {
-		t.Errorf("Expected 'second' to be processed second, got %s", callOrder[1])
+	if !firstTwoProcessed["first"] || !firstTwoProcessed["second"] {
+		t.Errorf("Expected 'first' and 'second' to be processed in the first batch, got %v", callOrder[:2])
+	}
+	// Verify that third and fourth come after the first batch
+	if len(callOrder) >= 4 {
+		lastTwoProcessed := make(map[string]bool)
+		for i := 2; i < 4; i++ {
+			lastTwoProcessed[callOrder[i]] = true
+		}
+		if !lastTwoProcessed["third"] || !lastTwoProcessed["fourth"] {
+			t.Errorf("Expected 'third' and 'fourth' to be processed after the first batch, got %v", callOrder[2:])
+		}
 	}
 }
 
@@ -215,8 +234,9 @@ func TestProcessFields_ContextCancellation(t *testing.T) {
 	}
 	request := domain.NewGenerationRequest("test", schema)
 	execContext := domain.NewExecutionContext(request)
+	execContext.SetWorkerPool(NewWorkerPool(0))
 
-	resultsCh := processor.ProcessFields(ctx, schema, nil, execContext)
+	resultsCh := processor.ProcessFieldsStart(ctx, schema, nil, execContext)
 
 	// Cancel after a short time
 	go func() {
@@ -255,25 +275,33 @@ func TestProcessObjectField(t *testing.T) {
 	task := domain.NewFieldTask("nestedObj", nestedSchema, nil)
 	request := domain.NewGenerationRequest("test", nestedSchema)
 	execContext := domain.NewExecutionContext(request)
+	execContext.SetWorkerPool(NewWorkerPool(0))
 
+	// Process object field - it collects nested results and returns a single combined result
 	results := processor.processObjectField(ctx, task, execContext)
 
+	// processObjectField should return 1 result containing the nested object
 	if len(results) != 1 {
-		t.Fatalf("Expected 1 result, got %d", len(results))
+		t.Fatalf("Expected 1 result with nested object, got %d", len(results))
 	}
 
+	// Verify the result contains the nested object with both fields
 	result := results[0]
 	if result.Key() != "nestedObj" {
-		t.Errorf("Expected key 'nestedObj', got %s", result.Key())
+		t.Errorf("Expected key 'nestedObj', got '%s'", result.Key())
 	}
 
-	nestedResults, ok := result.Value().(map[string]interface{})
+	// The value should be a map with nested1 and nested2
+	nestedMap, ok := result.Value().(map[string]interface{})
 	if !ok {
-		t.Fatalf("Expected map[string]interface{}, got %T", result.Value())
+		t.Fatalf("Expected value to be map[string]interface{}, got %T", result.Value())
 	}
 
-	if len(nestedResults) != 2 {
-		t.Errorf("Expected 2 nested results, got %d", len(nestedResults))
+	if _, exists := nestedMap["nested1"]; !exists {
+		t.Error("Expected nested1 in result")
+	}
+	if _, exists := nestedMap["nested2"]; !exists {
+		t.Error("Expected nested2 in result")
 	}
 }
 
@@ -488,6 +516,7 @@ func TestProcessField_DecisionPoint(t *testing.T) {
 	task := domain.NewFieldTask("testField", decisionDef, nil)
 	request := domain.NewGenerationRequest("test", decisionDef)
 	execContext := domain.NewExecutionContext(request)
+	execContext.SetWorkerPool(NewWorkerPool(0))
 
 	results := processor.processField(ctx, task, execContext)
 
@@ -509,17 +538,467 @@ func TestProcessField_ScoringCriteria(t *testing.T) {
 
 // TestEvaluateScores tests score evaluation
 func TestEvaluateScores(t *testing.T) {
-	t.Skip("Skipping scoring test - requires full jsonSchema.ScoringCriteria implementation")
+	// Mock generator that returns scores
+	gen := &mockGenerator{
+		generateFunc: func(req *domain.GenerationRequest) (*domain.GenerationResult, error) {
+			return domain.NewGenerationResult(map[string]interface{}{
+				"quality":   85.0,
+				"relevance": 90.0,
+				"clarity":   88.0,
+			}, domain.NewResultMetadata()), nil
+		},
+	}
+
+	processor := NewFieldProcessor(&mockLLMProvider{}, &mockPromptBuilder{})
+	processor.SetGenerator(gen)
+
+	ctx := context.Background()
+
+	result := domain.NewTaskResult("test-id", "testField", "test content", domain.NewResultMetadata())
+
+	criteria := &jsonSchema.ScoringCriteria{
+		Dimensions: map[string]jsonSchema.ScoringDimension{
+			"quality": {
+				Type:        jsonSchema.ScoreNumeric,
+				Description: "Quality of content",
+				Weight:      0.5,
+			},
+			"relevance": {
+				Type:        jsonSchema.ScoreNumeric,
+				Description: "Relevance to topic",
+				Weight:      0.3,
+			},
+			"clarity": {
+				Type:        jsonSchema.ScoreNumeric,
+				Description: "Clarity of expression",
+				Weight:      0.2,
+			},
+		},
+		AggregationMethod: jsonSchema.AggregateWeightedAverage,
+	}
+
+	request := domain.NewGenerationRequest("test", &jsonSchema.Definition{})
+	execContext := domain.NewExecutionContext(request)
+
+	scores, err := processor.evaluateScores(ctx, result, criteria, execContext)
+	if err != nil {
+		t.Fatalf("evaluateScores failed: %v", err)
+	}
+
+	if len(scores) != 4 { // 3 dimensions + aggregate
+		t.Errorf("Expected 4 scores (3 dimensions + aggregate), got %d", len(scores))
+	}
+
+	if scores["quality"] != 85.0 {
+		t.Errorf("Expected quality score 85.0, got %v", scores["quality"])
+	}
+
+	if scores["relevance"] != 90.0 {
+		t.Errorf("Expected relevance score 90.0, got %v", scores["relevance"])
+	}
+
+	if scores["clarity"] != 88.0 {
+		t.Errorf("Expected clarity score 88.0, got %v", scores["clarity"])
+	}
+
+	// Check aggregate exists
+	if _, exists := scores["_aggregate"]; !exists {
+		t.Error("Expected _aggregate score to be present")
+	}
 }
 
 // TestEvaluateScores_NoGenerator tests error when generator is not set
 func TestEvaluateScores_NoGenerator(t *testing.T) {
-	t.Skip("Skipping scoring test - requires full jsonSchema.ScoringCriteria implementation")
+	processor := NewFieldProcessor(&mockLLMProvider{}, &mockPromptBuilder{})
+	// Don't set generator
+
+	ctx := context.Background()
+
+	result := domain.NewTaskResult("test-id", "testField", "test content", domain.NewResultMetadata())
+
+	criteria := &jsonSchema.ScoringCriteria{
+		Dimensions: map[string]jsonSchema.ScoringDimension{
+			"quality": {
+				Type:        jsonSchema.ScoreNumeric,
+				Description: "Quality of content",
+			},
+		},
+	}
+
+	request := domain.NewGenerationRequest("test", &jsonSchema.Definition{})
+	execContext := domain.NewExecutionContext(request)
+
+	_, err := processor.evaluateScores(ctx, result, criteria, execContext)
+	if err == nil {
+		t.Error("Expected error when generator is not set")
+	}
+
+	if err.Error() != "generator not set, cannot evaluate scores" {
+		t.Errorf("Expected specific error message, got: %v", err)
+	}
+}
+
+// TestEvaluateScores_ContextCancelled tests context cancellation
+func TestEvaluateScores_ContextCancelled(t *testing.T) {
+	gen := &mockGenerator{}
+	processor := NewFieldProcessor(&mockLLMProvider{}, &mockPromptBuilder{})
+	processor.SetGenerator(gen)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	result := domain.NewTaskResult("test-id", "testField", "test content", domain.NewResultMetadata())
+
+	criteria := &jsonSchema.ScoringCriteria{
+		Dimensions: map[string]jsonSchema.ScoringDimension{
+			"quality": {
+				Type:        jsonSchema.ScoreNumeric,
+				Description: "Quality",
+			},
+		},
+	}
+
+	request := domain.NewGenerationRequest("test", &jsonSchema.Definition{})
+	execContext := domain.NewExecutionContext(request)
+
+	_, err := processor.evaluateScores(ctx, result, criteria, execContext)
+	if err == nil {
+		t.Error("Expected error for cancelled context")
+	}
+}
+
+// TestEvaluateScores_DifferentDimensionTypes tests different score types
+func TestEvaluateScores_DifferentDimensionTypes(t *testing.T) {
+	gen := &mockGenerator{
+		generateFunc: func(req *domain.GenerationRequest) (*domain.GenerationResult, error) {
+			return domain.NewGenerationResult(map[string]interface{}{
+				"score":   85.0,
+				"isValid": 1, // Represented as int
+			}, domain.NewResultMetadata()), nil
+		},
+	}
+
+	processor := NewFieldProcessor(&mockLLMProvider{}, &mockPromptBuilder{})
+	processor.SetGenerator(gen)
+
+	ctx := context.Background()
+
+	result := domain.NewTaskResult("test-id", "testField", "test content", domain.NewResultMetadata())
+
+	criteria := &jsonSchema.ScoringCriteria{
+		Dimensions: map[string]jsonSchema.ScoringDimension{
+			"score": {
+				Type:        jsonSchema.ScoreNumeric,
+				Description: "Numeric score",
+			},
+			"isValid": {
+				Type:        jsonSchema.ScoreBoolean,
+				Description: "Is valid",
+			},
+		},
+	}
+
+	request := domain.NewGenerationRequest("test", &jsonSchema.Definition{})
+	execContext := domain.NewExecutionContext(request)
+
+	scores, err := processor.evaluateScores(ctx, result, criteria, execContext)
+	if err != nil {
+		t.Fatalf("evaluateScores failed: %v", err)
+	}
+
+	// Numeric scores should be extracted
+	if scores["score"] != 85.0 {
+		t.Errorf("Expected score 85.0, got %v", scores["score"])
+	}
+
+	// Boolean converted to numeric (1.0)
+	if scores["isValid"] != 1.0 {
+		t.Errorf("Expected isValid 1.0, got %v", scores["isValid"])
+	}
+}
+
+// TestEvaluateScores_WithScale tests dimension with scale
+func TestEvaluateScores_WithScale(t *testing.T) {
+	gen := &mockGenerator{
+		generateFunc: func(req *domain.GenerationRequest) (*domain.GenerationResult, error) {
+			// Verify the schema includes scale in instruction
+			schema := req.Schema()
+			if schema == nil || schema.Properties == nil {
+				t.Error("Expected schema with properties")
+			}
+			return domain.NewGenerationResult(map[string]interface{}{
+				"quality": 8.5,
+			}, domain.NewResultMetadata()), nil
+		},
+	}
+
+	processor := NewFieldProcessor(&mockLLMProvider{}, &mockPromptBuilder{})
+	processor.SetGenerator(gen)
+
+	ctx := context.Background()
+
+	result := domain.NewTaskResult("test-id", "testField", "test content", domain.NewResultMetadata())
+
+	criteria := &jsonSchema.ScoringCriteria{
+		Dimensions: map[string]jsonSchema.ScoringDimension{
+			"quality": {
+				Type:        jsonSchema.ScoreNumeric,
+				Description: "Quality rating",
+				Scale: &jsonSchema.ScoreScale{
+					Min: 0,
+					Max: 10,
+				},
+			},
+		},
+	}
+
+	request := domain.NewGenerationRequest("test", &jsonSchema.Definition{})
+	execContext := domain.NewExecutionContext(request)
+
+	scores, err := processor.evaluateScores(ctx, result, criteria, execContext)
+	if err != nil {
+		t.Fatalf("evaluateScores failed: %v", err)
+	}
+
+	if scores["quality"] != 8.5 {
+		t.Errorf("Expected quality score 8.5, got %v", scores["quality"])
+	}
+}
+
+// TestEvaluateScores_CustomModel tests evaluation with custom model
+func TestEvaluateScores_CustomModel(t *testing.T) {
+	gen := &mockGenerator{
+		generateFunc: func(req *domain.GenerationRequest) (*domain.GenerationResult, error) {
+			// Verify model is set
+			schema := req.Schema()
+			if schema.Model != "gpt-4" {
+				t.Errorf("Expected model 'gpt-4', got '%s'", schema.Model)
+			}
+			return domain.NewGenerationResult(map[string]interface{}{
+				"quality": 95.0,
+			}, domain.NewResultMetadata()), nil
+		},
+	}
+
+	processor := NewFieldProcessor(&mockLLMProvider{}, &mockPromptBuilder{})
+	processor.SetGenerator(gen)
+
+	ctx := context.Background()
+
+	result := domain.NewTaskResult("test-id", "testField", "test content", domain.NewResultMetadata())
+
+	criteria := &jsonSchema.ScoringCriteria{
+		Dimensions: map[string]jsonSchema.ScoringDimension{
+			"quality": {
+				Type:        jsonSchema.ScoreNumeric,
+				Description: "Quality",
+			},
+		},
+		EvaluationModel: "gpt-4",
+	}
+
+	request := domain.NewGenerationRequest("test", &jsonSchema.Definition{})
+	execContext := domain.NewExecutionContext(request)
+
+	_, err := processor.evaluateScores(ctx, result, criteria, execContext)
+	if err != nil {
+		t.Fatalf("evaluateScores failed: %v", err)
+	}
+}
+
+// TestEvaluateScores_GenerationError tests handling of generation errors
+func TestEvaluateScores_GenerationError(t *testing.T) {
+	gen := &mockGenerator{
+		generateFunc: func(req *domain.GenerationRequest) (*domain.GenerationResult, error) {
+			return nil, errors.New("generation failed")
+		},
+	}
+
+	processor := NewFieldProcessor(&mockLLMProvider{}, &mockPromptBuilder{})
+	processor.SetGenerator(gen)
+
+	ctx := context.Background()
+
+	result := domain.NewTaskResult("test-id", "testField", "test content", domain.NewResultMetadata())
+
+	criteria := &jsonSchema.ScoringCriteria{
+		Dimensions: map[string]jsonSchema.ScoringDimension{
+			"quality": {
+				Type:        jsonSchema.ScoreNumeric,
+				Description: "Quality",
+			},
+		},
+	}
+
+	request := domain.NewGenerationRequest("test", &jsonSchema.Definition{})
+	execContext := domain.NewExecutionContext(request)
+
+	_, err := processor.evaluateScores(ctx, result, criteria, execContext)
+	if err == nil {
+		t.Error("Expected error when generation fails")
+	}
 }
 
 // TestCalculateAggregate tests score aggregation methods
 func TestCalculateAggregate(t *testing.T) {
-	t.Skip("Skipping scoring test - requires full jsonSchema.ScoringCriteria implementation")
+	processor := NewFieldProcessor(&mockLLMProvider{}, &mockPromptBuilder{})
+
+	tests := []struct {
+		name              string
+		scores            map[string]float64
+		criteria          *jsonSchema.ScoringCriteria
+		expectedAggregate float64
+	}{
+		{
+			name: "WeightedAverage_WithWeights",
+			scores: map[string]float64{
+				"quality":   80.0,
+				"relevance": 90.0,
+				"clarity":   85.0,
+			},
+			criteria: &jsonSchema.ScoringCriteria{
+				Dimensions: map[string]jsonSchema.ScoringDimension{
+					"quality":   {Weight: 0.5},
+					"relevance": {Weight: 0.3},
+					"clarity":   {Weight: 0.2},
+				},
+				AggregationMethod: jsonSchema.AggregateWeightedAverage,
+			},
+			expectedAggregate: 84.0, // (80*0.5 + 90*0.3 + 85*0.2) = 84.0
+		},
+		{
+			name: "WeightedAverage_NoWeights",
+			scores: map[string]float64{
+				"a": 60.0,
+				"b": 80.0,
+				"c": 100.0,
+			},
+			criteria: &jsonSchema.ScoringCriteria{
+				Dimensions: map[string]jsonSchema.ScoringDimension{
+					"a": {Weight: 0},
+					"b": {Weight: 0},
+					"c": {Weight: 0},
+				},
+				AggregationMethod: jsonSchema.AggregateWeightedAverage,
+			},
+			expectedAggregate: 80.0, // (60 + 80 + 100) / 3 = 80.0
+		},
+		{
+			name: "Minimum",
+			scores: map[string]float64{
+				"quality":   85.0,
+				"relevance": 75.0,
+				"clarity":   90.0,
+			},
+			criteria: &jsonSchema.ScoringCriteria{
+				Dimensions: map[string]jsonSchema.ScoringDimension{
+					"quality":   {},
+					"relevance": {},
+					"clarity":   {},
+				},
+				AggregationMethod: jsonSchema.AggregateMinimum,
+			},
+			expectedAggregate: 75.0,
+		},
+		{
+			name: "Maximum",
+			scores: map[string]float64{
+				"quality":   85.0,
+				"relevance": 95.0,
+				"clarity":   90.0,
+			},
+			criteria: &jsonSchema.ScoringCriteria{
+				Dimensions: map[string]jsonSchema.ScoringDimension{
+					"quality":   {},
+					"relevance": {},
+					"clarity":   {},
+				},
+				AggregationMethod: jsonSchema.AggregateMaximum,
+			},
+			expectedAggregate: 95.0,
+		},
+		{
+			name: "Average_Default",
+			scores: map[string]float64{
+				"quality":   80.0,
+				"relevance": 90.0,
+			},
+			criteria: &jsonSchema.ScoringCriteria{
+				Dimensions: map[string]jsonSchema.ScoringDimension{
+					"quality":   {},
+					"relevance": {},
+				},
+				AggregationMethod: "", // Unknown/default
+			},
+			expectedAggregate: 85.0, // (80 + 90) / 2
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := processor.calculateAggregate(tt.scores, tt.criteria)
+			if math.Abs(result-tt.expectedAggregate) > 0.0001 {
+				t.Errorf("Expected aggregate %v, got %v", tt.expectedAggregate, result)
+			}
+		})
+	}
+}
+
+// TestCalculateAggregate_EmptyScores tests edge cases
+func TestCalculateAggregate_EmptyScores(t *testing.T) {
+	processor := NewFieldProcessor(&mockLLMProvider{}, &mockPromptBuilder{})
+
+	criteria := &jsonSchema.ScoringCriteria{
+		Dimensions:        map[string]jsonSchema.ScoringDimension{},
+		AggregationMethod: jsonSchema.AggregateWeightedAverage,
+	}
+
+	result := processor.calculateAggregate(map[string]float64{}, criteria)
+	if result != 0 {
+		t.Errorf("Expected 0 for empty scores, got %v", result)
+	}
+}
+
+// TestCalculateAggregate_MinimumWithHighValue tests minimum starts at 100
+func TestCalculateAggregate_MinimumWithHighValue(t *testing.T) {
+	processor := NewFieldProcessor(&mockLLMProvider{}, &mockPromptBuilder{})
+
+	scores := map[string]float64{
+		"quality": 98.0,
+	}
+
+	criteria := &jsonSchema.ScoringCriteria{
+		Dimensions: map[string]jsonSchema.ScoringDimension{
+			"quality": {},
+		},
+		AggregationMethod: jsonSchema.AggregateMinimum,
+	}
+
+	result := processor.calculateAggregate(scores, criteria)
+	if result != 98.0 {
+		t.Errorf("Expected 98.0, got %v", result)
+	}
+}
+
+// TestCalculateAggregate_MaximumWithLowValue tests maximum starts at 0
+func TestCalculateAggregate_MaximumWithLowValue(t *testing.T) {
+	processor := NewFieldProcessor(&mockLLMProvider{}, &mockPromptBuilder{})
+
+	scores := map[string]float64{
+		"quality": 5.0,
+	}
+
+	criteria := &jsonSchema.ScoringCriteria{
+		Dimensions: map[string]jsonSchema.ScoringDimension{
+			"quality": {},
+		},
+		AggregationMethod: jsonSchema.AggregateMaximum,
+	}
+
+	result := processor.calculateAggregate(scores, criteria)
+	if result != 5.0 {
+		t.Errorf("Expected 5.0, got %v", result)
+	}
 }
 
 // TestAttachScoresToResult tests score attachment to result metadata
@@ -580,6 +1059,7 @@ func TestProcessField_ErrorHandling(t *testing.T) {
 	task := domain.NewFieldTask("testField", def, nil)
 	request := domain.NewGenerationRequest("test", def)
 	execContext := domain.NewExecutionContext(request)
+	execContext.SetWorkerPool(NewWorkerPool(0))
 
 	results := processor.processField(ctx, task, execContext)
 
@@ -599,6 +1079,7 @@ func TestProcessField_UnsupportedType(t *testing.T) {
 	task := domain.NewFieldTask("testField", def, nil)
 	request := domain.NewGenerationRequest("test", def)
 	execContext := domain.NewExecutionContext(request)
+	execContext.SetWorkerPool(NewWorkerPool(0))
 
 	results := processor.processField(ctx, task, execContext)
 
@@ -634,10 +1115,10 @@ func TestProcessConcurrentFields(t *testing.T) {
 		// No ProcessingOrder - all should be concurrent
 	}
 
-	ch := make(chan *domain.TaskResult, 5)
 	currentGen := make(map[string]interface{})
 	request := domain.NewGenerationRequest("test", schema)
 	execContext := domain.NewExecutionContext(request)
+	execContext.SetWorkerPool(NewWorkerPool(0))
 
 	// Get all keys
 	var keys []string
@@ -645,13 +1126,15 @@ func TestProcessConcurrentFields(t *testing.T) {
 		keys = append(keys, k)
 	}
 
-	processor.processConcurrentFields(ctx, ch, schema, nil, execContext, currentGen, keys)
-	close(ch)
-
-	count := 0
-	for range ch {
-		count++
+	// Use a MapCollector to collect results
+	collector := &MapCollector{
+		results:  make(map[string]interface{}),
+		metadata: domain.NewResultMetadata(),
 	}
+
+	processor.processConcurrentFieldsAndWait(ctx, collector, schema, nil, execContext, currentGen, keys)
+
+	count := len(collector.results)
 
 	if count != 5 {
 		t.Errorf("Expected 5 results, got %d", count)
@@ -694,6 +1177,7 @@ func TestProcessField_WithEpstimicOrchestrator(t *testing.T) {
 	task := domain.NewFieldTask("testField", def, nil)
 	request := domain.NewGenerationRequest("test", def)
 	execContext := domain.NewExecutionContext(request)
+	execContext.SetWorkerPool(NewWorkerPool(0))
 
 	results := processor.processField(ctx, task, execContext)
 

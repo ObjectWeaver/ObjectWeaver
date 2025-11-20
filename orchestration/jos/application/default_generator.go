@@ -3,13 +3,15 @@ package application
 import (
 	"context"
 	"fmt"
+	"objectweaver/logger"
 	"objectweaver/orchestration/jos/domain"
+	"objectweaver/orchestration/jos/infrastructure/assembly"
 	"objectweaver/orchestration/jos/infrastructure/epstimic"
 	"objectweaver/orchestration/jos/infrastructure/execution"
+	"time"
 )
 
 // DefaultGenerator - Main orchestrator for synchronous generation
-// Now uses the simpler recursive GenerateObject approach
 type DefaultGenerator struct {
 	llmProvider    domain.LLMProvider
 	promptBuilder  domain.PromptBuilder
@@ -45,10 +47,16 @@ func NewDefaultGenerator(
 
 // Generate - Main generation workflow using recursive field processing
 func (g *DefaultGenerator) Generate(request *domain.GenerationRequest) (*domain.GenerationResult, error) {
-	// Create context for cancellation support
-	ctx := context.Background()
-	// TODO: In future, accept context from caller for proper deadline/cancellation propagation
-	// func (g *DefaultGenerator) Generate(ctx context.Context, request *domain.GenerationRequest) (*domain.GenerationResult, error)
+	// Use context from request if available, otherwise background
+	reqCtx := request.Context()
+	if reqCtx == nil {
+		reqCtx = context.Background()
+	}
+
+	// Create context with timeout to prevent indefinite hangs
+	// Default to 120s, or use env var if needed (not implemented here for simplicity)
+	ctx, cancel := context.WithTimeout(reqCtx, 120*time.Second)
+	defer cancel()
 
 	// Phase 1: Pre-processing plugins
 	processedRequest, err := g.plugins.ApplyPreProcessors(request)
@@ -62,52 +70,40 @@ func (g *DefaultGenerator) Generate(request *domain.GenerationRequest) (*domain.
 	}
 
 	// Phase 3: Generate using recursive field processor
-	// Create execution context
 	execContext := domain.NewExecutionContext(processedRequest)
+	workerPool := execution.NewWorkerPool(-1)
+	execContext.SetWorkerPool(workerPool)
 	execContext.PromptContext().AddPrompt(processedRequest.Prompt())
 
-	// Process all fields recursively
-	resultsCh := g.fieldProcessor.ProcessFields(ctx, processedRequest.Schema(), nil, execContext)
+	// Process all fields
+	startTime := time.Now()
+	logger.Printf("[DefaultGenerator] Starting field processing")
 
-	// Collect results into map with detailed metadata
-	data := make(map[string]interface{})
-	detailedData := make(map[string]*domain.FieldResultWithMetadata)
+	resultsCh := g.fieldProcessor.ProcessFieldsStart(ctx, processedRequest.Schema(), nil, execContext)
 
-	// Aggregate metadata across all fields
-	aggregateMetadata := domain.NewResultMetadata()
+	// Collect flat results with path information
+	var allResults []*domain.TaskResult
 
-	for result := range resultsCh {
-		if result != nil {
-			// Add to simple data map
-			data[result.Key()] = result.Value()
-
-			// Create detailed field result with metadata
-			fieldMetadata := result.Metadata()
-			if fieldMetadata == nil {
-				fieldMetadata = domain.NewResultMetadata()
-			}
-
-			detailedData[result.Key()] = domain.NewFieldResultWithMetadata(
-				result.Value(),
-				fieldMetadata,
-			)
-
-			// Aggregate metadata for overall result
-			if fieldMetadata != nil {
-				aggregateMetadata.AddTokens(fieldMetadata.TokensUsed)
-				aggregateMetadata.AddCost(fieldMetadata.Cost)
-				aggregateMetadata.IncrementFieldCount()
-
-				// Aggregate choices if present
-				if len(fieldMetadata.Choices) > 0 {
-					aggregateMetadata.Choices = append(aggregateMetadata.Choices, fieldMetadata.Choices...)
-				}
-			}
+	for results := range resultsCh {
+		select {
+		case <-ctx.Done():
+			logger.Printf("[DefaultGenerator] Request TIMEOUT after %v: %v", time.Since(startTime), ctx.Err())
+			return nil, fmt.Errorf("request timeout after %v: %w", time.Since(startTime), ctx.Err())
+		default:
 		}
+
+		// Collect all results - they have path information
+		allResults = append(allResults, results...)
 	}
 
-	// Create generation result with detailed data
-	result := domain.NewGenerationResultWithDetailedData(data, detailedData, aggregateMetadata)
+	logger.Printf("[DefaultGenerator] Field processing completed in %v, collected %d results", time.Since(startTime), len(allResults))
+
+	// Use path-based assembler to reconstruct nested structure from flat results
+	assembler := assembly.NewPathBasedAssembler()
+	result, err := assembler.Assemble(allResults)
+	if err != nil {
+		return nil, fmt.Errorf("failed to assemble results: %w", err)
+	}
 
 	// Phase 4: Post-processing plugins
 	processedResult, err := g.plugins.ApplyPostProcessors(result)
@@ -142,6 +138,6 @@ func (g *DefaultGenerator) RegisterPlugin(plugin domain.Plugin) {
 }
 
 func generateCacheKey(request *domain.GenerationRequest) string {
-	// Simple cache key generation - could be made more sophisticated
+	// Simple cache key generation
 	return fmt.Sprintf("%s_%s", request.Prompt(), request.Schema().Instruction)
 }

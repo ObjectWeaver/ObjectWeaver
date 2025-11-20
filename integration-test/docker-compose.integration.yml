@@ -1,0 +1,151 @@
+# Docker Compose for Integration Testing
+
+services:
+  # Mock LLM Server - Returns pre-defined responses instantly
+  mock-llm:
+    build:
+      context: ./mock-llm-server
+      dockerfile: Dockerfile
+    container_name: mock-llm-server
+    ports:
+      - "8080:8080"
+    environment:
+      MOCK_LLM_PORT: "8080"
+      MOCK_LLM_MIN_DELAY_MS: "10"
+      MOCK_LLM_MAX_DELAY_MS: "50"
+      MOCK_LLM_MAX_CONCURRENT: "30000"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    networks:
+      - integration-test
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # ObjectWeaver Server - The system under test
+  objectweaver:
+    build:
+      context: ..
+      dockerfile: dockerfile
+    container_name: objectweaver-test
+    ports:
+      - "2008:2008"  # Main API
+    environment:
+      # Bypass authentication for testing
+      ENVIRONMENT: "development"
+      PASSWORD: "test-password"
+      
+      # LLM Configuration - auto-detects as local when LLM_API_URL is set
+      LLM_API_URL: "http://mock-llm:8080/v1/chat/completions"
+      LLM_API_KEY: "mock-api-key"
+      LLM_ENABLE_BATCH: "false"  # Explicitly disable batch processing for faster testing
+      
+      # HTTP Client Timeouts - increased for tail latency under high load
+      LLM_HTTP_TIMEOUT_SECONDS: "30"  # Total request timeout (was 10, increased for p99)
+      LLM_HTTP_CONNECTION_TIMEOUT_SECONDS: "5"  # Connection establishment timeout
+      
+      # Retry Configuration - enable minimal retries for reliability
+      LLM_MAX_RETRIES: "1"  # Single retry for transient failures (was 0, enabling for reliability)
+      
+      # Connection Pool - tuned for high concurrency
+      LLM_HTTP_MAX_IDLE_CONNS: "15000"  # Total idle connections (default: 1000)
+      LLM_HTTP_MAX_IDLE_CONNS_PER_HOST: "15000"  # Per-host idle connections (default: 500)
+      LLM_HTTP_MAX_CONNS_PER_HOST: "15000" # Explicitly set max connections per host
+      
+      # Job Submission Strategy - NEW: "direct" bypasses worker queue for 120x faster performance
+      # "default" = uses worker queue (18+ second latency), "direct" = calls HTTP directly (~150ms)
+      LLM_SUBMITTER_TYPE: "direct"  # CRITICAL: This eliminates 6 layers of indirection
+      
+      # Concurrency - DirectSubmitter semaphore limit for concurrent HTTP requests
+      # Formula: Peak VUs (1100) × avg nested fields (30) / 10 = ~3300 concurrent
+      LLM_CONCURRENCY: "15000"  # High limit to prevent semaphore blocking under extreme load
+      
+      # Rate limiting - increase for load testing
+      LLM_MAX_REQUESTS_PER_MINUTE: "100000"  # High limit for testing
+      LLM_MAX_TOKENS_PER_MINUTE: "150000000"  # High limit for testing
+      
+      # Model configuration
+      ITEMS_MODEL: "gpt-4o-mini"  # Match what the code expects
+      KMEAN_EMBEDDING_MODEL: "text-embedding-ada-002"
+      
+      # Disable verbose logs for cleaner metrics
+      VERBOSE_LOGS: "false"
+      
+      # gRPC settings
+      GRPC_UNSECURE: "true"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    networks:
+      - integration-test
+    depends_on:
+      mock-llm:
+        condition: service_healthy
+
+  # Prometheus - Metrics collection and visualization
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-test
+    user: "0:0"  # Run as root to avoid permission issues with tmpfs
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    tmpfs:
+      - /prometheus:rw,exec,size=100m
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - integration-test
+    depends_on:
+      - objectweaver
+    restart: unless-stopped
+
+  # Grafana - Optional: Metrics visualization dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-test
+    user: "0:0"  # Run as root to avoid permission issues with tmpfs
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_PATHS_DATA=/tmp/grafana
+      - GF_PATHS_LOGS=/tmp/grafana/logs
+    tmpfs:
+      - /tmp/grafana:rw,exec,size=100m
+    networks:
+      - integration-test
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # Load Testing with k6
+  k6:
+    image: grafana/k6:latest
+    container_name: k6-load-test
+    networks:
+      - integration-test
+    volumes:
+      - ./k6:/scripts
+      - ./results:/results
+    depends_on:
+      - objectweaver
+    command: ["run", "/scripts/load-test.js"]
+    profiles:
+      - load-test
+
+networks:
+  integration-test:
+    driver: bridge

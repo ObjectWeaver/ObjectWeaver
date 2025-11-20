@@ -3,6 +3,7 @@ package service
 import (
 	"compress/gzip"
 	"net/http"
+	"net/http/pprof"
 	"objectweaver/cors"
 	"os"
 	"time"
@@ -18,7 +19,6 @@ type Server struct {
 func NewHttpServer() *Server {
 	s := CreateNewServer()
 	s.MountHandlers()
-
 	return s
 }
 
@@ -40,31 +40,47 @@ func (s *Server) MountHandlers() {
 
 	s.Router.Use(middleware.RequestID)
 	s.Router.Use(middleware.RealIP)
-	s.Router.Use(middleware.Logger)
+	// s.Router.Use(middleware.Logger) // Disabled for performance
 	s.Router.Use(middleware.Recoverer)
+	s.Router.Use(middleware.ThrottleWithOpts(middleware.ThrottleOpts{
+		Limit:          10000,
+		BacklogLimit:   5000,
+		BacklogTimeout: 60 * time.Second, // Max wait time before 503
+		RetryAfterFn: func(ctxDone bool) time.Duration {
+			if ctxDone {
+				return 0
+			}
+			return 1 * time.Second
+		},
+	}))
 	s.Router.Use(GzipDecompression)      // Handle incoming gzip compressed requests
 	s.Router.Use(middleware.Compress(5)) // Enable gzip compression for responses
-	s.Router.Use(middleware.ThrottleBacklog(500, 1000, 30*time.Second))
-	s.Router.Use(middleware.Timeout(300 * time.Second))
+	s.Router.Use(middleware.Timeout(30 * time.Second))
 	s.Router.Use(middleware.URLFormat)
 
-	// Health check endpoint (no authentication required)
 	s.Router.Get("/health", HealthCheck)
 
-	// Define API routes
+	s.Router.Get("/metrics", PrometheusMetricsHandler)
+
+	s.Router.Get("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	s.Router.Get("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	s.Router.Get("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	s.Router.Get("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	s.Router.Get("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+	s.Router.Get("/debug/pprof/{cmd}", http.HandlerFunc(pprof.Index))
+
 	s.Router.Group(func(r chi.Router) {
 		r.Use(PrometheusMiddleware) //this can always be moved into more speficic areas
 		r.Use(ValidatePassword)
-		r.Post("/api/objectGen", ObjectGen)
+		r.Post("/api/objectGen", s.ObjectGenHandler)
 	})
 
 	// if this isn't in production then don't provide this as an option
 	if os.Getenv("ENVIRONMENT") == "development" {
-		// Serve static files from the absolute path /static //TODO do not remove!
+		// Serve static files from the absolute path /static
 		fileServer := http.FileServer(http.Dir("/static"))
 		s.Router.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
-		// Serve dynamic index.html with environment variables
 		s.Router.Get("/", ServeIndexHTML)
 	}
 }

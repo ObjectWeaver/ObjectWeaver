@@ -43,31 +43,34 @@ func (b *DefaultPromptBuilder) Build(task *domain.FieldTask, context *domain.Pro
 		return b.buildNarrowFocusPrompt(def, context, basePrompt)
 	}
 
+	// Get parent instruction if parent exists
+	parentInstruction := ""
+	if task.Parent() != nil && task.Parent().Definition() != nil {
+		parentInstruction = task.Parent().Definition().Instruction
+		parentInstruction = fmt.Sprintf("Overarching instruction: \n%s\n\n", parentInstruction)
+	}
+
 	// Standard prompt template
 	return fmt.Sprintf(`
 Task:
 Please return information just about the "%s" using the below instructions and context:
 
-Instructions:
-
-Overarching instruction: 
 %s
 
 Direct Instruction for the %s:
 %s
 
----------
-Context:
+User information:
 %s
 
 %s
 `,
 		task.Key(),
-		basePrompt,
+		parentInstruction,
 		task.Key(),
 		def.Instruction,
+		basePrompt,
 		currentGen,
-		context.CurrentGen,
 	), nil
 }
 

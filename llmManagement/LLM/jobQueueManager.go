@@ -41,7 +41,8 @@ func (q *JobQueueManager) StartManager(wg *sync.WaitGroup) {
 			if job := q.jobQueue.Dequeue(); job != nil {
 				q.jobChan <- job
 			} else {
-				time.Sleep(10 * time.Millisecond) // Wait if queue is empty
+				// Use minimal sleep to prevent tight loop, but not block processing
+				time.Sleep(100 * time.Microsecond)
 			}
 		}
 	}
