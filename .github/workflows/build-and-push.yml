@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
+      actions: write
 
     steps:
       # Step 1: Check out the repository's code
@@ -31,20 +33,6 @@ jobs:
         with:
           go-version: '1.25'
 
-      - name: Cache Go modules
-        uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Run tests
-        run: go test ./... -coverprofile=coverage.out
-
-      - name: Generate coverage report
-        run: go tool cover -func=coverage.out | grep total
-
       # Step 2: Determine the next version number
       # This action finds the latest Git tag that looks like a version number,
       # increments the patch number, and creates a new Git tag.
@@ -53,9 +41,10 @@ jobs:
         uses: anothrNick/github-tag-action@1.67.0
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
-          WITH_V: true # This will prefix the tag with 'v' (e.g., v1.0.1)
-          DEFAULT_BUMP: patch # Increments the last part of the version
-          INITIAL_VERSION: 1.0.0 # Start with 1.0.0 if no other valid tags are found
+          WITH_V: true
+          DEFAULT_BUMP: patch
+          INITIAL_VERSION: 1.0.0
+          GIT_API_TAGGING: false
 
       # Step 3: Prepare Docker tags
       # This step manually creates the tag strings to avoid complex parsing later.
@@ -117,3 +106,11 @@ jobs:
       # (Optional) Step 9: Output the new tag for verification
       - name: Print new tag
         run: echo "The new tag is ${{ steps.tag_version.outputs.new_tag }}"
+
+      # Step 10: Trigger Release Workflow
+      # This ensures the release workflow runs after the tag is created and the build is successful.
+      - name: Trigger Release
+        if: steps.tag_version.outputs.new_tag != ''
+        run: gh workflow run release.yml --ref ${{ steps.tag_version.outputs.new_tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

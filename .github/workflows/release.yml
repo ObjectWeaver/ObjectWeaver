@@ -1,9 +1,8 @@
 name: Go-Release
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
 
@@ -32,4 +31,4 @@ jobs:
           version: latest
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
