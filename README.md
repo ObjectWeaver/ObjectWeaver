@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/objectweaver/objectweaver/blob/main/LICENSE.txt)
 [![Docker](https://img.shields.io/badge/Docker-Ready-brightgreen.svg)](https://hub.docker.com/r/objectweaver/objectweaver)
 [![Documentation](https://img.shields.io/badge/Docs-objectweaver.dev-orange.svg)](https://objectweaver.dev/docs)
-![Coverage](https://img.shields.io/badge/Coverage-45.5%25-red)
+![Coverage](https://img.shields.io/badge/Coverage-73.9%25-yellow)
 [![Codeleft Checks](https://github.com/ObjectWeaver/ObjectWeaver/actions/workflows/codeleft-test.yaml/badge.svg)](https://github.com/ObjectWeaver/ObjectWeaver/actions/workflows/codeleft-test.yaml)
 
 </div>
