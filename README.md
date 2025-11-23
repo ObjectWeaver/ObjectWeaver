@@ -14,6 +14,10 @@ ObjectWeaver is an "AI" Orchestration Service for generating structured objects 
 
 For complete documentation, examples, and guides, visit [our documentation](https://objectweaver.dev/docs/intro).
 
+<div align="center">
+  <img src="demo.gif" alt="ObjectWeaver Demo" width="800"/>
+</div>
+
 ## Why ObjectWeaver?
 
 Traditional JSON generation with LLMs often fails, with success rates as low as 35-65%. While grammar-constrained alternatives can guarantee syntax, they force a one-size-fits-all approach, using a single model and prompt for all fields. ObjectWeaver solves this by providing intelligent, field-level orchestration that offers several key advantages:
@@ -128,6 +132,7 @@ You're also able to find the compiled binaries in the [releases](https://github.
 
 ## Community and Support
 
+-   <img src="https://api.iconify.design/lucide/star.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Star on GitHub**: If you find ObjectWeaver useful, please [give us a star on GitHub](https://github.com/objectweaver/objectweaver)! It helps others discover the project.
 -   **Documentation**: For detailed guides, examples, and API references, visit our [documentation website](https://objectweaver.dev/docs).
 -   **GitHub Issues**: If you encounter a bug or have a feature request, please [open an issue on GitHub](https://github.com/objectweaver/objectweaver/issues).
 -   **Contact Us**: For enterprise inquiries, please [contact us](https://objectweaver.dev/enterprise).
