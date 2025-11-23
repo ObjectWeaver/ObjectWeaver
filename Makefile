@@ -249,7 +249,7 @@ integration-test-up:
 	@echo "  - Prometheus (port 9090)"
 	@echo "  - Grafana (port 3000)"
 	@echo ""
-	cd integration-test && docker-compose -f docker-compose.integration.yml up -d --build
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml up -d --build
 	@echo ""
 	@echo "Waiting for services to be ready..."
 	@echo "(Mock LLM has health checks, ObjectWeaver needs time to start)"
@@ -273,14 +273,14 @@ integration-test-up:
 # Stop all integration test services
 integration-test-down:
 	@echo "Stopping integration test environment..."
-	cd integration-test && docker-compose -f docker-compose.integration.yml down
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml down
 	@echo "✓ Services stopped"
 
 # Stop and clean volumes
 integration-test-clean:
 	@echo "Cleaning integration test environment..."
-	cd integration-test && docker-compose -f docker-compose.integration.yml down -v
-	@rm -rf integration-test/results/*
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml down -v
+	@rm -rf integration-test/e2e/results/*
 	@echo "✓ Services stopped and volumes cleaned"
 
 # Run load test with default settings (1000 req/s)
@@ -293,8 +293,8 @@ integration-test-run:
 	@echo "  - Duration: 60 seconds"
 	@echo "  - Ramp-up time: 30 seconds"
 	@echo ""
-	@mkdir -p integration-test/results
-	cd integration-test && docker-compose -f docker-compose.integration.yml run --rm \
+	@mkdir -p integration-test/e2e/results
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
 		-e MAX_RPS=1000 \
 		-e DURATION=60s \
 		-e RAMP_UP_TIME=30s \
@@ -303,13 +303,13 @@ integration-test-run:
 		k6 run /scripts/load-test.js
 	@echo ""
 	@echo "✓ Load test completed!"
-	@echo "Results saved to: integration-test/results/"
+	@echo "Results saved to: integration-test/e2e/results/"
 
 # Light load test (100 req/s)
 integration-test-light:
 	@echo "Running LIGHT load test (100 req/s)..."
-	@mkdir -p integration-test/results
-	cd integration-test && docker-compose -f docker-compose.integration.yml run --rm \
+	@mkdir -p integration-test/e2e/results
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
 		-e MAX_RPS=100 \
 		-e DURATION=60s \
 		-e RAMP_UP_TIME=20s \
@@ -318,8 +318,8 @@ integration-test-light:
 # Medium load test (500 req/s)
 integration-test-medium:
 	@echo "Running MEDIUM load test (500 req/s)..."
-	@mkdir -p integration-test/results
-	cd integration-test && docker-compose -f docker-compose.integration.yml run --rm \
+	@mkdir -p integration-test/e2e/results
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
 		-e MAX_RPS=500 \
 		-e DURATION=60s \
 		-e RAMP_UP_TIME=30s \
@@ -328,8 +328,8 @@ integration-test-medium:
 # Heavy load test (1000 req/s)
 integration-test-heavy:
 	@echo "Running HEAVY load test (1000 req/s)..."
-	@mkdir -p integration-test/results
-	cd integration-test && docker-compose -f docker-compose.integration.yml run --rm \
+	@mkdir -p integration-test/e2e/results
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
 		-e MAX_RPS=1000 \
 		-e DURATION=60s \
 		-e RAMP_UP_TIME=30s \
@@ -348,12 +348,12 @@ integration-test-5k:
 	@echo "  - Max VUs: 10,000"
 	@echo "  - Monitoring: Goroutine tracking enabled"
 	@echo ""
-	@mkdir -p integration-test/results
+	@mkdir -p integration-test/e2e/results
 	@echo "Starting goroutine monitor in background..."
-	@./integration-test/monitor_goroutines.sh & \
+	@./integration-test/e2e/monitor_goroutines.sh & \
 	MONITOR_PID=$$! ; \
 	echo "Monitor PID: $$MONITOR_PID" ; \
-	cd integration-test && docker-compose -f docker-compose.integration.yml run --rm \
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
 		-e MAX_RPS=5000 \
 		-e DURATION=60s \
 		-e RAMP_UP_TIME=45s \
@@ -367,19 +367,19 @@ integration-test-5k:
 	echo "═══════════════════════════════════════" ; \
 	echo "Goroutine Analysis Results:" ; \
 	echo "═══════════════════════════════════════" ; \
-	ls -lh integration-test/results/goroutine_monitor_*.log 2>/dev/null | tail -1 || echo "No logs found" ; \
+	ls -lh integration-test/e2e/results/goroutine_monitor_*.log 2>/dev/null | tail -1 || echo "No logs found" ; \
 	echo "" ; \
 	echo "📊 View detailed results:" ; \
-	echo "   cat integration-test/results/goroutine_monitor_*.log | tail -50" ; \
-	echo "   ls integration-test/results/goroutine_profiles_*/" ; \
+	echo "   cat integration-test/e2e/results/goroutine_monitor_*.log | tail -50" ; \
+	echo "   ls integration-test/e2e/results/goroutine_profiles_*/" ; \
 	exit $$TEST_EXIT
 
 # Extreme load test (2000 req/s)
 integration-test-extreme:
 	@echo "Running EXTREME load test (2000 req/s)..."
 	@echo "WARNING: This is a very high load test!"
-	@mkdir -p integration-test/results
-	cd integration-test && docker-compose -f docker-compose.integration.yml run --rm \
+	@mkdir -p integration-test/e2e/results
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
 		-e MAX_RPS=2000 \
 		-e DURATION=60s \
 		-e RAMP_UP_TIME=40s \
@@ -398,12 +398,12 @@ integration-test-10k:
 	@echo "  - Max VUs: 20,000"
 	@echo "  - Monitoring: Goroutine tracking enabled"
 	@echo ""
-	@mkdir -p integration-test/results
+	@mkdir -p integration-test/e2e/results
 	@echo "Starting goroutine monitor in background..."
-	@./integration-test/monitor_goroutines.sh & \
+	@./integration-test/e2e/monitor_goroutines.sh & \
 	MONITOR_PID=$$! ; \
 	echo "Monitor PID: $$MONITOR_PID" ; \
-	cd integration-test && docker-compose -f docker-compose.integration.yml run --rm \
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
 		-e MAX_RPS=10000 \
 		-e DURATION=60s \
 		-e RAMP_UP_TIME=60s \
@@ -417,11 +417,11 @@ integration-test-10k:
 	echo "═══════════════════════════════════════" ; \
 	echo "Goroutine Analysis Results:" ; \
 	echo "═══════════════════════════════════════" ; \
-	ls -lh integration-test/results/goroutine_monitor_*.log 2>/dev/null | tail -1 || echo "No logs found" ; \
+	ls -lh integration-test/e2e/results/goroutine_monitor_*.log 2>/dev/null | tail -1 || echo "No logs found" ; \
 	echo "" ; \
 	echo "📊 View detailed results:" ; \
-	echo "   cat integration-test/results/goroutine_monitor_*.log | tail -50" ; \
-	echo "   ls integration-test/results/goroutine_profiles_*/" ; \
+	echo "   cat integration-test/e2e/results/goroutine_monitor_*.log | tail -50" ; \
+	echo "   ls integration-test/e2e/results/goroutine_profiles_*/" ; \
 	exit $$TEST_EXIT
 
 # Massive load test (25000 req/s)
@@ -438,12 +438,12 @@ integration-test-25k:
 	@echo "  - Max VUs: 50,000"
 	@echo "  - Monitoring: Goroutine tracking enabled"
 	@echo ""
-	@mkdir -p integration-test/results
+	@mkdir -p integration-test/e2e/results
 	@echo "Starting goroutine monitor in background..."
-	@./integration-test/monitor_goroutines.sh & \
+	@./integration-test/e2e/monitor_goroutines.sh & \
 	MONITOR_PID=$$! ; \
 	echo "Monitor PID: $$MONITOR_PID" ; \
-	cd integration-test && docker-compose -f docker-compose.integration.yml run --rm \
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
 		-e MAX_RPS=25000 \
 		-e DURATION=60s \
 		-e RAMP_UP_TIME=90s \
@@ -457,17 +457,17 @@ integration-test-25k:
 	echo "═══════════════════════════════════════" ; \
 	echo "Goroutine Analysis Results:" ; \
 	echo "═══════════════════════════════════════" ; \
-	ls -lh integration-test/results/goroutine_monitor_*.log 2>/dev/null | tail -1 || echo "No logs found" ; \
+	ls -lh integration-test/e2e/results/goroutine_monitor_*.log 2>/dev/null | tail -1 || echo "No logs found" ; \
 	echo "" ; \
 	echo "📊 View detailed results:" ; \
-	echo "   cat integration-test/results/goroutine_monitor_*.log | tail -50" ; \
-	echo "   ls integration-test/results/goroutine_profiles_*/" ; \
+	echo "   cat integration-test/e2e/results/goroutine_monitor_*.log | tail -50" ; \
+	echo "   ls integration-test/e2e/results/goroutine_profiles_*/" ; \
 	exit $$TEST_EXIT
 
 # Follow logs from all services
 integration-test-logs:
 	@echo "Following logs from all services (Ctrl+C to stop)..."
-	cd integration-test && docker-compose -f docker-compose.integration.yml logs -f
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml logs -f
 
 # Open Prometheus UI
 integration-test-metrics:
@@ -485,19 +485,19 @@ monitor-goroutines:
 	@echo "Starting real-time goroutine monitoring..."
 	@echo "Press Ctrl+C to stop"
 	@echo ""
-	@./integration-test/monitor_goroutines.sh
+	@./integration-test/e2e/monitor_goroutines.sh
 
 # Analyze goroutine monitoring results
 analyze-goroutines:
-	@./integration-test/analyze_goroutines.sh
+	@./integration-test/e2e/analyze_goroutines.sh
 
 # Display test results
 integration-test-results:
 	@echo "Integration Test Results"
 	@echo "========================"
 	@echo ""
-	@if [ -f integration-test/results/summary.txt ]; then \
-		cat integration-test/results/summary.txt; \
+	@if [ -f integration-test/e2e/results/summary.txt ]; then \
+		cat integration-test/e2e/results/summary.txt; \
 	else \
 		echo "No results found. Run 'make integration-test-run' first."; \
 	fi

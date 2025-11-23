@@ -30,7 +30,7 @@ services:
   # ObjectWeaver Server - The system under test
   objectweaver:
     build:
-      context: ..
+      context: ../..
       dockerfile: dockerfile
     container_name: objectweaver-test
     ports:
