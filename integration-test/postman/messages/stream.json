@@ -1,0 +1,19 @@
+{
+  "prompt": "A advanced world of D&D where there are guns and magic together",
+  "definition": {
+    "type": "object",
+    "instruction": "Defines the technological landscape of the world, including its level of advancement and notable innovations.",
+    "properties": {
+      "Level": {
+        "type": "string",
+        "instruction": "Categorize the overall technological sophistication of the world, such as medieval, industrial, or advanced futuristic.",
+        "priority": 2
+      },
+      "Inventions": {
+        "type": "string",
+        "instruction": "Describe the most significant technological discoveries and their transformative impact on the society, economy, and daily life.",
+        "priority": 3
+      }
+    }
+  }
+}

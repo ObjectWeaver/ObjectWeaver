@@ -1,0 +1,405 @@
+{
+  "prompt": "Generate a technical blog post about microservices architecture and best practices",
+  "definition": {
+    "type": "object",
+    "properties": {
+      "content": {
+        "type": "string",
+        "instruction": "Generate a technical blog post about microservices",
+        "scoringCriteria": {
+          "dimensions": {
+            "technical_accuracy": {
+              "description": "Rate the technical accuracy from 0-100",
+              "type": "numeric"
+            },
+            "readability": {
+              "description": "Rate the readability from 0-100",
+              "type": "numeric"
+            },
+            "completeness": {
+              "description": "Rate the completeness of the content from 0-100",
+              "type": "numeric"
+            }
+          }
+        },
+        "decisionPoint": {
+          "name": "ContentQualityRouter",
+          "branches": [
+            {
+              "name": "HighQuality",
+              "conditions": [
+                {
+                  "field": "technical_accuracy",
+                  "operator": "gte",
+                  "number_value": 90
+                },
+                {
+                  "field": "readability",
+                  "operator": "gte",
+                  "number_value": 90
+                },
+                {
+                  "field": "completeness",
+                  "operator": "gte",
+                  "number_value": 90
+                }
+              ],
+              "then": {
+                "type": "object",
+                "instruction": "Content meets quality standards, finalize it",
+                "selectFields": ["content"],
+                "properties": {
+                  "final_content": {
+                    "type": "string",
+                    "instruction": "Return the final polished content"
+                  },
+                  "quality_summary": {
+                    "type": "string",
+                    "instruction": "Provide a brief summary of the quality metrics"
+                  }
+                }
+              }
+            },
+            {
+              "name": "LowReadability",
+              "conditions": [
+                {
+                  "field": "readability",
+                  "operator": "lt",
+                  "number_value": 90
+                },
+                {
+                  "field": "technical_accuracy",
+                  "operator": "gte",
+                  "number_value": 80
+                }
+              ],
+              "then": {
+                "type": "object",
+                "instruction": "Improve readability while maintaining technical accuracy",
+                "selectFields": ["content"],
+                "properties": {
+                  "improved_content": {
+                    "type": "string",
+                    "instruction": "Rewrite the content with simpler language, better structure, and clearer examples while preserving technical accuracy",
+                    "scoringCriteria": {
+                      "dimensions": {
+                        "technical_accuracy": {
+                          "description": "Rate the technical accuracy from 0-100",
+                          "type": "numeric"
+                        },
+                        "readability": {
+                          "description": "Rate the readability from 0-100",
+                          "type": "numeric"
+                        },
+                        "completeness": {
+                          "description": "Rate the completeness from 0-100",
+                          "type": "numeric"
+                        }
+                      }
+                    },
+                    "decisionPoint": {
+                      "name": "RecursiveQualityCheck",
+                      "branches": [
+                        {
+                          "name": "MeetsStandards",
+                          "conditions": [
+                            {
+                              "field": "technical_accuracy",
+                              "operator": "gte",
+                              "number_value": 90
+                            },
+                            {
+                              "field": "readability",
+                              "operator": "gte",
+                              "number_value": 90
+                            },
+                            {
+                              "field": "completeness",
+                              "operator": "gte",
+                              "number_value": 90
+                            }
+                          ],
+                          "then": {
+                            "type": "object",
+                            "instruction": "Finalize the improved content",
+                            "selectFields": ["improved_content"],
+                            "properties": {
+                              "final_content": {
+                                "type": "string",
+                                "instruction": "Return the final content"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "name": "NeedsMoreWork",
+                          "conditions": [
+                            {
+                              "field": "readability",
+                              "operator": "lt",
+                              "number_value": 90
+                            }
+                          ],
+                          "then": {
+                            "type": "object",
+                            "instruction": "Further improve readability",
+                            "selectFields": ["improved_content"],
+                            "properties": {
+                              "refined_content": {
+                                "type": "string",
+                                "instruction": "Make additional improvements to readability",
+                                "scoringCriteria": {
+                                  "dimensions": {
+                                    "technical_accuracy": {
+                                      "description": "Rate the technical accuracy from 0-100",
+                                      "type": "numeric"
+                                    },
+                                    "readability": {
+                                      "description": "Rate the readability from 0-100",
+                                      "type": "numeric"
+                                    },
+                                    "completeness": {
+                                      "description": "Rate the completeness from 0-100",
+                                      "type": "numeric"
+                                    }
+                                  }
+                                },
+                                "decisionPoint": {
+                                  "name": "FinalQualityCheck",
+                                  "branches": [
+                                    {
+                                      "name": "Acceptable",
+                                      "conditions": [
+                                        {
+                                          "field": "readability",
+                                          "operator": "gte",
+                                          "number_value": 85
+                                        },
+                                        {
+                                          "field": "technical_accuracy",
+                                          "operator": "gte",
+                                          "number_value": 85
+                                        }
+                                      ],
+                                      "then": {
+                                        "type": "object",
+                                        "instruction": "Accept the content as final",
+                                        "selectFields": ["refined_content"],
+                                        "properties": {
+                                          "final_content": {
+                                            "type": "string",
+                                            "instruction": "Return the final content"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ],
+                                  "default": {
+                                    "type": "object",
+                                    "instruction": "Content could not be improved further",
+                                    "selectFields": ["refined_content"],
+                                    "properties": {
+                                      "best_effort_content": {
+                                        "type": "string",
+                                        "instruction": "Return the best effort content with a note about limitations"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "default": {
+                        "type": "object",
+                        "instruction": "Handle unexpected case",
+                        "selectFields": ["improved_content"],
+                        "properties": {
+                          "fallback_content": {
+                            "type": "string",
+                            "instruction": "Return the content as-is"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "LowAccuracy",
+              "conditions": [
+                {
+                  "field": "technical_accuracy",
+                  "operator": "lt",
+                  "number_value": 80
+                }
+              ],
+              "then": {
+                "type": "object",
+                "instruction": "Improve technical accuracy with deeper research and fact-checking",
+                "selectFields": ["content"],
+                "properties": {
+                  "corrected_content": {
+                    "type": "string",
+                    "instruction": "Rewrite with improved technical accuracy, add citations and examples",
+                    "scoringCriteria": {
+                      "dimensions": {
+                        "technical_accuracy": {
+                          "description": "Rate the technical accuracy from 0-100",
+                          "type": "numeric"
+                        },
+                        "readability": {
+                          "description": "Rate the readability from 0-100",
+                          "type": "numeric"
+                        },
+                        "completeness": {
+                          "description": "Rate the completeness from 0-100",
+                          "type": "numeric"
+                        }
+                      }
+                    },
+                    "decisionPoint": {
+                      "name": "AccuracyRecheck",
+                      "branches": [
+                        {
+                          "name": "ImprovedAccuracy",
+                          "conditions": [
+                            {
+                              "field": "technical_accuracy",
+                              "operator": "gte",
+                              "number_value": 85
+                            }
+                          ],
+                          "then": {
+                            "type": "object",
+                            "instruction": "Accuracy improved, now check overall quality",
+                            "selectFields": ["corrected_content"],
+                            "properties": {
+                              "final_content": {
+                                "type": "string",
+                                "instruction": "Return the technically accurate content"
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "default": {
+                        "type": "object",
+                        "instruction": "Accuracy still low, provide best available content",
+                        "selectFields": ["corrected_content"],
+                        "properties": {
+                          "partial_content": {
+                            "type": "string",
+                            "instruction": "Return content with disclaimer about accuracy limitations"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "LowCompleteness",
+              "conditions": [
+                {
+                  "field": "completeness",
+                  "operator": "lt",
+                  "number_value": 90
+                },
+                {
+                  "field": "technical_accuracy",
+                  "operator": "gte",
+                  "number_value": 80
+                },
+                {
+                  "field": "readability",
+                  "operator": "gte",
+                  "number_value": 80
+                }
+              ],
+              "then": {
+                "type": "object",
+                "instruction": "Expand the content to cover missing topics",
+                "selectFields": ["content"],
+                "properties": {
+                  "expanded_content": {
+                    "type": "string",
+                    "instruction": "Add missing sections, examples, and details to make the content comprehensive",
+                    "scoringCriteria": {
+                      "dimensions": {
+                        "technical_accuracy": {
+                          "description": "Rate the technical accuracy from 0-100",
+                          "type": "numeric"
+                        },
+                        "readability": {
+                          "description": "Rate the readability from 0-100",
+                          "type": "numeric"
+                        },
+                        "completeness": {
+                          "description": "Rate the completeness from 0-100",
+                          "type": "numeric"
+                        }
+                      }
+                    },
+                    "decisionPoint": {
+                      "name": "CompletenessRecheck",
+                      "branches": [
+                        {
+                          "name": "NowComplete",
+                          "conditions": [
+                            {
+                              "field": "completeness",
+                              "operator": "gte",
+                              "number_value": 90
+                            }
+                          ],
+                          "then": {
+                            "type": "object",
+                            "instruction": "Content is now complete",
+                            "selectFields": ["expanded_content"],
+                            "properties": {
+                              "final_content": {
+                                "type": "string",
+                                "instruction": "Return the complete content"
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "default": {
+                        "type": "object",
+                        "instruction": "Content expanded but may need more work",
+                        "selectFields": ["expanded_content"],
+                        "properties": {
+                          "partial_content": {
+                            "type": "string",
+                            "instruction": "Return the expanded content"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "default": {
+            "type": "object",
+            "instruction": "Handle edge cases that don't match any branch",
+            "selectFields": ["content"],
+            "properties": {
+              "fallback_content": {
+                "type": "string",
+                "instruction": "Return the original content with minor improvements"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
