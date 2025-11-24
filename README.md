@@ -82,7 +82,7 @@ curl -X POST http://localhost:2008/api/objectGen \
 '
 ```
 
-Find more different language examples here[https://objectweaver.dev/docs/api-reference/curl-examples]
+Find more different language examples [here](https://objectweaver.dev/docs/api-reference/curl-examples).
 
 ## Features
 
