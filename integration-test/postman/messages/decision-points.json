@@ -1,0 +1,55 @@
+{
+  "prompt": "Generate a technical blog post about microservices architecture and best practices",
+  "definition": {
+    "type": "object",
+    "properties": {
+      "content": {
+        "type": "string",
+        "instruction": "Generate a technical blog post about microservices",
+        "scoringCriteria": {
+          "dimensions": {
+            "technical_accuracy": {
+              "description": "Rate the technical accuracy from 0-100",
+              "type": "number"
+            },
+            "readability": {
+              "description": "Rate the readability from 0-100",
+              "type": "number"
+            }
+          }
+        },
+        "decisionPoint": {
+          "name": "ContentQualityRouter",
+          "branches": [
+            {
+              "name": "HighAccuracyLowReadability",
+              "conditions": [
+                {
+                  "field": "technical_accuracy",
+                  "operator": "gt",
+                  "number_value": 95
+                },
+                {
+                  "field": "readability",
+                  "operator": "lt",
+                  "number_value": 95
+                }
+              ],
+              "then": {
+                "type": "object",
+                "instruction": "Improve readability while maintaining technical accuracy",
+                "selectFields": ["content"],
+                "properties": {
+                  "simplified_content": {
+                    "type": "string",
+                    "instruction": "Simplify the language"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
