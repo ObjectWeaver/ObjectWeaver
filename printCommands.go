@@ -32,7 +32,7 @@ You can access the testing environment at: http://localhost:%s/
 			"This software is provided by ObjectWeaver (https://objectweaver.dev). By using this software,\n"+
 			"you automatically accept and agree to be bound by the License Agreement located at:\n"+
 			"https://github.com/ObjectWeaver/ObjectWeaver/blob/main/LICENSE.txt\n\n"+
-			"For complete documentation and support, visit: https://objectweaver.dev/docs/intro\n\n"+
+			"For complete documentation and support, visit: https://objectweaver.dev/docs\n\n"+
 			"© ObjectWeaver. All rights reserved.\n\n",
 		branding,
 		developerMessage,
