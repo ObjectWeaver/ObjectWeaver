@@ -20,7 +20,7 @@ For complete documentation, examples, and guides, visit [our documentation](http
 
 ## Why ObjectWeaver?
 
-Traditional JSON generation with LLMs often fails, with success rates as low as 35-65%. While grammar-constrained alternatives can guarantee syntax, they force a one-size-fits-all approach, using a single model and prompt for all fields. ObjectWeaver solves this by providing intelligent, field-level orchestration that offers several key advantages:
+Traditional JSON generation with LLMs often fails, with success rates as low as [35-65%](https://composio.dev/blog/gpt-4-function-calling-example). While grammar-constrained alternatives can guarantee syntax, they force a one-size-fits-all approach, using a single model and prompt for all fields. ObjectWeaver solves this by providing intelligent, field-level orchestration that offers several key advantages:
 
 - <img src="https://api.iconify.design/lucide/circle-check-big.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Guaranteed JSON Output**: Field-level type validation and compositional assembly ensure 100% valid JSON every time.
 - <img src="https://api.iconify.design/lucide/zap.svg?color=%23006329" width="16" height="16" style="vertical-align: text-bottom;" /> **Parallel Generation**: Independent fields are generated concurrently, leading to significantly faster processing times.
