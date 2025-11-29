@@ -344,7 +344,7 @@ func TestOpenAIProvider_GenerateImage_InvalidAPIKey(t *testing.T) {
 
 	request := &domain.ImageGenerationRequest{
 		Prompt: "A beautiful sunset",
-		Model:  string(jsonSchema.OpenAiDalle2),
+		Model:  "dall-e-2",
 		Size:   "1024x1024",
 	}
 
@@ -378,7 +378,7 @@ func TestOpenAIProvider_GenerateImage_RequestValidation(t *testing.T) {
 			name: "DALL-E 2 request",
 			request: &domain.ImageGenerationRequest{
 				Prompt: "A cat in space",
-				Model:  string(jsonSchema.OpenAiDalle2),
+				Model:  "dall-e-2",
 				Size:   "512x512",
 			},
 		},
@@ -386,7 +386,7 @@ func TestOpenAIProvider_GenerateImage_RequestValidation(t *testing.T) {
 			name: "DALL-E 3 request",
 			request: &domain.ImageGenerationRequest{
 				Prompt: "A futuristic city",
-				Model:  string(jsonSchema.OpenAiDalle3),
+				Model:  "dall-e-3",
 				Size:   "1024x1024",
 			},
 		},
@@ -505,7 +505,7 @@ func TestOpenAIProvider_GenerateImage_EmptyPrompt(t *testing.T) {
 
 	request := &domain.ImageGenerationRequest{
 		Prompt: "",
-		Model:  string(jsonSchema.OpenAiDalle2),
+		Model:  "dall-e-2",
 		Size:   "512x512",
 	}
 
