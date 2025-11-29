@@ -15,18 +15,10 @@ import (
 	"github.com/objectweaver/go-sdk/client"
 )
 
-// FieldMetadata contains metadata for a single field
-type FieldMetadata struct {
-	TokensUsed int             `json:"tokensUsed"`
-	Cost       float64         `json:"cost"`
-	ModelUsed  string          `json:"modelUsed"`
-	Choices    []domain.Choice `json:"choices,omitempty"`
-}
-
 // DetailedField contains both the value and metadata for a field
 type DetailedField struct {
-	Value    interface{}    `json:"value"`
-	Metadata *FieldMetadata `json:"metadata"`
+	Value    interface{}            `json:"value"`
+	Metadata *domain.ResultMetadata `json:"metadata"`
 }
 
 // Response struct with both simple data and detailed metadata
@@ -136,18 +128,9 @@ func (s *Server) ObjectGenHandler(w http.ResponseWriter, r *http.Request) {
 	if result.HasDetailedData() {
 		detailedData = make(map[string]*DetailedField)
 		for key, fieldResult := range result.DetailedData() {
-			var fieldMeta *FieldMetadata
-			if fieldResult.Metadata != nil {
-				fieldMeta = &FieldMetadata{
-					TokensUsed: fieldResult.Metadata.TokensUsed,
-					Cost:       fieldResult.Metadata.Cost,
-					ModelUsed:  fieldResult.Metadata.ModelUsed,
-					Choices:    fieldResult.Metadata.Choices,
-				}
-			}
 			detailedData[key] = &DetailedField{
 				Value:    fieldResult.Value,
-				Metadata: fieldMeta,
+				Metadata: fieldResult.Metadata,
 			}
 		}
 	}

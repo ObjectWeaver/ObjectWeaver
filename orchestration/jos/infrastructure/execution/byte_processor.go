@@ -172,6 +172,7 @@ func (p *ByteProcessor) processSpeechToText(task *domain.FieldTask, context *dom
 	resultMetadata.ModelUsed = metadata.Model
 	resultMetadata.Cost = metadata.Cost
 	resultMetadata.TokensUsed = metadata.TokensUsed
+	resultMetadata.VerboseData = metadata.VerboseData // Preserve verbose data from provider
 
 	result := domain.NewTaskResult(task.ID(), task.Key(), transcriptionText, resultMetadata)
 	return result.WithPath(task.Path()), nil
