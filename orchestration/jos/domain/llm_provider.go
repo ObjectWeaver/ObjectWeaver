@@ -77,6 +77,7 @@ type ProviderMetadata struct {
 	FinishReason string
 	Prompt       string
 	Choices      []Choice
+	VerboseData map[string]any
 }
 
 type Choice struct {

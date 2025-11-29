@@ -303,6 +303,15 @@ func (p *OpenAIProvider) TranscribeAudio(request *domain.AudioTranscriptionReque
 		TokensUsed: 0,
 	}
 
+	if request.ResponseFormat == "verbose_json" || request.ResponseFormat == "diarized_json" {
+		metadata.VerboseData = map[string]any{
+			"language":       response.Language,
+			"duration":       response.Duration,
+			"segments":       response.Segments,
+			"words":           response.Words,
+		}
+	}
+
 	return response.Text, metadata, nil
 }
 
