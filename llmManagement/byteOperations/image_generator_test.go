@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -36,12 +35,12 @@ func TestImageGenerator_ModelSelection(t *testing.T) {
 	}{
 		{
 			name:          "DALL-E 2 model",
-			inputModel:    string(jsonSchema.OpenAiDalle2),
+			inputModel:    "dall-e-2",
 			expectedModel: openai.CreateImageModelDallE2,
 		},
 		{
 			name:          "DALL-E 3 model",
-			inputModel:    string(jsonSchema.OpenAiDalle3),
+			inputModel:    "dall-e-3",
 			expectedModel: openai.CreateImageModelDallE3,
 		},
 		{
@@ -285,12 +284,12 @@ func TestImageGenerator_GenerateImage_ModelConversion(t *testing.T) {
 	}{
 		{
 			name:          "DALL-E 2",
-			inputModel:    string(jsonSchema.OpenAiDalle2),
+			inputModel:    "dall-e-2",
 			expectedModel: openai.CreateImageModelDallE2,
 		},
 		{
 			name:          "DALL-E 3",
-			inputModel:    string(jsonSchema.OpenAiDalle3),
+			inputModel:    "dall-e-3",
 			expectedModel: openai.CreateImageModelDallE3,
 		},
 		{
@@ -311,9 +310,9 @@ func TestImageGenerator_GenerateImage_ModelConversion(t *testing.T) {
 			var resultModel string
 
 			modelStr := string(tt.inputModel)
-			if modelStr == string(jsonSchema.OpenAiDalle2) {
+			if modelStr == "dall-e-2" {
 				resultModel = openai.CreateImageModelDallE2
-			} else if modelStr == string(jsonSchema.OpenAiDalle3) {
+			} else if modelStr == "dall-e-3" {
 				resultModel = openai.CreateImageModelDallE3
 			} else {
 				resultModel = openai.CreateImageModelDallE2

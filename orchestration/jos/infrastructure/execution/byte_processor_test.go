@@ -208,7 +208,7 @@ func TestByteProcessor_Process_ImageGeneration_Success(t *testing.T) {
 		Type: jsonSchema.Byte,
 		Image: &jsonSchema.Image{
 			Size:  "1024x1024",
-			Model: jsonSchema.OpenAiDalle3,
+			Model: "dall-e-3",
 		},
 		Instruction: "A beautiful sunset",
 	}
@@ -336,7 +336,7 @@ func TestByteProcessor_Process_ImageGeneration_Error(t *testing.T) {
 	schema := &jsonSchema.Definition{
 		Type: jsonSchema.Byte,
 		Image: &jsonSchema.Image{
-			Model: jsonSchema.OpenAiDalle3,
+			Model: "dall-e-3",
 		},
 		Instruction: "Generate image",
 	}

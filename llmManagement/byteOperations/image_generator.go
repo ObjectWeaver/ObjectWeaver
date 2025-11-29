@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"objectweaver/logger"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -40,9 +39,9 @@ func (g *ImageGenerator) GenerateImage(prompt string, model string, size string)
 	// Set model based on configuration
 	// Convert ModelType to string and check
 	modelStr := string(model)
-	if modelStr == string(jsonSchema.OpenAiDalle2) {
+	if modelStr == "dall-e-2" {
 		req.Model = openai.CreateImageModelDallE2
-	} else if modelStr == string(jsonSchema.OpenAiDalle3) {
+	} else if modelStr == "dall-e-3" {
 		req.Model = openai.CreateImageModelDallE3
 	} else {
 		req.Model = openai.CreateImageModelDallE2 // Default fallback
