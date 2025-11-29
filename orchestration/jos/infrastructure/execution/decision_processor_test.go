@@ -430,12 +430,11 @@ func TestNormalizeOperator(t *testing.T) {
 		{">=", jsonSchema.OpGreaterThanOrEqual},
 		{"<=", jsonSchema.OpLessThanOrEqual},
 
-		// CamelCase variants - these won't work because lowercase conversion breaks them
-		// The implementation has a bug where it lowercases "greaterThan" to "greaterthan"
-		// but the map has "greaterThan" with capital T, so these won't match
-		// Testing that they return as-is (the bug behavior)
-		{"greaterThan", "greaterThan"}, // Bug: won't normalize due to lowercase mismatch
-		{"lessThan", "lessThan"},       // Bug: won't normalize due to lowercase mismatch
+		// CamelCase variants - these should now work after the bug fix
+		{"greaterThan", jsonSchema.OpGreaterThan},
+		{"lessThan", jsonSchema.OpLessThan},
+		{"greaterThanOrEqual", jsonSchema.OpGreaterThanOrEqual},
+		{"lessThanOrEqual", jsonSchema.OpLessThanOrEqual},
 
 		// Unknown operator (should return as-is)
 		{"unknown", "unknown"},
