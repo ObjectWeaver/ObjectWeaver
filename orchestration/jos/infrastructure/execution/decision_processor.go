@@ -400,10 +400,10 @@ func normalizeOperator(op jsonSchema.ComparisonOperator) jsonSchema.ComparisonOp
 		">=":                 jsonSchema.OpGreaterThanOrEqual,
 		"<=":                 jsonSchema.OpLessThanOrEqual,
 		"equals":             jsonSchema.OpEqual,
-		"greaterThan":        jsonSchema.OpGreaterThan,
-		"lessThan":           jsonSchema.OpLessThan,
-		"greaterThanOrEqual": jsonSchema.OpGreaterThanOrEqual,
-		"lessThanOrEqual":    jsonSchema.OpLessThanOrEqual,
+		"greaterthan":        jsonSchema.OpGreaterThan,
+		"lessthan":           jsonSchema.OpLessThan,
+		"greaterthanorequal": jsonSchema.OpGreaterThanOrEqual,
+		"lessthanorequal":    jsonSchema.OpLessThanOrEqual,
 	}
 
 	// Convert to lowercase for case-insensitive matching
