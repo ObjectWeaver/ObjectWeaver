@@ -29,9 +29,6 @@ func NewOpenAIClientAdapter(
 	httpClient *http.Client,
 ) *OpenAIClientAdapter {
 	config := openai.DefaultConfig(apiKey)
-	if httpClient != nil {
-		config.HTTPClient = httpClient
-	}
 	client := openai.NewClientWithConfig(config)
 
 	return &OpenAIClientAdapter{
