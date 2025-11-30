@@ -59,7 +59,7 @@ func getDefaultModelForProvider() string {
 			return "gpt-4o-mini"
 		}
 		// Default to Gemini Flash if using Gemini keys
-		if os.Getenv("GEMINI_API_KEY") != "" || os.Getenv("LLM_API_KEY") != "" {
+		if os.Getenv("GEMINI_API_KEY") != "" {
 			return "gemini-2.0-flash"
 		}
 		// Final fallback
@@ -196,6 +196,7 @@ func (p *OpenAIProvider) GenerateAudio(request *domain.AudioGenerationRequest) (
 	logger.Printf("[OpenAIProvider] Voice: %s", request.Voice)
 	logger.Printf("[OpenAIProvider] Model: %s", request.Model)
 
+
 	// Create OpenAI TTS request
 	ttsReq := gogpt.CreateSpeechRequest{
 		Model:          gogpt.SpeechModel(request.Model),
@@ -305,10 +306,10 @@ func (p *OpenAIProvider) TranscribeAudio(request *domain.AudioTranscriptionReque
 
 	if request.ResponseFormat == "verbose_json" || request.ResponseFormat == "diarized_json" {
 		metadata.VerboseData = map[string]any{
-			"language":       response.Language,
-			"duration":       response.Duration,
-			"segments":       response.Segments,
-			"words":           response.Words,
+			"language": response.Language,
+			"duration": response.Duration,
+			"segments": response.Segments,
+			"words":    response.Words,
 		}
 	}
 
