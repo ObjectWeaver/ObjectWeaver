@@ -23,6 +23,11 @@ func (s *Server) StreamGeneratedObjectsV2(req *pb.RequestBody, stream pb.JSONSch
 		Definition: converison.ConvertProtoToModel(req.Definition),
 	}
 
+	// Validate that definition exists
+	if body.Definition == nil {
+		return errors.New("invalid request: definition is required")
+	}
+
 	logger.Println("Received streaming request for definition:", body.Definition)
 
 	// Check for circular definitions
