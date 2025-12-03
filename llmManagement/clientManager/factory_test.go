@@ -250,7 +250,7 @@ func TestNewClientAdapter_InvalidProvider(t *testing.T) {
 func TestNewClientAdapter_OpenAI_MissingKey(t *testing.T) {
 	// Ensure OPENAI_API_KEY is not set
 	defer setEnv(t, map[string]string{})()
-	
+
 	config := AdapterConfig{
 		Provider: ProviderOpenAI,
 	}
@@ -269,7 +269,7 @@ func TestNewClientAdapter_OpenAI_MissingKey(t *testing.T) {
 func TestNewClientAdapter_Gemini_MissingKey(t *testing.T) {
 	// Ensure GEMINI_API_KEY is not set
 	defer setEnv(t, map[string]string{})()
-	
+
 	config := AdapterConfig{
 		Provider: ProviderGemini,
 	}

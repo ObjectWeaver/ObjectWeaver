@@ -33,7 +33,11 @@ export const options = {
     },
   },
   thresholds: {
-    'http_req_duration': ['p(95)<500', 'p(99)<1000'],  // 95% < 500ms, 99% < 1s
+    // With fixed 5s LLM latency, measure ObjectWeaver overhead:
+    // - p(95) < 8s: LLM (5s) + ObjectWeaver overhead (up to 3s)
+    // - p(99) < 15s: Tail latency under load
+    // Goal: Minimize the gap between response time and LLM latency
+    'http_req_duration': ['p(95)<8000', 'p(99)<15000'],
     'http_req_failed': ['rate<0.05'],                   // Error rate < 5%
     'errors': ['rate<0.05'],
   },
@@ -217,7 +221,7 @@ export default function () {
       'Content-Type': 'application/json',
       'Authorization': `Basic ${__ENV.AUTH_TOKEN || encoding.b64encode(`user:${PASSWORD}`)}`,
     },
-    timeout: '30s',
+    timeout: '120s',  // 2 minute timeout for slow LLM responses
     tags: {
       schema_complexity: schemaConfig.name
     }
@@ -236,7 +240,7 @@ export default function () {
   });
 
   check(response, {
-    'response time < 1000ms': () => duration < 1000,
+    'response time < 5000ms': () => duration < 5000,
   });
 
   if (functionalSuccess) {

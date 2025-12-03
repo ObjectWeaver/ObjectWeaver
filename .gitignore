@@ -5,3 +5,5 @@
 objectweaver
 objectweaver
 integration-test/results/*
+integration-test/e2e/k6/results/*
+integration-test/e2e/results/*

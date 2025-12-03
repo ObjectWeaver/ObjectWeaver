@@ -1,0 +1,218 @@
+version: '3.8'
+
+# Distributed k6 Load Testing Setup
+# Allows running multiple k6 instances in parallel to generate higher load
+
+services:
+  # Mock LLM Server
+  mock-llm-server:
+    build:
+      context: ./mock-llm-server
+      dockerfile: Dockerfile
+    container_name: mock-llm-distributed
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - MOCK_LLM_MIN_DELAY_MS=${MOCK_LLM_MIN_DELAY_MS:-5000}
+      - MOCK_LLM_MAX_DELAY_MS=${MOCK_LLM_MAX_DELAY_MS:-5000}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    networks:
+      - loadtest
+
+  # ObjectWeaver Server
+  objectweaver:
+    build:
+      context: ../..
+      dockerfile: dockerfile
+    container_name: objectweaver-distributed
+    ports:
+      - "2008:2008"
+    environment:
+      # Basic config
+      - ENVIRONMENT=development
+      - PASSWORD=test-password
+      # LLM Configuration
+      - LLM_API_URL=http://mock-llm-server:8080/v1/chat/completions
+      - LLM_API_KEY=test-key
+      - LLM_HTTP_TIMEOUT_SECONDS=120
+      - LLM_ENABLE_BATCH=false
+      # Worker pool - configurable for different load tests
+      - WORKER_POOL_SIZE=${WORKER_POOL_SIZE:-10000}
+      - LLM_CONCURRENCY=${LLM_CONCURRENCY:-15000}
+      # Submitter type for performance
+      - LLM_SUBMITTER_TYPE=direct
+      # Connection pool
+      - LLM_HTTP_MAX_IDLE_CONNS=25000
+      - LLM_HTTP_MAX_IDLE_CONNS_PER_HOST=25000
+      - LLM_HTTP_MAX_CONNS_PER_HOST=25000
+      # Rate limits
+      - LLM_MAX_REQUESTS_PER_MINUTE=100000
+      - LLM_MAX_TOKENS_PER_MINUTE=150000000
+      # gRPC settings - required for server startup
+      - GRPC_UNSECURE=true
+    depends_on:
+      mock-llm-server:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+    networks:
+      - loadtest
+
+  # K6 Load Generator 1
+  k6-1:
+    image: grafana/k6:latest
+    container_name: k6-instance-1
+    volumes:
+      - ./k6:/scripts
+      - ./results:/results
+    environment:
+      - K6_INSTANCE=1
+      - MAX_RPS=${MAX_RPS:-1000}
+      - DURATION=${DURATION:-30s}
+      - RAMP_UP_TIME=${RAMP_UP_TIME:-10s}
+      - SCHEMA_TYPE=${SCHEMA_TYPE:-minimal}
+      - LLM_LATENCY_MS=${LLM_LATENCY_MS:-5000}
+      - BASE_URL=http://objectweaver:2008
+      - PASSWORD=test-password
+    depends_on:
+      - objectweaver
+    networks:
+      - loadtest
+    profiles:
+      - distributed
+
+  # K6 Load Generator 2
+  k6-2:
+    image: grafana/k6:latest
+    container_name: k6-instance-2
+    volumes:
+      - ./k6:/scripts
+      - ./results:/results
+    environment:
+      - K6_INSTANCE=2
+      - MAX_RPS=${MAX_RPS:-1000}
+      - DURATION=${DURATION:-30s}
+      - RAMP_UP_TIME=${RAMP_UP_TIME:-10s}
+      - SCHEMA_TYPE=${SCHEMA_TYPE:-minimal}
+      - LLM_LATENCY_MS=${LLM_LATENCY_MS:-5000}
+      - BASE_URL=http://objectweaver:2008
+      - PASSWORD=test-password
+    depends_on:
+      - objectweaver
+    networks:
+      - loadtest
+    profiles:
+      - distributed
+
+  # K6 Load Generator 3
+  k6-3:
+    image: grafana/k6:latest
+    container_name: k6-instance-3
+    volumes:
+      - ./k6:/scripts
+      - ./results:/results
+    environment:
+      - K6_INSTANCE=3
+      - MAX_RPS=${MAX_RPS:-1000}
+      - DURATION=${DURATION:-30s}
+      - RAMP_UP_TIME=${RAMP_UP_TIME:-10s}
+      - SCHEMA_TYPE=${SCHEMA_TYPE:-minimal}
+      - LLM_LATENCY_MS=${LLM_LATENCY_MS:-5000}
+      - BASE_URL=http://objectweaver:2008
+      - PASSWORD=test-password
+    depends_on:
+      - objectweaver
+    networks:
+      - loadtest
+    profiles:
+      - distributed
+
+  # K6 Load Generator 4
+  k6-4:
+    image: grafana/k6:latest
+    container_name: k6-instance-4
+    volumes:
+      - ./k6:/scripts
+      - ./results:/results
+    environment:
+      - K6_INSTANCE=4
+      - MAX_RPS=${MAX_RPS:-1000}
+      - DURATION=${DURATION:-30s}
+      - RAMP_UP_TIME=${RAMP_UP_TIME:-10s}
+      - SCHEMA_TYPE=${SCHEMA_TYPE:-minimal}
+      - LLM_LATENCY_MS=${LLM_LATENCY_MS:-5000}
+      - BASE_URL=http://objectweaver:2008
+      - PASSWORD=test-password
+    depends_on:
+      - objectweaver
+    networks:
+      - loadtest
+    profiles:
+      - distributed
+
+  # K6 Load Generator 5
+  k6-5:
+    image: grafana/k6:latest
+    container_name: k6-instance-5
+    volumes:
+      - ./k6:/scripts
+      - ./results:/results
+    environment:
+      - K6_INSTANCE=5
+      - MAX_RPS=${MAX_RPS:-1000}
+      - DURATION=${DURATION:-30s}
+      - RAMP_UP_TIME=${RAMP_UP_TIME:-10s}
+      - SCHEMA_TYPE=${SCHEMA_TYPE:-minimal}
+      - LLM_LATENCY_MS=${LLM_LATENCY_MS:-5000}
+      - BASE_URL=http://objectweaver:2008
+      - PASSWORD=test-password
+    depends_on:
+      - objectweaver
+    networks:
+      - loadtest
+    profiles:
+      - distributed
+
+  # Single k6 for non-distributed runs
+  k6:
+    image: grafana/k6:latest
+    container_name: k6-single
+    volumes:
+      - ./k6:/scripts
+      - ./results:/results
+    environment:
+      - MAX_RPS=${MAX_RPS:-1000}
+      - DURATION=${DURATION:-30s}
+      - RAMP_UP_TIME=${RAMP_UP_TIME:-10s}
+      - SCHEMA_TYPE=${SCHEMA_TYPE:-minimal}
+      - LLM_LATENCY_MS=${LLM_LATENCY_MS:-5000}
+      - BASE_URL=http://objectweaver:2008
+      - PASSWORD=test-password
+    depends_on:
+      - objectweaver
+    networks:
+      - loadtest
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - loadtest
+
+networks:
+  loadtest:
+    driver: bridge
