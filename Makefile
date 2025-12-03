@@ -197,7 +197,7 @@ benchmark-server-compare:
 # Integration Testing Targets
 # ============================================================================
 
-.PHONY: integration-test-help integration-test-up integration-test-down integration-test-run integration-test-clean integration-test-logs integration-test-metrics integration-test-full integration-test-10k
+.PHONY: integration-test-help integration-test-up integration-test-down integration-test-run integration-test-clean integration-test-logs integration-test-metrics integration-test-full integration-test-10k integration-test-matrix integration-test-matrix-single
 
 # Integration test help
 integration-test-help:
@@ -219,6 +219,21 @@ integration-test-help:
 	@echo "  make integration-test-extreme   - Extreme load: ramp to 2000 req/s"
 	@echo "  make integration-test-10k       - Ultra load: ramp to 10000 req/s"
 	@echo "  make integration-test-25k       - Massive load: ramp to 25000 req/s"
+	@echo ""
+	@echo "Matrix Tests (Load × Complexity):"
+	@echo "  make integration-test-matrix           - Run full matrix (all schemas × 50-2000 req/s)"
+	@echo "  make integration-test-matrix-quick     - Quick matrix (3 schemas × 4 load levels)"
+	@echo "  make integration-test-matrix-light     - Light matrix (2 schemas × 2 load levels)"
+	@echo "  make integration-test-matrix-minimal   - Test minimal schema at all load levels"
+	@echo "  make integration-test-matrix-simple    - Test simple schema at all load levels"
+	@echo "  make integration-test-matrix-nested    - Test nested schema at all load levels"
+	@echo "  make integration-test-matrix-complex   - Test complex schema at all load levels"
+	@echo "  make integration-test-matrix-100       - Test all schemas at 100 req/s"
+	@echo "  make integration-test-matrix-500       - Test all schemas at 500 req/s"
+	@echo "  make integration-test-matrix-1000      - Test all schemas at 1000 req/s"
+	@echo "  make integration-test-matrix-2000      - Test all schemas at 2000 req/s"
+	@echo "  make integration-test-matrix-single    - Single test (SCHEMA=x RPS=y)"
+	@echo "  make integration-test-matrix-results   - View latest matrix results"
 	@echo ""
 	@echo "Monitoring:"
 	@echo "  make integration-test-logs      - Follow logs from all services"
@@ -519,3 +534,229 @@ integration-test-full:
 	@echo "Test complete! Services are still running."
 	@echo "View metrics at: http://localhost:9090"
 	@echo "Run 'make integration-test-down' to stop services."
+
+# ============================================
+# MATRIX TESTS (Load × Schema Complexity)
+# ============================================
+
+# Full matrix test - all schemas × all load levels (up to 2000 req/s)
+# Estimated time: ~30-45 minutes
+integration-test-matrix:
+	@echo "Running FULL performance matrix test..."
+	@chmod +x scripts/matrix-test-runner.sh
+	@./scripts/matrix-test-runner.sh
+
+# Quick matrix - subset for faster iteration (~10 min)
+integration-test-matrix-quick:
+	@echo "Running QUICK matrix test (subset)..."
+	@chmod +x scripts/matrix-test-runner.sh
+	@SCHEMA_TYPES="minimal simple complex" LOAD_LEVELS="100 300 500 1000" ./scripts/matrix-test-runner.sh
+
+# Light matrix - even faster (~5 min)
+integration-test-matrix-light:
+	@echo "Running LIGHT matrix test..."
+	@chmod +x scripts/matrix-test-runner.sh
+	@SCHEMA_TYPES="minimal complex" LOAD_LEVELS="100 500" TEST_DURATION=10s ./scripts/matrix-test-runner.sh
+
+# Matrix by schema type - test one schema at all load levels
+integration-test-matrix-minimal:
+	@chmod +x scripts/matrix-test-runner.sh
+	@SCHEMA_TYPES="minimal" ./scripts/matrix-test-runner.sh
+
+integration-test-matrix-simple:
+	@chmod +x scripts/matrix-test-runner.sh
+	@SCHEMA_TYPES="simple" ./scripts/matrix-test-runner.sh
+
+integration-test-matrix-nested:
+	@chmod +x scripts/matrix-test-runner.sh
+	@SCHEMA_TYPES="nested" ./scripts/matrix-test-runner.sh
+
+integration-test-matrix-complex:
+	@chmod +x scripts/matrix-test-runner.sh
+	@SCHEMA_TYPES="complex" ./scripts/matrix-test-runner.sh
+
+# Matrix by load level - test all schemas at specific load
+integration-test-matrix-100:
+	@chmod +x scripts/matrix-test-runner.sh
+	@LOAD_LEVELS="100" ./scripts/matrix-test-runner.sh
+
+integration-test-matrix-500:
+	@chmod +x scripts/matrix-test-runner.sh
+	@LOAD_LEVELS="500" ./scripts/matrix-test-runner.sh
+
+integration-test-matrix-1000:
+	@chmod +x scripts/matrix-test-runner.sh
+	@LOAD_LEVELS="1000" ./scripts/matrix-test-runner.sh
+
+integration-test-matrix-2000:
+	@chmod +x scripts/matrix-test-runner.sh
+	@LOAD_LEVELS="2000" ./scripts/matrix-test-runner.sh
+
+# Single matrix test - run with SCHEMA and RPS environment variables
+# Example: SCHEMA=simple RPS=100 make integration-test-matrix-single
+integration-test-matrix-single:
+	@echo "Running single matrix test..."
+	@echo "============================="
+	@echo "Schema: $(or $(SCHEMA),simple)"
+	@echo "Target RPS: $(or $(RPS),100)"
+	@echo ""
+	@mkdir -p integration-test/e2e/results/matrix
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
+		-e MAX_RPS=$(or $(RPS),100) \
+		-e DURATION=20s \
+		-e RAMP_UP_TIME=5s \
+		-e SCHEMA_TYPE=$(or $(SCHEMA),simple) \
+		-e LLM_LATENCY_MS=5000 \
+		-e BASE_URL=http://objectweaver:2008 \
+		-e PASSWORD=test-password \
+		k6 run /scripts/matrix-test.js
+
+# View latest matrix results
+integration-test-matrix-results:
+	@echo "Latest Matrix Test Results:"
+	@echo "==========================="
+	@ls -t integration-test/e2e/results/matrix/*.txt 2>/dev/null | head -1 | xargs cat 2>/dev/null || echo "No results found. Run 'make integration-test-matrix' first."
+
+# ============================================================================
+# Distributed Load Testing (50k-200k+ req/s)
+# ============================================================================
+# Uses multiple parallel k6 instances to achieve higher load than single k6
+
+.PHONY: distributed-test-help distributed-test-50k distributed-test-100k distributed-test-200k distributed-test
+
+distributed-test-help:
+	@echo "Distributed Load Testing Commands"
+	@echo "=================================="
+	@echo ""
+	@echo "These use multiple parallel k6 instances to generate higher load."
+	@echo ""
+	@echo "⚠️  IMPORTANT: With 5s LLM latency and default worker pool (10k):"
+	@echo "    Max theoretical throughput = 10,000 workers / 5s = 2,000 req/s"
+	@echo ""
+	@echo "    To test higher loads, either:"
+	@echo "    1. Reduce LLM latency (edit docker-compose MOCK_LLM_MIN_DELAY_MS)"
+	@echo "    2. Increase worker pool (set WORKER_POOL_SIZE env var)"
+	@echo ""
+	@echo "Realistic Targets (with 5s LLM latency):"
+	@echo "  make distributed-test INSTANCES=2 SCHEMA=minimal RPS=1000  # 2k total"
+	@echo "  make distributed-test INSTANCES=3 SCHEMA=minimal RPS=500   # 1.5k total"
+	@echo ""
+	@echo "High Load Targets (requires tuning worker pool):"
+	@echo "  make distributed-test-50k   - 5 instances × 10k RPS = 50k req/s target"
+	@echo "  make distributed-test-100k  - 10 instances × 10k RPS = 100k req/s target"
+	@echo ""
+	@echo "Custom Target:"
+	@echo "  make distributed-test INSTANCES=5 SCHEMA=simple RPS=8000"
+	@echo ""
+	@echo "Parameters:"
+	@echo "  INSTANCES - Number of parallel k6 containers (default: 5)"
+	@echo "  SCHEMA    - Schema type: minimal, simple, nested, complex (default: minimal)"
+	@echo "  RPS       - Requests per second per instance (default: 10000)"
+	@echo ""
+
+# Distributed test: 50k req/s (5 instances × 10k each)
+distributed-test-50k:
+	@echo "Starting distributed load test: 50k req/s"
+	@echo "=========================================="
+	@echo "Configuration: 5 instances × 10,000 req/s each"
+	@chmod +x scripts/distributed-load-test.sh
+	./scripts/distributed-load-test.sh 5 minimal 10000
+
+# Distributed test: 100k req/s (10 instances × 10k each)
+distributed-test-100k:
+	@echo "Starting distributed load test: 100k req/s"
+	@echo "==========================================="
+	@echo "Configuration: 10 instances × 10,000 req/s each"
+	@chmod +x scripts/distributed-load-test.sh
+	./scripts/distributed-load-test.sh 10 minimal 10000
+
+# Distributed test: 200k req/s (20 instances × 10k each)
+distributed-test-200k:
+	@echo "Starting distributed load test: 200k req/s"
+	@echo "==========================================="
+	@echo "Configuration: 20 instances × 10,000 req/s each"
+	@chmod +x scripts/distributed-load-test.sh
+	./scripts/distributed-load-test.sh 20 minimal 10000
+
+# Custom distributed test
+# Usage: make distributed-test INSTANCES=5 SCHEMA=simple RPS=8000
+distributed-test:
+	@echo "Starting custom distributed load test"
+	@echo "======================================"
+	@echo "Instances: $(or $(INSTANCES),5)"
+	@echo "Schema: $(or $(SCHEMA),minimal)"
+	@echo "RPS per instance: $(or $(RPS),10000)"
+	@echo "Total target RPS: $$(( $(or $(INSTANCES),5) * $(or $(RPS),10000) ))"
+	@chmod +x scripts/distributed-load-test.sh
+	./scripts/distributed-load-test.sh $(or $(INSTANCES),5) $(or $(SCHEMA),minimal) $(or $(RPS),10000)
+
+# ============================================================================
+# Fast LLM Testing (100ms latency - test true server capacity)
+# ============================================================================
+.PHONY: fast-llm-test-up fast-llm-test-down fast-llm-test-5k fast-llm-test-10k fast-llm-test-matrix
+
+fast-llm-test-help:
+	@echo "Fast LLM Testing (100ms latency)"
+	@echo "================================="
+	@echo ""
+	@echo "Tests ObjectWeaver with 100ms LLM latency instead of 5000ms."
+	@echo "This removes the LLM bottleneck to show TRUE server capacity."
+	@echo ""
+	@echo "With 100ms latency, theoretical max = 10,000 workers / 0.1s = 100,000 req/s"
+	@echo ""
+	@echo "Commands:"
+	@echo "  make fast-llm-test-up      - Start services with 100ms LLM"
+	@echo "  make fast-llm-test-down    - Stop services"
+	@echo "  make fast-llm-test-5k      - Test 5,000 req/s"
+	@echo "  make fast-llm-test-10k     - Test 10,000 req/s"
+	@echo "  make fast-llm-test-matrix  - Test all schemas at 5000 req/s"
+	@echo ""
+
+fast-llm-test-up:
+	@echo "Starting fast LLM test environment (100ms latency)..."
+	cd integration-test/e2e && docker-compose -f docker-compose.fast-llm.yml up -d --build
+	@sleep 5
+	@curl -s http://localhost:2008/health > /dev/null && echo "✓ Services ready!" || echo "⚠️  Still starting..."
+
+fast-llm-test-down:
+	@echo "Stopping fast LLM test environment..."
+	cd integration-test/e2e && docker-compose -f docker-compose.fast-llm.yml down
+
+fast-llm-test-5k:
+	@echo "Running 5k req/s test with 100ms LLM latency..."
+	@$(MAKE) fast-llm-test-up
+	@sleep 3
+	cd integration-test/e2e && docker-compose -f docker-compose.fast-llm.yml run --rm \
+		-e MAX_RPS=5000 \
+		-e DURATION=60s \
+		-e RAMP_UP_TIME=30s \
+		-e SCHEMA_TYPE=minimal \
+		k6 run /scripts/matrix-test.js
+
+fast-llm-test-10k:
+	@echo "Running 10k req/s test with 100ms LLM latency..."
+	@$(MAKE) fast-llm-test-up
+	@sleep 3
+	cd integration-test/e2e && docker-compose -f docker-compose.fast-llm.yml run --rm \
+		-e MAX_RPS=10000 \
+		-e DURATION=60s \
+		-e RAMP_UP_TIME=45s \
+		-e SCHEMA_TYPE=minimal \
+		k6 run /scripts/matrix-test.js
+
+fast-llm-test-matrix:
+	@echo "Running matrix test with 100ms LLM latency..."
+	@$(MAKE) fast-llm-test-up
+	@sleep 3
+	@for schema in minimal simple nested complex; do \
+		echo ""; \
+		echo "Testing $$schema at 5000 req/s with 100ms LLM..."; \
+		cd integration-test/e2e && docker-compose -f docker-compose.fast-llm.yml run --rm \
+			-e MAX_RPS=5000 \
+			-e DURATION=30s \
+			-e RAMP_UP_TIME=10s \
+			-e SCHEMA_TYPE=$$schema \
+			-e LLM_LATENCY_MS=100 \
+			k6 run /scripts/matrix-test.js; \
+	done
+	@$(MAKE) fast-llm-test-down

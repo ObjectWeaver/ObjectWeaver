@@ -11,9 +11,9 @@ services:
       - "8080:8080"
     environment:
       MOCK_LLM_PORT: "8080"
-      MOCK_LLM_MIN_DELAY_MS: "10"
-      MOCK_LLM_MAX_DELAY_MS: "50"
-      MOCK_LLM_MAX_CONCURRENT: "30000"
+      MOCK_LLM_MIN_DELAY_MS: "5000"
+      MOCK_LLM_MAX_DELAY_MS: "5000"
+      MOCK_LLM_MAX_CONCURRENT: "50000"  # Increased for 5k+ req/s with 4s latency
     ulimits:
       nofile:
         soft: 65536
@@ -46,24 +46,29 @@ services:
       LLM_ENABLE_BATCH: "false"  # Explicitly disable batch processing for faster testing
       
       # HTTP Client Timeouts - increased for tail latency under high load
-      LLM_HTTP_TIMEOUT_SECONDS: "30"  # Total request timeout (was 10, increased for p99)
-      LLM_HTTP_CONNECTION_TIMEOUT_SECONDS: "5"  # Connection establishment timeout
+      LLM_HTTP_TIMEOUT_SECONDS: "60"  # Total request timeout (increased for queuing under load)
+      LLM_HTTP_CONNECTION_TIMEOUT_SECONDS: "10"  # Connection establishment timeout
       
       # Retry Configuration - enable minimal retries for reliability
       LLM_MAX_RETRIES: "1"  # Single retry for transient failures (was 0, enabling for reliability)
       
       # Connection Pool - tuned for high concurrency
-      LLM_HTTP_MAX_IDLE_CONNS: "15000"  # Total idle connections (default: 1000)
-      LLM_HTTP_MAX_IDLE_CONNS_PER_HOST: "15000"  # Per-host idle connections (default: 500)
-      LLM_HTTP_MAX_CONNS_PER_HOST: "15000" # Explicitly set max connections per host
+      LLM_HTTP_MAX_IDLE_CONNS: "25000"  # Total idle connections (increased for 5k+ req/s)
+      LLM_HTTP_MAX_IDLE_CONNS_PER_HOST: "25000"  # Per-host idle connections
+      LLM_HTTP_MAX_CONNS_PER_HOST: "25000" # Explicitly set max connections per host
+      
+      # Worker Pool - CRITICAL for realistic LLM latency (5s per call)
+      # Formula: target_req/s × avg_latency = concurrent operations
+      # 2000 req/s × 5s = 10,000 concurrent operations needed
+      WORKER_POOL_SIZE: "10000"  # Tuned for 2k req/s with 5s LLM latency
       
       # Job Submission Strategy - NEW: "direct" bypasses worker queue for 120x faster performance
       # "default" = uses worker queue (18+ second latency), "direct" = calls HTTP directly (~150ms)
       LLM_SUBMITTER_TYPE: "direct"  # CRITICAL: This eliminates 6 layers of indirection
       
       # Concurrency - DirectSubmitter semaphore limit for concurrent HTTP requests
-      # Formula: Peak VUs (1100) × avg nested fields (30) / 10 = ~3300 concurrent
-      LLM_CONCURRENCY: "15000"  # High limit to prevent semaphore blocking under extreme load
+      # Formula: Peak VUs (2000) × avg nested fields (3) = ~6,000 concurrent
+      LLM_CONCURRENCY: "15000"  # Balanced for 2k req/s testing
       
       # Rate limiting - increase for load testing
       LLM_MAX_REQUESTS_PER_MINUTE: "100000"  # High limit for testing

@@ -43,8 +43,8 @@ func (s *Server) MountHandlers() {
 	// s.Router.Use(middleware.Logger) // Disabled for performance
 	s.Router.Use(middleware.Recoverer)
 	s.Router.Use(middleware.ThrottleWithOpts(middleware.ThrottleOpts{
-		Limit:          10000,
-		BacklogLimit:   5000,
+		Limit:          50000,            // Increased from 10000 for high-load testing
+		BacklogLimit:   25000,            // Increased from 5000 for high-load testing
 		BacklogTimeout: 60 * time.Second, // Max wait time before 503
 		RetryAfterFn: func(ctxDone bool) time.Duration {
 			if ctxDone {
@@ -53,9 +53,9 @@ func (s *Server) MountHandlers() {
 			return 1 * time.Second
 		},
 	}))
-	s.Router.Use(GzipDecompression)      // Handle incoming gzip compressed requests
-	s.Router.Use(middleware.Compress(5)) // Enable gzip compression for responses
-	s.Router.Use(middleware.Timeout(30 * time.Second))
+	s.Router.Use(GzipDecompression)                     // Handle incoming gzip compressed requests
+	s.Router.Use(middleware.Compress(5))                // Enable gzip compression for responses
+	s.Router.Use(middleware.Timeout(120 * time.Second)) // 2 minute timeout for slow LLM responses
 	s.Router.Use(middleware.URLFormat)
 
 	s.Router.Get("/health", HealthCheck)
