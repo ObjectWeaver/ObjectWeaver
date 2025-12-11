@@ -27,8 +27,11 @@ func getIntFromEnvWithDefault(key string, defaultValue int) int {
 // this client supports mtls for secure communication with the completion server.
 func NewStandardClient() *http.Client {
 	// get timeout from environment or use default (30 seconds)
-	timeoutSeconds := getIntFromEnvWithDefault("LLM_HTTP_TIMEOUT_SECONDS", 30)
+	timeoutSeconds := getIntFromEnvWithDefault("LLM_HTTP_TIMEOUT_SECONDS", 120)
 	connectionTimeoutSeconds := getIntFromEnvWithDefault("LLM_HTTP_CONNECTION_TIMEOUT_SECONDS", 5)
+	// response header timeout should match the overall timeout for LLM requests
+	// which can take 30+ seconds to generate responses
+	responseHeaderTimeoutSeconds := getIntFromEnvWithDefault("LLM_HTTP_RESPONSE_HEADER_TIMEOUT_SECONDS", timeoutSeconds)
 
 	// get connection pool settings from environment with high-load defaults
 	// for 5k req/s with ~4s avg latency: need ~20k concurrent requests
@@ -58,7 +61,7 @@ func NewStandardClient() *http.Client {
 			KeepAlive: 30 * time.Second,
 		}).DialContext,
 		TLSHandshakeTimeout:   10 * time.Second,
-		ResponseHeaderTimeout: 10 * time.Second,
+		ResponseHeaderTimeout: time.Duration(responseHeaderTimeoutSeconds) * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 		// Force connection closure after response to prevent accumulation under high load
 		// This prevents goroutine leaks from persistent connections

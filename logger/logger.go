@@ -19,6 +19,7 @@ func init() {
 	} else {
 		verbose = strings.ToLower(val) == "true"
 	}
+	verbose = true
 }
 
 // Printf logs formatted output (normal build)

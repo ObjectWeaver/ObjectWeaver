@@ -34,7 +34,8 @@
       ".github",
       ".documentation",
       "toolCalling",
-      "grpc"
+      "grpc", 
+      "integration-test"
     ]
   },
   "codeReviewType": {
