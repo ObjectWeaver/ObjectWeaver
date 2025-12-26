@@ -13,6 +13,9 @@ import (
 	"time"
 )
 
+
+
+
 // getintfromenvwithdefault retrieves an integer from environment variable with fallback
 func getIntFromEnvWithDefault(key string, defaultValue int) int {
 	if value := os.Getenv(key); value != "" {
@@ -27,7 +30,7 @@ func getIntFromEnvWithDefault(key string, defaultValue int) int {
 // this client supports mtls for secure communication with the completion server.
 func NewStandardClient() *http.Client {
 	// get timeout from environment or use default (30 seconds)
-	timeoutSeconds := getIntFromEnvWithDefault("LLM_HTTP_TIMEOUT_SECONDS", 120)
+	timeoutSeconds := getIntFromEnvWithDefault("LLM_HTTP_TIMEOUT_SECONDS", 300)
 	connectionTimeoutSeconds := getIntFromEnvWithDefault("LLM_HTTP_CONNECTION_TIMEOUT_SECONDS", 5)
 	// response header timeout should match the overall timeout for LLM requests
 	// which can take 30+ seconds to generate responses

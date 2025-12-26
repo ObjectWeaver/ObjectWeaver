@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+
 // ErrorClassifier categorizes errors to determine the correct handling strategy.
 type ErrorClassifier struct{}
 

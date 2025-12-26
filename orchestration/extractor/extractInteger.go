@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+
 type PrimitiveExtractor[T any] interface {
 	// Extract extracts a value of type T from the given completion string.
 	Extract(completion string) (T, error)
