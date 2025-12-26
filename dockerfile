@@ -15,7 +15,7 @@ RUN apk add --no-cache ca-certificates
 ENV CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2 -fstack-protector-all"
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -tags nolog -ldflags="-s -w" -o /go/bin/app
+    go build -ldflags="-s -w" -o /go/bin/app
 
 FROM scratch
 

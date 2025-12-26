@@ -123,13 +123,10 @@ type fieldContinuation struct {
 }
 
 func (fc *fieldContinuation) waitForCompletion() {
-	start := time.Now()
 	fc.wg.Wait()
 	fc.mu.Lock()
 	fc.completedAt = time.Now()
 	fc.mu.Unlock()
-	waitDuration := time.Since(start)
-	logger.Printf("[FieldProcessor] Continuation completed: %d fields processed in %v", fc.fieldCount, waitDuration)
 }
 
 func (fp *FieldProcessor) processSequentialFields(
@@ -142,17 +139,13 @@ func (fp *FieldProcessor) processSequentialFields(
 	orderedKeys []string,
 ) {
 	batches := fp.analyzeFieldDependencies(orderedKeys, schema)
-	logger.Printf("[FieldProcessor] ProcessingOrder analysis: %d fields split into %d batches", len(orderedKeys), len(batches))
 
-	for batchIdx, batch := range batches {
+	for _, batch := range batches {
 		select {
 		case <-ctx.Done():
-			logger.Printf("[FieldProcessor] Context cancelled during batch %d/%d", batchIdx+1, len(batches))
 			return
 		default:
 		}
-
-		logger.Printf("[FieldProcessor] Processing batch %d/%d with %d independent fields", batchIdx+1, len(batches), len(batch))
 
 		if len(batch) == 1 {
 			// Process single field synchronously
@@ -190,16 +183,20 @@ func (fp *FieldProcessor) processField(ctx context.Context, task *domain.FieldTa
 	default:
 	}
 
+	var result *domain.TaskResult
 	if task.Definition().Type == jsonSchema.Object {
-		return fp.processObjectField(ctx, task, execContext)
-	}
-
-	processor := fp.getProcessorForType(task.Definition())
-
-	result, err := processor.Process(ctx, task, execContext)
-	if err != nil {
-		logger.Printf("Error processing field %s: %v", task.Key(), err)
-		return nil
+		results := fp.processObjectField(ctx, task, execContext)
+		if len(results) > 0 {
+			result = results[0]
+		}
+	} else {
+		processor := fp.getProcessorForType(task.Definition())
+		var err error
+		result, err = processor.Process(ctx, task, execContext)
+		if err != nil {
+			logger.Printf("Error processing field %s: %v", task.Key(), err)
+			return nil
+		}
 	}
 
 	if result == nil {
@@ -207,24 +204,17 @@ func (fp *FieldProcessor) processField(ctx context.Context, task *domain.FieldTa
 	}
 
 	execContext.SetGeneratedValue(result.Key(), result.Value())
-	logger.Printf("[FieldProcessor] Generated field '%s', value: %v", result.Key(), result.Value())
 
-	logger.Printf("[FieldProcessor] Checking scoring criteria for field '%s': %v", task.Key(), task.Definition().ScoringCriteria != nil)
 	if task.Definition().ScoringCriteria != nil {
-		logger.Printf("[FieldProcessor] Evaluating scores for field '%s'", task.Key())
 		scores, err := fp.evaluateScores(ctx, result, task.Definition().ScoringCriteria, execContext)
 		if err != nil {
 			logger.Printf("[FieldProcessor] Warning: scoring failed for field %s: %v", task.Key(), err)
 		} else {
 			fp.attachScoresToResult(result, scores)
-			logger.Printf("[FieldProcessor] Field '%s' scores: %v", result.Key(), scores)
 		}
 	}
 
-	logger.Printf("[FieldProcessor] Checking decision point for field '%s': %v", task.Key(), task.Definition().DecisionPoint != nil)
 	if task.Definition().DecisionPoint != nil {
-		logger.Printf("[FieldProcessor] Processing decision point for field %s", task.Key())
-
 		results, err := fp.decisionProcessor.ProcessDecisionPoint(ctx, task, result, execContext)
 		if err != nil {
 			logger.Printf("[FieldProcessor] Decision point processing failed: %v", err)
@@ -232,10 +222,8 @@ func (fp *FieldProcessor) processField(ctx context.Context, task *domain.FieldTa
 		}
 
 		if len(results) > 1 {
-			logger.Printf("[FieldProcessor] Decision point created %d additional fields", len(results)-1)
 			for _, branchResult := range results[1:] {
 				execContext.SetGeneratedValue(branchResult.Key(), branchResult.Value())
-				logger.Printf("[FieldProcessor] Added branch field to context: %s = %v", branchResult.Key(), branchResult.Value())
 			}
 		}
 
@@ -246,8 +234,6 @@ func (fp *FieldProcessor) processField(ctx context.Context, task *domain.FieldTa
 }
 
 func (fp *FieldProcessor) processObjectField(ctx context.Context, task *domain.FieldTask, execContext *domain.ExecutionContext) []*domain.TaskResult {
-	logger.Printf("[FieldProcessor] Processing nested object field '%s'", task.Key())
-
 	nestedResults := make(map[string]interface{})
 	aggregatedMetadata := domain.NewResultMetadata()
 
@@ -288,9 +274,6 @@ func (fp *FieldProcessor) processConcurrentFieldsAndWait(
 	}
 
 	if availableWorkers < lowWorkerThreshold {
-		logger.Printf("[FieldProcessor] Low worker availability (%d < %d), processing %d fields sequentially to avoid deadlock",
-			availableWorkers, lowWorkerThreshold, len(remainingKeys))
-
 		for _, key := range remainingKeys {
 			select {
 			case <-ctx.Done():
@@ -319,8 +302,6 @@ func (fp *FieldProcessor) processConcurrentFieldsAndWait(
 		fieldCount: len(remainingKeys),
 	}
 
-	logger.Printf("[FieldProcessor] Starting work continuation for %d concurrent fields", len(remainingKeys))
-
 	for _, key := range remainingKeys {
 		childDef := schema.Properties[key]
 		childDefCopy := childDef
@@ -335,7 +316,6 @@ func (fp *FieldProcessor) processConcurrentFieldsAndWait(
 
 			select {
 			case <-ctx.Done():
-				logger.Printf("[FieldProcessor] Context cancelled, skipping field: %s", fieldKey)
 				return
 			default:
 			}
@@ -345,14 +325,12 @@ func (fp *FieldProcessor) processConcurrentFieldsAndWait(
 
 			select {
 			case <-ctx.Done():
-				logger.Printf("[FieldProcessor] Context cancelled after processing field: %s", fieldKey)
 				return
 			default:
 			}
 
 			if len(results) > 0 {
 				if err := collector.Collect(ctx, results); err != nil {
-					logger.Printf("[FieldProcessor] Context cancelled during collect for field: %s", fieldKey)
 					return
 				}
 			}
@@ -550,8 +528,6 @@ func (fp *FieldProcessor) processSpeculativeBatch(
 		collector:  collector,
 		fieldCount: len(batch),
 	}
-
-	logger.Printf("[FieldProcessor] Processing speculative batch: %d fields", len(batch))
 
 	for _, key := range batch {
 		childDef := schema.Properties[key]

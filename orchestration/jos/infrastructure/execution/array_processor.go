@@ -49,8 +49,6 @@ func (p *ArrayProcessor) Process(ctx context.Context, task *domain.FieldTask, ex
 	}
 
 	arraySize, listString, err := p.determineArraySize(task, execContext)
-	logger.Println("Determined array size: ", arraySize)
-	logger.Println("Determined list string: ", listString)
 	if err != nil {
 		logger.Printf("Warning: failed to determine array size, using default: %v\n", err)
 	}
@@ -88,12 +86,10 @@ func (p *ArrayProcessor) Process(ctx context.Context, task *domain.FieldTask, ex
 				var itemContext *domain.ExecutionContext
 				if listString != "" {
 					specificItem := p.extractItemFromList(listString, idx)
-					logger.Printf("[ArrayProcessor] Item %d extracted: '%s'", idx, specificItem)
 					if specificItem != "" {
 						itemSpecificContext := fmt.Sprintf("Generate details for: %s", specificItem)
 						itemContext = enhancedContext.WithItemContext(itemTask, itemSpecificContext)
 					} else {
-						logger.Printf("[ArrayProcessor] Warning: Could not extract item %d from list", idx)
 						itemContext = enhancedContext.WithParent(itemTask)
 					}
 				} else {
@@ -138,7 +134,6 @@ func (p *ArrayProcessor) Process(ctx context.Context, task *domain.FieldTask, ex
 							err:   fmt.Errorf("array item %d failed: %w", idx, err),
 						}:
 						case <-ctx.Done():
-							logger.Printf("[ArrayProcessor] Context cancelled while sending error for item %d", idx)
 						}
 						return
 					}
@@ -152,7 +147,6 @@ func (p *ArrayProcessor) Process(ctx context.Context, task *domain.FieldTask, ex
 					err:   nil,
 				}:
 				case <-ctx.Done():
-					logger.Printf("[ArrayProcessor] Context cancelled while sending result for item %d", idx)
 				}
 			}
 		}
@@ -165,7 +159,6 @@ func (p *ArrayProcessor) Process(ctx context.Context, task *domain.FieldTask, ex
 				err:   fmt.Errorf("failed to acquire semaphore for item %d: %w", index, err),
 			}:
 			case <-ctx.Done():
-				logger.Printf("[ArrayProcessor] Context cancelled while sending error for item %d", index)
 			}
 			return nil, ctx.Err()
 		}
@@ -214,14 +207,11 @@ func (p *ArrayProcessor) determineArraySize(task *domain.FieldTask, context *dom
 	listTask := domain.NewFieldTask("listInfo", listDef, task)
 
 	result, err := p.executeLLMRequest(listTask, context)
-	logger.Println("The result from executeLLMRequest: ", result)
 	if err != nil {
 		return 3, "", err
 	}
 
 	numItems, listString := p.extractListInfo(result)
-	logger.Println("Extracted numItems: ", numItems)
-	logger.Println("Extracted listString: ", listString)
 
 	return numItems, listString, nil
 }
@@ -289,8 +279,18 @@ COUNT: [number]`
 	// override prompt with combined instruction
 	prompt = combinedPrompt + "\n\n" + prompt
 
-	generationConfig := context.GenerationConfig()
+	// Create a local copy of the config to avoid race conditions and ensure correct system prompt
+	sharedConfig := context.GenerationConfig()
+	generationConfig := &domain.GenerationConfig{}
+	if sharedConfig != nil {
+		*generationConfig = *sharedConfig
+	}
 	generationConfig.Definition = listDef
+
+	// Set system prompt from definition if available
+	if listDef.SystemPrompt != nil {
+		generationConfig.SystemPrompt = *listDef.SystemPrompt
+	}
 
 	response, _, err := p.llmProvider.Generate(prompt, generationConfig)
 	if err != nil {
@@ -303,8 +303,11 @@ COUNT: [number]`
 		responseStr = fmt.Sprintf("%v", response)
 	}
 
+	// Handle literal \n strings if they appear
+	responseStr = strings.ReplaceAll(responseStr, "\\n", "\n")
+
 	var listString string
-	var numItems int = 3 // default
+	var numItems int = -1 // Use -1 to indicate not found
 
 	// split response into list and count sections
 	lines := strings.Split(responseStr, "\n")
@@ -314,17 +317,23 @@ COUNT: [number]`
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 
-		if strings.HasPrefix(trimmed, "LIST:") {
+		if strings.HasPrefix(strings.ToUpper(trimmed), "LIST:") {
 			inList = true
+			// Check if there's content after "LIST:" on the same line
+			content := strings.TrimSpace(line[len("LIST:"):])
+			if content != "" {
+				listLines = append(listLines, content)
+			}
 			continue
 		}
 
-		if strings.HasPrefix(trimmed, "COUNT:") {
+		if strings.HasPrefix(strings.ToUpper(trimmed), "COUNT:") {
 			inList = false
 			// Extract count
-			countStr := strings.TrimPrefix(trimmed, "COUNT:")
-			countStr = strings.TrimSpace(countStr)
-			fmt.Sscanf(countStr, "%d", &numItems)
+			countStr := strings.TrimSpace(line[len("COUNT:"):])
+			if _, err := fmt.Sscanf(countStr, "%d", &numItems); err != nil {
+				numItems = -1
+			}
 			continue
 		}
 
@@ -336,19 +345,29 @@ COUNT: [number]`
 	listString = strings.Join(listLines, "\n")
 
 	// fallback: if parsing failed, count numbered items manually
-	if numItems < 1 || listString == "" {
-		numItems = 0
+	if numItems == -1 || (numItems > 0 && listString == "") {
+		manualCount := 0
 		for _, line := range strings.Split(responseStr, "\n") {
-			if len(line) > 0 && line[0] >= '0' && line[0] <= '9' {
-				numItems++
+			trimmed := strings.TrimSpace(line)
+			if len(trimmed) > 0 && trimmed[0] >= '0' && trimmed[0] <= '9' {
+				manualCount++
 			}
 		}
-		if numItems < 1 {
+
+		if manualCount > 0 {
+			numItems = manualCount
+		} else if numItems == -1 {
+			// Only default to 3 if we really couldn't find anything
 			numItems = 3
 		}
+
 		if listString == "" {
 			listString = responseStr
 		}
+	}
+
+	if numItems < 0 {
+		numItems = 0
 	}
 
 	if numItems > 100 {
@@ -363,7 +382,7 @@ COUNT: [number]`
 }
 
 func (p *ArrayProcessor) extractListInfo(result map[string]interface{}) (int, string) {
-	numItems := 3
+	numItems := 0
 	listString := ""
 
 	if val, ok := result["numItems"]; ok {
@@ -383,8 +402,8 @@ func (p *ArrayProcessor) extractListInfo(result map[string]interface{}) (int, st
 		}
 	}
 
-	if numItems < 1 {
-		numItems = 1
+	if numItems < 0 {
+		numItems = 0
 	}
 	if numItems > 100 {
 		numItems = 100

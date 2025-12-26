@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"objectweaver/llmManagement"
 	"objectweaver/llmManagement/modelConverter"
-	"objectweaver/logger"
 	"os"
 	"strconv"
 	"strings"
@@ -93,27 +92,20 @@ func (b *defaultOpenAIReqBuilder) BuildRequest(inputs *llmManagement.Inputs) (go
 	isStream := inputs.Def.Stream
 
 	// 2. Build the base messages
-	var message gogpt.ChatCompletionMessage
-	messages := []gogpt.ChatCompletionMessage{
-		{
+	var messages []gogpt.ChatCompletionMessage
+	if systemPrompt != "" {
+		messages = append(messages, gogpt.ChatCompletionMessage{
 			Role:    gogpt.ChatMessageRoleSystem,
 			Content: systemPrompt,
-		},
+		})
 	}
+
+	var message gogpt.ChatCompletionMessage
 
 	// 3. Handle image data
 	var imagesData [][]byte
 	if inputs.Def.SendImage != nil {
 		imagesData = inputs.Def.SendImage.ImagesData
-		logger.Printf("[CreateOpenAIReq DEBUG] Found %d images in SendImage", len(imagesData))
-		for i, img := range imagesData {
-			logger.Printf("[CreateOpenAIReq DEBUG] Image %d: %d bytes", i, len(img))
-			if len(img) > 0 {
-				logger.Printf("[CreateOpenAIReq DEBUG] Image %d first 20 bytes: %v", i, img[:min(20, len(img))])
-			}
-		}
-	} else {
-		logger.Printf("[CreateOpenAIReq DEBUG] No SendImage data found")
 	}
 
 	var url *gogpt.ChatMessageImageURL
@@ -198,9 +190,7 @@ func toBase64DataURL(imageData []byte, mimeType string) string {
 // Function to determine MIME type
 func detectMimeType(imageData []byte) string {
 	mimeType := http.DetectContentType(imageData)
-	logger.Println("the mime type found: ", mimeType)
 	if !strings.HasPrefix(mimeType, "image/") {
-		logger.Println("returning the value of image/jpeg")
 		return "image/jpeg"
 	}
 	return mimeType

@@ -114,13 +114,9 @@ func (p *PrimitiveProcessor) buildRequestPieces(task *domain.FieldTask, context 
 		// Add selected field values directly to the prompt
 		prompt += "\n\nContext from previous generation:\n"
 		for _, fieldPath := range task.Definition().SelectFields {
-			logger.Printf("[PrimitiveProcessor] Looking for field '%s' in context", fieldPath)
 			if value, exists := ResolveFieldPath(fieldPath, context.GeneratedValues()); exists {
 				formattedValue := FormatFieldValue(value)
 				prompt += fmt.Sprintf("\n%s:\n%s\n", fieldPath, formattedValue)
-				logger.Printf("[PrimitiveProcessor] Added field '%s' to prompt (length: %d chars)", fieldPath, len(formattedValue))
-			} else {
-				logger.Printf("[PrimitiveProcessor] Field '%s' not found in context", fieldPath)
 			}
 		}
 	}
@@ -180,9 +176,6 @@ func (p *PrimitiveProcessor) buildVectorRequest(task *domain.FieldTask, context 
 			if value, exists := ResolveFieldPath(fieldPath, context.GeneratedValues()); exists {
 				formattedValue := FormatFieldValue(value)
 				prompt += fmt.Sprintf("%s\n", formattedValue)
-				logger.Printf("[PrimitiveProcessor] Added field '%s' to prompt (length: %d chars)", fieldPath, len(formattedValue))
-			} else {
-				logger.Printf("[PrimitiveProcessor] Field '%s' not found in context", fieldPath)
 			}
 		}
 
@@ -196,7 +189,6 @@ func (p *PrimitiveProcessor) buildVectorRequest(task *domain.FieldTask, context 
 func (p *PrimitiveProcessor) generateValue(ctx context.Context, task *domain.FieldTask, context *domain.ExecutionContext) (any, *domain.ProviderMetadata, error) {
 	prompt, config, err := p.buildRequestPieces(task, context)
 	if err != nil {
-		logger.Printf("[TaskExecutor ERROR] Failed to build request pieces for property '%s': %v", task.Key(), err)
 		return nil, nil, fmt.Errorf("failed to build request pieces: %w", err)
 	}
 
@@ -205,18 +197,13 @@ func (p *PrimitiveProcessor) generateValue(ctx context.Context, task *domain.Fie
 
 	response, metadata, err := p.llmProvider.Generate(prompt, config)
 	if err != nil {
-		logger.Printf("[TaskExecutor ERROR] Generation failed for property '%s': %v", task.Key(), err)
 		return nil, nil, fmt.Errorf("LLM generation failed: %w", err)
 	}
-
-	logger.Printf("[TaskExecutor] Received response for property '%s', parsing as %s",
-		task.Key(), task.Definition().Type)
 
 	// Parse response based on type
 	value := p.parseValue(response, task.Definition().Type)
 	metadata.Prompt = prompt
 
-	logger.Printf("[TaskExecutor] Parsed value for property '%s': %+v", task.Key(), value)
 	return value, metadata, nil
 }
 

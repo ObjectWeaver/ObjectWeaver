@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+
 // Extractor handles the responsibility of extracting and joining values.
 type Extractor interface {
 	ExtractAndJoin(currentGen map[string]any, keys []string) string
