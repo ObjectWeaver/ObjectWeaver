@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"objectweaver/logger"
 	"strings"
@@ -16,6 +17,7 @@ type TtwRequest struct {
 
 // TtwRawOutput is the intermediate format from the LLM before post-processing
 type TtwRawOutput struct {
+	StructuralAnalysis    string            `json:"structuralAnalysis"`
 	Analysis              string            `json:"analysis"`
 	RootType              string            `json:"rootType"`
 	DefinitionInstruction string            `json:"definitionInstruction"`
@@ -74,8 +76,18 @@ func (s *Server) TextToWeaver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Debug logging to see what the LLM actually returned
+	logger.Printf("[TextToWeaver] Raw LLM output - StructuralAnalysis: %s", rawOutput.StructuralAnalysis)
+	logger.Printf("[TextToWeaver] Raw LLM output - Analysis: %s", rawOutput.Analysis)
+	logger.Printf("[TextToWeaver] Raw LLM output - FieldCount: %d, ActualFields: %d", len(rawOutput.Fields), len(rawOutput.Fields))
+	for i, f := range rawOutput.Fields {
+		logger.Printf("[TextToWeaver] Field[%d]: name=%s, type=%s, isComplex=%v, nestedCount=%d, nestedFieldsLen=%d",
+			i, f.FieldName, f.FieldType, f.IsComplex, f.NestedCount, len(f.NestedFields))
+	}
+
 	// Post-process to convert to proper Definition structure
-	definition := convertRawOutputToDefinition(rawOutput)
+	// Pass the original prompt for contextual instructions
+	definition := convertRawOutputToDefinition(rawOutput, req.Prompt)
 
 	// Build the final response
 	res := &TtwResponse{
@@ -93,79 +105,79 @@ func definitionForDefinition() *jsonSchema.Definition {
 	var fieldDescriptor jsonSchema.Definition
 	fieldDescriptor = jsonSchema.Definition{
 		Type:        jsonSchema.Object,
-		Instruction: "Define ONE property from the decomposed list. Do NOT define the root object.",
+		Instruction: "Define one field from your analysis.",
 		Properties: map[string]jsonSchema.Definition{
 			"fieldName": {
 				Type:        jsonSchema.String,
-				Instruction: "The property name. MUST be a specific attribute (e.g. 'email', 'age'). \n\nCRITICAL: Do NOT use the name of the ROOT object (e.g. 'user', 'profile' if the request is for a user profile). Use the names identified in the structuralAnalysis. NEVER use generic names like 'fieldName' or 'property'.",
-			},
-			"reasoning": {
-				Type:        jsonSchema.String,
-				Instruction: "Analyze the field name. Is it a simple value (string/number) or a complex structure (object/array)? \nExample: 'address' is complex because it contains street and city.",
+				Instruction: "The field name in snake_case (e.g. 'title', 'modules', 'instructor'). Do NOT use content words like 'beginner' or 'robotics'.",
 			},
 			"fieldType": {
 				Type:        jsonSchema.String,
-				Instruction: "The JSON data type. \n\n- 'string' (for text, email, date)\n- 'number' (for float)\n- 'integer' (for int)\n- 'boolean' (true/false)\n- 'object' (for nested structures)\n- 'array' (for lists)\n\nDo NOT use 'object' for simple strings like email.",
+				Instruction: "One of: 'string', 'integer', 'number', 'boolean', 'array', 'object'. Use 'array' for lists, 'object' for nested structures.",
 			},
 			"isComplex": {
 				Type:        jsonSchema.Boolean,
-				Instruction: "CRITICAL: If fieldType is 'object' or 'array', this MUST be TRUE. Set to FALSE only for string, number, integer, boolean.",
+				Instruction: "true if fieldType is 'array' or 'object', false otherwise.",
 			},
 			"dataInstruction": {
 				Type:        jsonSchema.String,
-				Instruction: "Write a specific command for the generator. \n\nCRITICAL: If this is an object, the instruction should be about the object as a whole, NOT its children. \nExample: if fieldName='address', instruction='Generate address details'. Do NOT say 'Generate street and city'.",
+				Instruction: "Instruction for generating this field's value.",
 			},
 			"nestedAnalysis": {
 				Type:        jsonSchema.String,
-				Instruction: "If isComplex is true, list the attributes for THIS nested object ONLY. Example: if fieldName is 'address', list 'street, city, zip'. Do NOT list root fields here. Otherwise leave empty.",
+				Instruction: "If isComplex=true, list child field names comma-separated. Empty if isComplex=false.",
 			},
 			"nestedCount": {
 				Type:        jsonSchema.Integer,
-				Instruction: "Count the attributes in nestedAnalysis. 0 if isComplex is false.",
+				Instruction: "Number of items in nestedAnalysis. 0 if isComplex=false.",
 			},
 			"nestedFields": {
 				Type:        jsonSchema.Array,
-				Instruction: "If isComplex is true, generate exactly [nestedCount] items. Otherwise leave empty.",
-				Items:       &fieldDescriptor, // Recursive reference!
+				Instruction: "If isComplex=true, define each child field. Empty array if isComplex=false.",
+				Items:       &fieldDescriptor,
 			},
 		},
-		ProcessingOrder: []string{"fieldName", "reasoning", "fieldType", "isComplex", "dataInstruction", "nestedAnalysis", "nestedCount", "nestedFields"},
+		ProcessingOrder: []string{"fieldName", "fieldType", "isComplex", "dataInstruction", "nestedAnalysis", "nestedCount", "nestedFields"},
 	}
 
-	// The main structure generates an array of fields with recursive capability
 	return &jsonSchema.Definition{
-		Type:        jsonSchema.Object,
-		Instruction: "You are a Schema Flattener. The user wants an object. You must list its INTERNAL properties.\n\nInput: 'Create a User'\n\nWRONG Output:\n- Field: 'user' (Type: object)\n\nRIGHT Output:\n- Field: 'username' (Type: string)\n- Field: 'email' (Type: string)",
+		Type: jsonSchema.Object,
+		Instruction: `You are designing a JSON schema. The user's request describes WHAT to generate, you must design HOW to structure it.
+
+TASK: Create a schema with 6-10 fields. At least 3 must be arrays or objects with nested fields.
+
+EXAMPLE for "Create a course":
+Fields: title(string), description(string), duration_hours(integer), modules(array), instructor(object), prerequisites(array)
+- modules is array with nested: title, description, lessons(array)
+  - lessons is array with nested: title, content, duration_minutes
+- instructor is object with nested: name, bio, credentials
+- prerequisites is array with nested: name, description
+
+YOUR OUTPUT MUST FOLLOW THIS PATTERN.`,
 		Properties: map[string]jsonSchema.Definition{
-			// Step 0: Structural Analysis
 			"structuralAnalysis": {
 				Type:        jsonSchema.String,
-				Instruction: "Analyze the request. Identify which fields are simple (string/number) and which are complex (objects/arrays). \nExample: 'User with address' -> 'name (simple), email (simple), address (complex: street, city)'.",
+				Instruction: "Plan your schema. List 6-10 fields with their types. Mark which are arrays/objects and what they contain. Example: 'title(string), modules(array: title, lessons), instructor(object: name, bio)'",
 			},
-			// Step 1: Analysis phase
 			"analysis": {
 				Type:        jsonSchema.String,
-				Instruction: "List ONLY the ROOT level fields requested. \n\nCRITICAL: If a field is nested (e.g. 'street' inside 'address'), ONLY list the parent ('address'). Do NOT list 'street' at this level. \nExample: 'User with name and address (street, city)' -> 'name, address'.",
+				Instruction: "List just the root field names, comma-separated. Must have 6-10 fields.",
 			},
-			// Step 1.5: Count
 			"fieldCount": {
 				Type:        jsonSchema.Integer,
-				Instruction: "Count the number of items in your ROOT level analysis list.",
+				Instruction: "Count of fields in analysis. Must be between 6 and 10.",
 			},
-			// Step 2: Determine root type
 			"rootType": {
 				Type:        jsonSchema.String,
-				Instruction: "The root type of the schema. MUST be either 'object' or 'array'.",
+				Instruction: "Usually 'object'.",
 			},
-			// Step 3: Main instruction for the generated definition
 			"definitionInstruction": {
 				Type:        jsonSchema.String,
-				Instruction: "A command to generate the whole object. Example: 'Generate a realistic user profile'.",
+				Instruction: "Instruction for generating the complete object.",
 			},
-			// Step 4: Generate the list of fields (this is where recursion happens)
 			"fields": {
 				Type:        jsonSchema.Array,
-				Instruction: "Generate exactly [fieldCount] fields as identified in the analysis. \n\nCRITICAL: If a field is complex (object/array), define it ONCE here. Its children will be defined inside its 'nestedFields' property.",
+				Instruction: "Define exactly [fieldCount] fields. IMPORTANT: For each array/object field, you MUST fill in nestedAnalysis, nestedCount, and nestedFields.",
 				Items:       &fieldDescriptor,
 			},
 		},
@@ -174,7 +186,8 @@ func definitionForDefinition() *jsonSchema.Definition {
 }
 
 // convertRawOutputToDefinition transforms the LLM output into a proper jsonSchema.Definition
-func convertRawOutputToDefinition(output *TtwRawOutput) *jsonSchema.Definition {
+// originalPrompt is the user's original request, used to make instructions more contextual
+func convertRawOutputToDefinition(output *TtwRawOutput, originalPrompt string) *jsonSchema.Definition {
 	rootType := jsonSchema.Object
 	if strings.TrimSpace(output.RootType) == "array" {
 		rootType = jsonSchema.Array
@@ -184,6 +197,33 @@ func convertRawOutputToDefinition(output *TtwRawOutput) *jsonSchema.Definition {
 		Type:        rootType,
 		Instruction: strings.TrimSpace(output.DefinitionInstruction),
 		Properties:  make(map[string]jsonSchema.Definition),
+	}
+
+	// FALLBACK: If fields array is empty OR malformed, parse structuralAnalysis directly
+	// Malformed = all fields have same name, or field count doesn't match analysis
+	shouldUseFallback := false
+	if len(output.Fields) == 0 {
+		shouldUseFallback = true
+	} else if output.StructuralAnalysis != "" {
+		// Check if fields are malformed (e.g., all have the same name)
+		nameCount := make(map[string]int)
+		for _, f := range output.Fields {
+			nameCount[strings.TrimSpace(f.FieldName)]++
+		}
+		// If more than half have the same name, it's malformed
+		for _, count := range nameCount {
+			if count > len(output.Fields)/2 {
+				logger.Printf("[TextToWeaver] Fields appear malformed (duplicate names), using fallback")
+				shouldUseFallback = true
+				break
+			}
+		}
+	}
+
+	if shouldUseFallback && output.StructuralAnalysis != "" {
+		logger.Printf("[TextToWeaver] Using fallback parser for structuralAnalysis: %s", output.StructuralAnalysis)
+		def.Properties = parseStructuralAnalysis(output.StructuralAnalysis, originalPrompt)
+		return def
 	}
 
 	// Name Recovery: If the LLM used generic names, try to recover from analysis
@@ -308,10 +348,32 @@ func convertFieldDescriptorToDefinition(field FieldDescriptor) jsonSchema.Defini
 				nestedDef := convertFieldDescriptorToDefinition(nested)
 				def.Properties[nestedName] = nestedDef
 			}
-		} else if fieldType == jsonSchema.Array && len(field.NestedFields) > 0 {
-			// For arrays, use the first nested field descriptor as the Items definition
-			itemDef := convertFieldDescriptorToDefinition(field.NestedFields[0])
-			def.Items = &itemDef
+		} else if fieldType == jsonSchema.Array {
+			// Auto-Wrap Logic:
+			// If the LLM lists properties directly under an Array, we assume it means "Array of Objects"
+			// and these are the properties of the item.
+			// Exception: If there is exactly 1 nested field AND it is explicitly an Object, we use it as the item definition directly.
+
+			if len(field.NestedFields) == 1 && sanitizeType(field.NestedFields[0].FieldType) == jsonSchema.Object {
+				// The LLM explicitly defined the item structure as an object
+				itemDef := convertFieldDescriptorToDefinition(field.NestedFields[0])
+				def.Items = &itemDef
+			} else {
+				// Implicit Object: Wrap the nested fields in a new Object definition
+				itemDef := jsonSchema.Definition{
+					Type:        jsonSchema.Object,
+					Instruction: "Generated item structure",
+					Properties:  make(map[string]jsonSchema.Definition),
+				}
+				for _, nested := range field.NestedFields {
+					nestedName := strings.TrimSpace(nested.FieldName)
+					if nestedName == "" {
+						continue
+					}
+					itemDef.Properties[nestedName] = convertFieldDescriptorToDefinition(nested)
+				}
+				def.Items = &itemDef
+			}
 		}
 	}
 
@@ -329,5 +391,154 @@ func sanitizeType(t string) jsonSchema.DataType {
 			return jsonSchema.Object
 		}
 		return jsonSchema.String
+	}
+}
+
+// parseStructuralAnalysis parses the LLM's structural analysis string into a Definition
+// Format: "title(string), modules(array: title, lessons(array: title, content)), instructor(object: name, bio)"
+func parseStructuralAnalysis(analysis string, rootInstruction string) map[string]jsonSchema.Definition {
+	properties := make(map[string]jsonSchema.Definition)
+
+	// Split by top-level commas (not inside parentheses)
+	fields := splitTopLevel(analysis, ',')
+
+	for _, field := range fields {
+		field = strings.TrimSpace(field)
+		if field == "" {
+			continue
+		}
+
+		name, def := parseFieldSpec(field, rootInstruction)
+		if name != "" {
+			properties[name] = def
+		}
+	}
+
+	return properties
+}
+
+// splitTopLevel splits a string by a delimiter, but only at the top level (not inside parentheses)
+func splitTopLevel(s string, delim rune) []string {
+	var result []string
+	var current strings.Builder
+	depth := 0
+
+	for _, r := range s {
+		switch r {
+		case '(':
+			depth++
+			current.WriteRune(r)
+		case ')':
+			depth--
+			current.WriteRune(r)
+		case delim:
+			if depth == 0 {
+				result = append(result, current.String())
+				current.Reset()
+			} else {
+				current.WriteRune(r)
+			}
+		default:
+			current.WriteRune(r)
+		}
+	}
+
+	if current.Len() > 0 {
+		result = append(result, current.String())
+	}
+
+	return result
+}
+
+// parseFieldSpec parses a single field specification like "modules(array: title, lessons(array: title, content))"
+// context is the original user prompt to make instructions more specific
+func parseFieldSpec(spec string, context string) (string, jsonSchema.Definition) {
+	spec = strings.TrimSpace(spec)
+
+	// Helper to create contextual instruction
+	makeInstruction := func(action, fieldName string) string {
+		if context != "" {
+			return fmt.Sprintf("%s %s for %s", action, fieldName, context)
+		}
+		return fmt.Sprintf("%s %s", action, fieldName)
+	}
+
+	// Check if there's a type specification in parentheses
+	parenIdx := strings.Index(spec, "(")
+	if parenIdx == -1 {
+		// Simple field with no type - assume string
+		return spec, jsonSchema.Definition{
+			Type:        jsonSchema.String,
+			Instruction: makeInstruction("Generate", spec),
+		}
+	}
+
+	name := strings.TrimSpace(spec[:parenIdx])
+	typeSpec := spec[parenIdx+1:]
+	// Remove trailing )
+	if strings.HasSuffix(typeSpec, ")") {
+		typeSpec = typeSpec[:len(typeSpec)-1]
+	}
+
+	// Check if it's array or object with nested fields
+	colonIdx := strings.Index(typeSpec, ":")
+	if colonIdx != -1 {
+		baseType := strings.TrimSpace(typeSpec[:colonIdx])
+		nestedSpec := strings.TrimSpace(typeSpec[colonIdx+1:])
+
+		if strings.ToLower(baseType) == "array" {
+			// Parse nested fields for array items
+			itemDef := jsonSchema.Definition{
+				Type:        jsonSchema.Object,
+				Instruction: makeInstruction("Generate a", name+" entry"),
+				Properties:  make(map[string]jsonSchema.Definition),
+			}
+
+			nestedFields := splitTopLevel(nestedSpec, ',')
+			for _, nf := range nestedFields {
+				nf = strings.TrimSpace(nf)
+				if nf == "" {
+					continue
+				}
+				nfName, nfDef := parseFieldSpec(nf, context)
+				if nfName != "" {
+					itemDef.Properties[nfName] = nfDef
+				}
+			}
+
+			return name, jsonSchema.Definition{
+				Type:        jsonSchema.Array,
+				Instruction: makeInstruction("Generate a comprehensive list of", name),
+				Items:       &itemDef,
+			}
+		} else if strings.ToLower(baseType) == "object" {
+			// Parse nested fields for object
+			objDef := jsonSchema.Definition{
+				Type:        jsonSchema.Object,
+				Instruction: makeInstruction("Generate", name+" details"),
+				Properties:  make(map[string]jsonSchema.Definition),
+			}
+
+			nestedFields := splitTopLevel(nestedSpec, ',')
+			for _, nf := range nestedFields {
+				nf = strings.TrimSpace(nf)
+				if nf == "" {
+					continue
+				}
+				nfName, nfDef := parseFieldSpec(nf, context)
+				if nfName != "" {
+					objDef.Properties[nfName] = nfDef
+				}
+			}
+
+			return name, objDef
+		}
+	}
+
+	// Simple type specification like "title(string)"
+	fieldType := sanitizeType(typeSpec)
+	return name, jsonSchema.Definition{
+		Type:        fieldType,
+		Instruction: makeInstruction("Generate", name),
 	}
 }

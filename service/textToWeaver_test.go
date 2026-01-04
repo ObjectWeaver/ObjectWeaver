@@ -35,7 +35,7 @@ func TestConvertRawOutputToDefinition(t *testing.T) {
 		},
 	}
 
-	def := convertRawOutputToDefinition(raw)
+	def := convertRawOutputToDefinition(raw, "")
 
 	if def.Type != jsonSchema.Object {
 		t.Errorf("Expected root type object, got %v", def.Type)
@@ -97,7 +97,7 @@ func TestConvertRawOutputToDefinition_Sanitization(t *testing.T) {
 		},
 	}
 
-	def := convertRawOutputToDefinition(raw)
+	def := convertRawOutputToDefinition(raw, "")
 
 	// Check root instruction
 	if def.Instruction != "Generate a user" {
@@ -164,7 +164,7 @@ func TestConvertRawOutputToDefinition_HeuristicNesting(t *testing.T) {
 		},
 	}
 
-	def := convertRawOutputToDefinition(raw)
+	def := convertRawOutputToDefinition(raw, "")
 
 	// Root should only have 'name' and 'address'
 	if len(def.Properties) != 2 {
@@ -222,7 +222,7 @@ func TestConvertRawOutputToDefinition_SameNameParentChild(t *testing.T) {
 		},
 	}
 
-	def := convertRawOutputToDefinition(raw)
+	def := convertRawOutputToDefinition(raw, "")
 
 	// The root should have 'street' (the object)
 	streetObj, ok := def.Properties["street"]
@@ -303,7 +303,7 @@ func TestConvertRawOutputToDefinition_LazyGemini(t *testing.T) {
 		},
 	}
 
-	def := convertRawOutputToDefinition(raw)
+	def := convertRawOutputToDefinition(raw, "")
 
 	// Should have 4 root properties: name, email, bio, address
 	if len(def.Properties) != 4 {
