@@ -20,6 +20,8 @@ type OpenAIProvider struct {
 	submitter    jobSubmitter.JobEntryPoint
 	defaultModel string
 	client       *gogpt.Client
+	throughputManager *DefaultThroughputManager
+	maxRetries       int
 }
 
 func NewOpenAIProvider() *OpenAIProvider {
@@ -34,10 +36,23 @@ func NewOpenAIProvider() *OpenAIProvider {
 	// Note: OpenAI byte operations don't support custom URLs like LLM_API_URL
 	// Those are only for text completion APIs
 
+	//setup for the throughput manager here
+	envModels := os.Getenv("THROUGHPUT_MODELS") // Comma-separated list of models to cycle through
+	models := []string{}
+	if envModels != "" {
+		models = strings.Split(envModels, ",")
+	}
+
+	if StandardThroughputManager == nil {
+		StandardThroughputManager = NewDefaultThroughputManager(models)
+	}
+
 	return &OpenAIProvider{
 		submitter:    jobSubmitter.NewDefaultJobEntryPoint(),
 		defaultModel: getDefaultModelForProvider(),
 		client:       gogpt.NewClientWithConfig(config),
+		throughputManager: StandardThroughputManager,
+		maxRetries:       3,
 	}
 }
 
@@ -47,7 +62,7 @@ func getDefaultModelForProvider() string {
 
 	switch provider {
 	case "gemini":
-		return "gemini-2.0-flash"
+		return "gemini-2.5-flash"
 	case "openai":
 		return "gpt-4o-mini"
 	case "local":
@@ -60,7 +75,7 @@ func getDefaultModelForProvider() string {
 		}
 		// Default to Gemini Flash if using Gemini keys
 		if os.Getenv("GEMINI_API_KEY") != "" {
-			return "gemini-2.0-flash"
+			return "gemini-2.5-flash"
 		}
 		// Final fallback
 		return "gpt-4o-mini"
@@ -72,6 +87,10 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 	model := config.Model
 	if model == "" {
 		model = p.defaultModel
+	} else if os.Getenv("THROUGHPUT_MANAGER") == "true" {
+		// Override with model from throughput manager
+		model = p.throughputManager.GetModelForRequest()
+		logger.Printf("[LLM] Overriding model with throughput manager selection: %s", model)
 	}
 
 	// Log the request details in development mode
@@ -88,7 +107,23 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 
 	// Submit job with Definition (includes SendImage if present)
 	completion, _, err := p.submitter.SubmitJob(ctx, model, config.Definition, prompt, config.SystemPrompt, nil)
+
 	if err != nil {
+		if strings.Contains(err.Error(), "429") && os.Getenv("THROUGHPUT_MANAGER") == "true" {
+			p.throughputManager.ReportRateLimitError(model)
+		}
+
+		for i := 0; i < p.maxRetries; i++ {
+			logger.Printf("[LLM] Retrying job submission (%d/%d)...", i+1, p.maxRetries)
+			completion, _, err = p.submitter.SubmitJob(ctx, model, config.Definition, prompt, config.SystemPrompt, nil)
+			if err == nil {
+				break
+			}
+			if strings.Contains(err.Error(), "429") && os.Getenv("THROUGHPUT_MANAGER") == "true" {
+				p.throughputManager.ReportRateLimitError(model)
+			}
+		}
+
 		logger.Printf("[LLM ERROR] Job submission failed: %v", err)
 		return "", nil, fmt.Errorf("job submission failed: %w", err)
 	}

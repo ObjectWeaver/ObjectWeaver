@@ -39,9 +39,6 @@ func (js *DefaultJobEntryPoint) SubmitJob(ctx context.Context, model string, def
 	startTime := time.Now()
 	_ = startTime
 
-	// CRITICAL: Allocate input on the heap, not stack, to prevent memory corruption
-	// when goroutines access it asynchronously. Taking address of stack variable
-	// causes nil pointer dereference under high concurrency.
 	input := &llmManagement.Inputs{
 		Ctx:          ctx, // Pass context from caller for cancellation support
 		Prompt:       newPrompt,
