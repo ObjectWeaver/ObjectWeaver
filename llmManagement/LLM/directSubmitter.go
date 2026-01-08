@@ -85,7 +85,6 @@ func NewDirectJobSubmitter(adapters []clientManager.ClientAdapter, maxConcurrent
 }
 
 // SubmitJob processes the job directly without going through the worker queue.
-// This is the new, simplified flow that eliminates 18+ second delays.
 func (d *DirectJobSubmitter) SubmitJob(job *Job, _ chan *Job) (any, *gogpt.Usage, error) {
 	if job == nil {
 		return "", nil, errors.New("job is nil")

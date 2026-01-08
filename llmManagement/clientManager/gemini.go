@@ -86,7 +86,6 @@ func (a *GeminiClientAdapter) processChat(inputs *llmManagement.Inputs) (*domain
 	}
 
 	// Use the model from the built request (already converted by request builder)
-	// openaiReq.Model is already in Gemini format (e.g., "gemini-2.0-flash-lite")
 	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s",
 		a.baseURL, openaiReq.Model, a.apiKey)
 
@@ -104,6 +103,10 @@ func (a *GeminiClientAdapter) processChat(inputs *llmManagement.Inputs) (*domain
 		return nil, fmt.Errorf("gemini api request failed: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return nil, fmt.Errorf("gemini api rate limit exceeded (status %d)", resp.StatusCode)
+	}
 
 	// 4. Handle non-200 status codes
 	if resp.StatusCode != http.StatusOK {
