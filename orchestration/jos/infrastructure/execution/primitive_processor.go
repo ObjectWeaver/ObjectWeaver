@@ -8,6 +8,7 @@ import (
 	"objectweaver/orchestration/jos/domain"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/objectweaver/go-sdk/jsonSchema"
 )
@@ -195,9 +196,31 @@ func (p *PrimitiveProcessor) generateValue(ctx context.Context, task *domain.Fie
 	// Add context for cancellation support
 	config.Context = ctx
 
-	response, metadata, err := p.llmProvider.Generate(prompt, config)
-	if err != nil {
-		return nil, nil, fmt.Errorf("LLM generation failed: %w", err)
+	var response any
+	var metadata *domain.ProviderMetadata
+
+	// retry loop specifically for empty responses which indicate upstream failures
+	for attempt := 0; attempt <= p.maxRetries; attempt++ {
+		if attempt > 0 {
+			logger.Printf("[PrimitiveProcessor] Retrying generation for field '%s' (attempt %d/%d) due to empty response",
+				task.Key(), attempt, p.maxRetries)
+			// exponential backoff: 200ms, 400ms, 800ms
+			backoff := time.Duration(200*(1<<(attempt-1))) * time.Millisecond
+			time.Sleep(backoff)
+		}
+
+		response, metadata, err = p.llmProvider.Generate(prompt, config)
+		if err != nil {
+			return nil, nil, fmt.Errorf("LLM generation failed: %w", err)
+		}
+
+		// check for empty/nil response which indicates upstream failure
+		if !p.isEmptyResponse(response, task.Definition().Type) {
+			break // got a valid response
+		}
+
+		logger.Printf("[PrimitiveProcessor] Empty response received for field '%s', type: %v",
+			task.Key(), task.Definition().Type)
 	}
 
 	// Parse response based on type
@@ -205,6 +228,26 @@ func (p *PrimitiveProcessor) generateValue(ctx context.Context, task *domain.Fie
 	metadata.Prompt = prompt
 
 	return value, metadata, nil
+}
+
+// isEmptyResponse checks if the LLM returned an empty/nil response indicating upstream failure
+func (p *PrimitiveProcessor) isEmptyResponse(response any, fieldType jsonSchema.DataType) bool {
+	if response == nil {
+		return true
+	}
+
+	switch fieldType {
+	case jsonSchema.String:
+		if str, ok := response.(string); ok {
+			return strings.TrimSpace(str) == ""
+		}
+	case jsonSchema.Vector:
+		if vec, ok := response.([]float32); ok {
+			return len(vec) == 0
+		}
+	}
+
+	return false
 }
 
 func (p *PrimitiveProcessor) parseValue(response any, fieldType jsonSchema.DataType) interface{} {

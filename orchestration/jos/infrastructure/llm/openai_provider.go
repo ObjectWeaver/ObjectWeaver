@@ -7,6 +7,7 @@ import (
 	"objectweaver/logger"
 	"os"
 	"strings"
+	"time"
 
 	byteoperations "objectweaver/llmManagement/byteOperations"
 	"objectweaver/orchestration/jobSubmitter"
@@ -17,11 +18,11 @@ import (
 
 // OpenAIProvider adapts the existing job submitter to the LLMProvider interface
 type OpenAIProvider struct {
-	submitter    jobSubmitter.JobEntryPoint
-	defaultModel string
-	client       *gogpt.Client
+	submitter         jobSubmitter.JobEntryPoint
+	defaultModel      string
+	client            *gogpt.Client
 	throughputManager *DefaultThroughputManager
-	maxRetries       int
+	maxRetries        int
 }
 
 func NewOpenAIProvider() *OpenAIProvider {
@@ -48,11 +49,11 @@ func NewOpenAIProvider() *OpenAIProvider {
 	}
 
 	return &OpenAIProvider{
-		submitter:    jobSubmitter.NewDefaultJobEntryPoint(),
-		defaultModel: getDefaultModelForProvider(),
-		client:       gogpt.NewClientWithConfig(config),
+		submitter:         jobSubmitter.NewDefaultJobEntryPoint(),
+		defaultModel:      getDefaultModelForProvider(),
+		client:            gogpt.NewClientWithConfig(config),
 		throughputManager: StandardThroughputManager,
-		maxRetries:       3,
+		maxRetries:        3,
 	}
 }
 
@@ -88,9 +89,15 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 	if model == "" {
 		model = p.defaultModel
 	} else if os.Getenv("THROUGHPUT_MANAGER") == "true" {
-		// Override with model from throughput manager
-		model = p.throughputManager.GetModelForRequest()
-		logger.Printf("[LLM] Overriding model with throughput manager selection: %s", model)
+		// Override with model from throughput manager - use wait version to handle rate limits
+		model = p.throughputManager.GetModelForRequestWithWait()
+		if model == "" {
+			// fallback to default if throughput manager has no models configured
+			model = p.defaultModel
+			logger.Printf("[LLM] Throughput manager returned empty, falling back to default: %s", model)
+		} else {
+			logger.Printf("[LLM] Overriding model with throughput manager selection: %s", model)
+		}
 	}
 
 	// Log the request details in development mode
@@ -113,8 +120,22 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 			p.throughputManager.ReportRateLimitError(model)
 		}
 
+		// retry with exponential backoff
 		for i := 0; i < p.maxRetries; i++ {
-			logger.Printf("[LLM] Retrying job submission (%d/%d)...", i+1, p.maxRetries)
+			// exponential backoff: 500ms, 1s, 2s, 4s...
+			backoffDuration := time.Duration(500*(1<<i)) * time.Millisecond
+			logger.Printf("[LLM] Retrying job submission (%d/%d) after %v...", i+1, p.maxRetries, backoffDuration)
+			time.Sleep(backoffDuration)
+
+			// on rate limit, try to get a different model
+			if strings.Contains(err.Error(), "429") && os.Getenv("THROUGHPUT_MANAGER") == "true" {
+				newModel := p.throughputManager.GetModelForRequestWithWait()
+				if newModel != "" && newModel != model {
+					logger.Printf("[LLM] Switching to different model for retry: %s -> %s", model, newModel)
+					model = newModel
+				}
+			}
+
 			completion, _, err = p.submitter.SubmitJob(ctx, model, config.Definition, prompt, config.SystemPrompt, nil)
 			if err == nil {
 				break
@@ -124,8 +145,10 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 			}
 		}
 
-		logger.Printf("[LLM ERROR] Job submission failed: %v", err)
-		return "", nil, fmt.Errorf("job submission failed: %w", err)
+		if err != nil {
+			logger.Printf("[LLM ERROR] Job submission failed after %d retries: %v", p.maxRetries, err)
+			return "", nil, fmt.Errorf("job submission failed: %w", err)
+		}
 	}
 
 	metadata := &domain.ProviderMetadata{
@@ -230,7 +253,6 @@ func (p *OpenAIProvider) GenerateAudio(request *domain.AudioGenerationRequest) (
 	logger.Printf("[OpenAIProvider] Input: %s", request.Input)
 	logger.Printf("[OpenAIProvider] Voice: %s", request.Voice)
 	logger.Printf("[OpenAIProvider] Model: %s", request.Model)
-
 
 	// Create OpenAI TTS request
 	ttsReq := gogpt.CreateSpeechRequest{
