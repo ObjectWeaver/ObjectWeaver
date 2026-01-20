@@ -47,12 +47,16 @@ type ExecutionContext struct {
 }
 
 func NewExecutionContext(request *GenerationRequest) *ExecutionContext {
+	// Create default config and set context from request for cancellation support
+	config := DefaultGenerationConfig()
+	config.Context = request.Context()
+
 	return &ExecutionContext{
 		request:          request,
 		generatedValues:  make(map[string]interface{}),
 		metadata:         make(map[string]interface{}),
 		promptContext:    NewPromptContext(),
-		generationConfig: DefaultGenerationConfig(),
+		generationConfig: config,
 	}
 }
 
