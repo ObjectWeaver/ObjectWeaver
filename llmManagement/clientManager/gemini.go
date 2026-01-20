@@ -2,6 +2,7 @@ package clientManager
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -92,7 +93,12 @@ func (a *GeminiClientAdapter) processChat(inputs *llmManagement.Inputs) (*domain
 	logger.Printf("[Gemini DEBUG] Using model: %s", openaiReq.Model)
 	logger.Printf("[Gemini DEBUG] API URL: %s", url)
 
-	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqBytes))
+	ctx := inputs.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(reqBytes))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create http request: %w", err)
 	}
@@ -147,7 +153,12 @@ func (a *GeminiClientAdapter) processEmbedding(inputs *llmManagement.Inputs) (*d
 	logger.Printf("[Gemini DEBUG] Using embedding model: %s", openaiReq.Model)
 	logger.Printf("[Gemini DEBUG] Embedding API URL: %s", url)
 
-	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqBytes))
+	ctx := inputs.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(reqBytes))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create http request: %w", err)
 	}
