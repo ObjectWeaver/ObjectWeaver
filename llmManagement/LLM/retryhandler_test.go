@@ -71,11 +71,11 @@ func TestHandleTransientError_Retry(t *testing.T) {
 	workerID := 1
 	err := error(nil) // some error
 
-	// Since sleep is 100ms * 1 = 100ms, but for test, we can wait or use goroutine
+	// exponential backoff is 200ms for first retry, so wait a bit longer
 	go rh.HandleTransientError(job, queue, workerID, err)
 
-	// Wait a bit for sleep
-	time.Sleep(150 * time.Millisecond)
+	// Wait for exponential backoff (200ms + buffer)
+	time.Sleep(300 * time.Millisecond)
 
 	// Check if retries incremented
 	if job.Retries != 1 {
