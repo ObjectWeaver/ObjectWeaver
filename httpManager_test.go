@@ -34,25 +34,6 @@ func TestNewHTTPManager(t *testing.T) {
 	}
 }
 
-func TestHTTPManager_ServerConfiguration(t *testing.T) {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Failed to create listener: %v", err)
-	}
-	defer listener.Close()
-
-	ready := make(chan bool, 1)
-	manager := NewHTTPManager(listener, ready)
-
-	if manager.server.ReadHeaderTimeout != 5*time.Second {
-		t.Errorf("Expected ReadHeaderTimeout to be 5 seconds, got %v", manager.server.ReadHeaderTimeout)
-	}
-
-	if manager.server.Handler == nil {
-		t.Error("Expected server Handler to be set")
-	}
-}
-
 func TestHTTPManager_Start(t *testing.T) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

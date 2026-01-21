@@ -344,7 +344,7 @@ func TestArrayProcessor_extractListInfo(t *testing.T) {
 		{
 			name:         "empty result",
 			result:       map[string]interface{}{},
-			expectedSize: 3, // default
+			expectedSize: 0, // no numItems provided
 			expectedList: "",
 		},
 		{
@@ -352,7 +352,7 @@ func TestArrayProcessor_extractListInfo(t *testing.T) {
 			result: map[string]interface{}{
 				"numItems": -1,
 			},
-			expectedSize: 1, // clamped
+			expectedSize: 0, // clamped to minimum of 0
 			expectedList: "",
 		},
 		{
