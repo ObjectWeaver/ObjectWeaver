@@ -56,8 +56,8 @@ func TestGetDefaultModelForProvider_Gemini(t *testing.T) {
 	defer os.Unsetenv("LLM_PROVIDER")
 
 	model := getDefaultModelForProvider()
-	if model != "gemini-2.0-flash" {
-		t.Errorf("Expected gemini-2.0-flash, got %v", model)
+	if model != "gemini-2.5-flash" {
+		t.Errorf("Expected gemini-2.5-flash, got %v", model)
 	}
 }
 
@@ -86,12 +86,13 @@ func TestGetDefaultModelForProvider_Default(t *testing.T) {
 
 func TestGetDefaultModelForProvider_WithGeminiKey(t *testing.T) {
 	os.Unsetenv("LLM_PROVIDER")
+	os.Unsetenv("LLM_API_URL")
 	os.Setenv("GEMINI_API_KEY", "test-key")
 	defer os.Unsetenv("GEMINI_API_KEY")
 
 	model := getDefaultModelForProvider()
-	if model != "gemini-2.0-flash" {
-		t.Errorf("Expected gemini-2.0-flash when GEMINI_API_KEY is set, got %v", model)
+	if model != "gemini-2.5-flash" {
+		t.Errorf("Expected gemini-2.5-flash when GEMINI_API_KEY is set, got %v", model)
 	}
 }
 
