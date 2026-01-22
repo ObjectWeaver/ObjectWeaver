@@ -6,7 +6,6 @@ import (
 	"objectweaver/logger"
 	"objectweaver/orchestration/jos/domain"
 	"strings"
-	"time"
 
 	"github.com/objectweaver/go-sdk/jsonSchema"
 	"golang.org/x/sync/semaphore"
@@ -77,9 +76,6 @@ func (p *ArrayProcessor) Process(ctx context.Context, task *domain.FieldTask, ex
 	for index := 0; index < arraySize; index++ {
 		processItemFunc := func(idx int) func() {
 			return func() {
-				_goroutineStart := time.Now()
-				_ = _goroutineStart
-
 				itemTask := domain.NewFieldTask(fmt.Sprintf("%s[%d]", task.Key(), idx), itemDef, task)
 
 				// create isolated context for this array item with item-specific prompt context
@@ -255,6 +251,10 @@ func (p *ArrayProcessor) createListExtractionDefinition(key string, arrayDef *js
 	}
 }
 
+/*
+this format of request is essentially begging the LLM to return the format in a set format. This has been done to increase the speed of processing requests as the array size and topic generation was a massive bottle neck.
+given the simplicity of the task. Most LLMs after GPT4 should be able to handle this without dying.
+*/
 func (p *ArrayProcessor) executeLLMRequest(task *domain.FieldTask, context *domain.ExecutionContext) (map[string]interface{}, error) {
 
 	listDef := task.Definition()
@@ -357,7 +357,7 @@ COUNT: [number]`
 		if manualCount > 0 {
 			numItems = manualCount
 		} else if numItems == -1 {
-			// Only default to 3 if we really couldn't find anything
+			// Only default to 3 if we couldn't find anything
 			numItems = 3
 		}
 
