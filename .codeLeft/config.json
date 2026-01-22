@@ -1,19 +1,27 @@
 {
-  "threshold": "A-",
+  "threshold": "A",
   "security": {
-    "owasp": true,
+    "owasp": false,
     "cweTop25": false
   },
   "quality": {
     "solid": true,
     "cleanCode": false,
     "prReady": false,
-    "complexity": true,
+    "complexity": false,
     "complexityPro": false,
-    "testability": false
+    "testability": false,
+    "solidPro": false,
+    "cleanCodePro": false
   },
   "safetyCritical": {
-    "misraCpp": false
+    "misraCpp": {
+      "enabled": false,
+      "mode": "standard",
+      "concurrency": 10,
+      "useHeuristics": true,
+      "generateReport": true
+    }
   },
   "testing": {
     "functionalCoverage": false
@@ -34,7 +42,7 @@
       ".github",
       ".documentation",
       "toolCalling",
-      "grpc", 
+      "grpc",
       "integration-test"
     ]
   },
@@ -50,8 +58,8 @@
     "language": "Golang",
     "testType": "Unit",
     "library": "Ginkgo"
-  }, 
-   "advanced": {
+  },
+  "advanced": {
     "llmPreference": {
       "models": [
         {
@@ -61,9 +69,9 @@
       ]
     },
     "performance": {
-      "lastMonth": true,
+      "lastMonth": false,
       "last3Months": false,
-      "onlyPresentUser": true
+      "onlyPresentUser": false
     },
     "costBreakdown": {
       "currencySymbol": "£",
