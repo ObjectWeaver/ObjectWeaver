@@ -86,7 +86,7 @@ func init() {
 	submitterType := os.Getenv("LLM_SUBMITTER_TYPE")
 	if submitterType == "direct" || submitterType == "" {
 		maxConcurrent := getEnvInt("LLM_CONCURRENCY", 1000)
-		verbose := strings.ToLower(os.Getenv("VERBOSE")) == "true"
+		verbose := strings.ToLower(os.Getenv("VERBOSE")) == "true" 
 		logger.Printf("[Init] Initializing DirectSubmitter with maxConcurrent=%d (bypassing worker queue)", maxConcurrent)
 		_ = InitDirectSubmitter(adapters, maxConcurrent, verbose)
 	}

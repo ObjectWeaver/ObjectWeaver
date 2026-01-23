@@ -71,6 +71,7 @@ func NewStandardClient() *http.Client {
 		DisableKeepAlives: false, // Keep connection pooling but with aggressive timeouts
 		// Limit reads per connection to force cleanup of stuck connections
 		MaxResponseHeaderBytes: 1 << 20, // 1MB max response header
+		ForceAttemptHTTP2:   true,
 	}
 
 	// check if tls client certificates are configured
