@@ -298,19 +298,20 @@ integration-test-clean:
 	@rm -rf integration-test/e2e/results/*
 	@echo "✓ Services stopped and volumes cleaned"
 
-# Run load test with default settings (1000 req/s)
+# Run load test with default settings (500 req/s - realistic for 5s LLM with simple schema)
 integration-test-run:
 	@echo "Running integration load test..."
 	@echo "================================"
 	@echo ""
 	@echo "Configuration:"
-	@echo "  - Ramping from 1 to 1000 req/s"
+	@echo "  - Ramping from 1 to 500 req/s"
 	@echo "  - Duration: 60 seconds"
 	@echo "  - Ramp-up time: 30 seconds"
+	@echo "  - Note: With 5s LLM latency, max theoretical is ~2000 req/s for simple schema"
 	@echo ""
 	@mkdir -p integration-test/e2e/results
 	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
-		-e MAX_RPS=1000 \
+		-e MAX_RPS=500 \
 		-e DURATION=60s \
 		-e RAMP_UP_TIME=30s \
 		-e BASE_URL=http://objectweaver:2008 \

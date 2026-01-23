@@ -6,6 +6,7 @@ import (
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/infrastructure/llm"
 	"objectweaver/orchestration/jos/infrastructure/prompt"
+	"sync"
 )
 
 // GeneratorFactory creates configured generators

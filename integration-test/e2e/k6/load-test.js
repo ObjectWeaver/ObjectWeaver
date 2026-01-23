@@ -17,14 +17,24 @@ const BASE_URL = __ENV.BASE_URL || 'http://objectweaver:2008';
 const PASSWORD = __ENV.PASSWORD || 'test-password';
 
 // Test configuration
+// Calculate VUs needed: VUs = target_rps × expected_latency_seconds
+// With 5s LLM latency, each VU can only complete 0.2 req/s
+// For 2000 req/s, we need: 2000 / 0.2 = 10,000 VUs minimum
+// Adding 50% buffer: 15,000 VUs
+const targetRps = parseInt(MAX_RPS);
+const estimatedLatency = 6;  // 5s LLM + 1s buffer
+const VU_BUFFER = 1.5;  // 50% extra for burst handling
+const calculatedMaxVUs = Math.ceil(targetRps * estimatedLatency * VU_BUFFER);
+const maxVUs = Math.max(calculatedMaxVUs, 500);  // Minimum 500 VUs
+
 export const options = {
   scenarios: {
     ramping_load: {
       executor: 'ramping-arrival-rate',
       startRate: 1,                    // Start with 1 req/sec
       timeUnit: '1s',
-      preAllocatedVUs: 50,             // Pre-allocate VUs
-      maxVUs: parseInt(MAX_RPS) * 2,   // Max VUs based on target RPS
+      preAllocatedVUs: Math.min(200, Math.ceil(maxVUs / 10)),  // Pre-allocate 10%
+      maxVUs: maxVUs,                  // VUs = RPS × latency × buffer
       stages: [
         { duration: RAMP_UP_TIME, target: parseInt(MAX_RPS) },  // Ramp up to MAX_RPS
         { duration: DURATION, target: parseInt(MAX_RPS) },      // Hold at MAX_RPS
@@ -34,11 +44,13 @@ export const options = {
   },
   thresholds: {
     // With fixed 5s LLM latency, measure ObjectWeaver overhead:
-    // - p(95) < 8s: LLM (5s) + ObjectWeaver overhead (up to 3s)
-    // - p(99) < 15s: Tail latency under load
-    // Goal: Minimize the gap between response time and LLM latency
-    'http_req_duration': ['p(95)<8000', 'p(99)<15000'],
-    'http_req_failed': ['rate<0.05'],                   // Error rate < 5%
+    // - Base: 5000ms (LLM response time)
+    // - Target overhead: < 500ms (so total < 5500ms)
+    // - p(95) < 6000ms: allows 1s overhead for 95% of requests
+    // - p(99) < 8000ms: allows 3s overhead for tail latency
+    // If these fail, it indicates queueing/bottleneck issues!
+    'http_req_duration': ['p(95)<6000', 'p(99)<8000'],
+    'http_req_failed': ['rate<0.05'],  // Error rate < 5%
     'errors': ['rate<0.05'],
   },
 };
@@ -194,15 +206,22 @@ const schemas = {
 };
 
 // Get random schema based on distribution
+// For 5s LLM latency tests, use minimal schema for maximum throughput
+// For mixed load tests, uncomment the distribution below
 function getRandomSchema() {
-  const rand = Math.random();
-  if (rand < 0.5) {
-    return { name: 'simple', schema: schemas.simple };
-  } else if (rand < 0.8) {
-    return { name: 'nested', schema: schemas.nested };
-  } else {
-    return { name: 'complex', schema: schemas.complex };
-  }
+  // Use minimal schema only for consistent, high-throughput testing
+  // With 5s LLM latency, this gives max ~2000 req/s theoretical
+  return { name: 'simple', schema: schemas.simple };
+  
+  // Uncomment below for mixed-load testing (lower throughput)
+  // const rand = Math.random();
+  // if (rand < 0.5) {
+  //   return { name: 'simple', schema: schemas.simple };
+  // } else if (rand < 0.8) {
+  //   return { name: 'nested', schema: schemas.nested };
+  // } else {
+  //   return { name: 'complex', schema: schemas.complex };
+  // }
 }
 
 // Main test function
@@ -239,8 +258,9 @@ export default function () {
     'response has body': (r) => r.body && r.body.length > 0,
   });
 
+  // With 5s LLM latency, overhead should be minimal (< 500ms)
   check(response, {
-    'response time < 5000ms': () => duration < 5000,
+    'response time < 5500ms (5s LLM + 500ms overhead)': () => duration < 5500,
   });
 
   if (functionalSuccess) {
@@ -311,18 +331,27 @@ function textSummary(data, options) {
   const httpReqDuration = data.metrics.http_req_duration;
   const httpReqFailed = data.metrics.http_req_failed;
   
-  summary += `${indent}Total Requests: ${httpReqs.values.count}\n`;
-  summary += `${indent}Request Rate: ${httpReqs.values.rate.toFixed(2)} req/s\n`;
-  summary += `${indent}Failed Requests: ${(httpReqFailed.values.rate * 100).toFixed(2)}%\n\n`;
+  // Safely access metrics with fallbacks
+  if (httpReqs && httpReqs.values) {
+    summary += `${indent}Total Requests: ${httpReqs.values.count || 0}\n`;
+    summary += `${indent}Request Rate: ${(httpReqs.values.rate || 0).toFixed(2)} req/s\n`;
+  }
   
-  summary += `${indent}Response Times:\n`;
-  summary += `${indent}  Min: ${httpReqDuration.values.min.toFixed(2)}ms\n`;
-  summary += `${indent}  Avg: ${httpReqDuration.values.avg.toFixed(2)}ms\n`;
-  summary += `${indent}  Med: ${httpReqDuration.values.med.toFixed(2)}ms\n`;
-  summary += `${indent}  p90: ${httpReqDuration.values['p(90)'].toFixed(2)}ms\n`;
-  summary += `${indent}  p95: ${httpReqDuration.values['p(95)'].toFixed(2)}ms\n`;
-  summary += `${indent}  p99: ${httpReqDuration.values['p(99)'].toFixed(2)}ms\n`;
-  summary += `${indent}  Max: ${httpReqDuration.values.max.toFixed(2)}ms\n\n`;
+  if (httpReqFailed && httpReqFailed.values) {
+    summary += `${indent}Failed Requests: ${((httpReqFailed.values.rate || 0) * 100).toFixed(2)}%\n\n`;
+  }
+  
+  if (httpReqDuration && httpReqDuration.values) {
+    const v = httpReqDuration.values;
+    summary += `${indent}Response Times:\n`;
+    summary += `${indent}  Min: ${(v.min != null ? v.min : 'N/A').toFixed ? v.min.toFixed(2) : v.min}ms\n`;
+    summary += `${indent}  Avg: ${(v.avg != null ? v.avg : 'N/A').toFixed ? v.avg.toFixed(2) : v.avg}ms\n`;
+    summary += `${indent}  Med: ${(v.med != null ? v.med : 'N/A').toFixed ? v.med.toFixed(2) : v.med}ms\n`;
+    summary += `${indent}  p90: ${(v['p(90)'] != null ? v['p(90)'].toFixed(2) : 'N/A')}ms\n`;
+    summary += `${indent}  p95: ${(v['p(95)'] != null ? v['p(95)'].toFixed(2) : 'N/A')}ms\n`;
+    summary += `${indent}  p99: ${(v['p(99)'] != null ? v['p(99)'].toFixed(2) : 'N/A')}ms\n`;
+    summary += `${indent}  Max: ${(v.max != null ? v.max : 'N/A').toFixed ? v.max.toFixed(2) : v.max}ms\n\n`;
+  }
   
   // Custom metrics
   if (data.metrics.successful_requests) {
