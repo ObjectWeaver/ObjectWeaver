@@ -105,6 +105,7 @@ func (s *Server) ObjectGenHandler(w http.ResponseWriter, r *http.Request) {
 	response, err := processObjectGenRequest(*body, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	if responseJSON, err := json.Marshal(response); err == nil {

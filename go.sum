@@ -43,8 +43,6 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
-github.com/objectweaver/go-sdk v0.0.0-20251110180655-46f1bd34e930 h1:dySj9I1q1wnjCGLefxosj8ABzaOjW4I+n/Dmwn95Yzg=
-github.com/objectweaver/go-sdk v0.0.0-20251110180655-46f1bd34e930/go.mod h1:jV044gC7MglGHiua+94ivXSYYyPMSiRWzX5mlOVfElU=
 github.com/objectweaver/go-sdk v0.0.0-20251129102717-2a3db11c5f9d h1:ZbVLdKKmX3caswWj32cZreCPvNyBgdxQ2zaUtsXmkdg=
 github.com/objectweaver/go-sdk v0.0.0-20251129102717-2a3db11c5f9d/go.mod h1:jV044gC7MglGHiua+94ivXSYYyPMSiRWzX5mlOVfElU=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
