@@ -54,7 +54,7 @@ func (s *Server) MountHandlers() {
 	}))
 	s.Router.Use(GzipDecompression)                     // handle incoming gzip compressed requests
 	s.Router.Use(middleware.Compress(5))                // enable gzip compression for responses
-	s.Router.Use(middleware.Timeout(300 * time.Second)) // 2 minute timeout for slow LLM responses
+	s.Router.Use(middleware.Timeout(300 * time.Second)) // 5 minute timeout for slow LLM responses
 	s.Router.Use(middleware.URLFormat)
 
 	s.Router.Get("/health", HealthCheck)
