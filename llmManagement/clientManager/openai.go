@@ -29,9 +29,6 @@ func NewOpenAIClientAdapter(
 	httpClient *http.Client,
 ) *OpenAIClientAdapter {
 	config := openai.DefaultConfig(apiKey)
-	if httpClient != nil {
-		config.HTTPClient = httpClient
-	}
 	client := openai.NewClientWithConfig(config)
 
 	return &OpenAIClientAdapter{
@@ -61,7 +58,10 @@ func (a *OpenAIClientAdapter) processChat(inputs *llmManagement.Inputs) (*domain
 	}
 
 	// 2. Use the native OpenAI SDK to make the request
-	ctx := context.Background()
+	ctx := inputs.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	resp, err := a.client.CreateChatCompletion(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("openai api error: %w", err)
@@ -78,7 +78,10 @@ func (a *OpenAIClientAdapter) processEmbedding(inputs *llmManagement.Inputs) (*d
 	}
 
 	// 2. Use the native OpenAI SDK to make the request
-	ctx := context.Background()
+	ctx := inputs.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	resp, err := a.client.CreateEmbeddings(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("openai api error: %w", err)

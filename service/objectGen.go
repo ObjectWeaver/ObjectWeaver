@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"objectweaver/checks"
@@ -15,18 +16,10 @@ import (
 	"github.com/objectweaver/go-sdk/client"
 )
 
-// FieldMetadata contains metadata for a single field
-type FieldMetadata struct {
-	TokensUsed int             `json:"tokensUsed"`
-	Cost       float64         `json:"cost"`
-	ModelUsed  string          `json:"modelUsed"`
-	Choices    []domain.Choice `json:"choices,omitempty"`
-}
-
 // DetailedField contains both the value and metadata for a field
 type DetailedField struct {
-	Value    interface{}    `json:"value"`
-	Metadata *FieldMetadata `json:"metadata"`
+	Value    interface{}            `json:"value"`
+	Metadata *domain.ResultMetadata `json:"metadata"`
 }
 
 // Response struct with both simple data and detailed metadata
@@ -109,6 +102,37 @@ func (s *Server) ObjectGenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	response, err := processObjectGenRequest(*body, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if responseJSON, err := json.Marshal(response); err == nil {
+		logger.Printf("[ObjectGen] Final response JSON: %s", string(responseJSON))
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		logger.Printf("Error encoding response (context error: %v): %v", r.Context().Err(), err)
+	}
+}
+
+func PrettyPrintJSON(jsonBytes []byte) {
+	var jsonObj map[string]interface{}
+	if err := json.Unmarshal(jsonBytes, &jsonObj); err != nil {
+		logger.Printf("Error unmarshalling JSON for pretty print: %v", err) // Use logger.Printf, not Fatalf for a lib func
+		return
+	}
+	prettyJSON, err := json.MarshalIndent(jsonObj, "", "    ")
+	if err != nil {
+		logger.Printf("Error marshalling JSON for pretty print: %v", err)
+		return
+	}
+	fmt.Println(string(prettyJSON))
+}
+
+func processObjectGenRequest(body client.RequestBody, r *http.Request) (*Response, error) {
 	generator := getGenerator()
 	defer returnGenerator(generator)
 
@@ -118,9 +142,9 @@ func (s *Server) ObjectGenHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Printf("Error during generation: %v", err)
 		if r.Context().Err() == nil {
-			http.Error(w, "Generation failed: "+err.Error(), http.StatusInternalServerError)
+			return nil, errors.New("context ran out")
 		}
-		return
+		return nil, err
 	}
 
 	data := result.Data()
@@ -136,54 +160,17 @@ func (s *Server) ObjectGenHandler(w http.ResponseWriter, r *http.Request) {
 	if result.HasDetailedData() {
 		detailedData = make(map[string]*DetailedField)
 		for key, fieldResult := range result.DetailedData() {
-			var fieldMeta *FieldMetadata
-			if fieldResult.Metadata != nil {
-				fieldMeta = &FieldMetadata{
-					TokensUsed: fieldResult.Metadata.TokensUsed,
-					Cost:       fieldResult.Metadata.Cost,
-					ModelUsed:  fieldResult.Metadata.ModelUsed,
-					Choices:    fieldResult.Metadata.Choices,
-				}
-			}
 			detailedData[key] = &DetailedField{
 				Value:    fieldResult.Value,
-				Metadata: fieldMeta,
+				Metadata: fieldResult.Metadata,
 			}
 		}
 	}
 
 	// Marshal and send the successful response
-	response := Response{
+	return &Response{
 		Data:         data,
 		DetailedData: detailedData,
 		UsdCost:      cost,
-	}
-
-	// Log the final JSON response being sent to client
-	if responseJSON, err := json.Marshal(response); err == nil {
-		logger.Printf("[ObjectGen] Final response JSON: %s", string(responseJSON))
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		// This error might occur if the client disconnected or if (less likely by now)
-		// another component wrote a response.
-		logger.Printf("Error encoding response (context error: %v): %v", r.Context().Err(), err)
-		// Don't try http.Error here as headers might have been partially written.
-	}
-}
-
-// PrettyPrintJSON (no changes needed, but ensure it's used safely if it involves I/O that could fail on closed connections)
-func PrettyPrintJSON(jsonBytes []byte) {
-	var jsonObj map[string]interface{}
-	if err := json.Unmarshal(jsonBytes, &jsonObj); err != nil {
-		logger.Printf("Error unmarshalling JSON for pretty print: %v", err) // Use logger.Printf, not Fatalf for a lib func
-		return
-	}
-	prettyJSON, err := json.MarshalIndent(jsonObj, "", "    ")
-	if err != nil {
-		logger.Printf("Error marshalling JSON for pretty print: %v", err)
-		return
-	}
-	fmt.Println(string(prettyJSON))
+	}, nil
 }

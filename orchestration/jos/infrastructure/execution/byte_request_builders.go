@@ -3,8 +3,6 @@ package execution
 import (
 	"fmt"
 	"objectweaver/orchestration/jos/domain"
-
-	"github.com/objectweaver/go-sdk/jsonSchema"
 )
 
 // TTSRequestBuilder constructs audio generation requests from field tasks
@@ -26,21 +24,7 @@ func (b *TTSRequestBuilder) BuildRequest(task *domain.FieldTask, context *domain
 		input = fmt.Sprintf("%s\n%s", task.Definition().Instruction, input)
 	}
 
-	// Map model type to actual OpenAI model name
-	var model string
-	modelStr := string(tts.Model)
-	switch modelStr {
-	case "tts", "OpenAiTTS":
-		model = "tts-1" // Standard quality
-	case "tts-hd", "OpenAiTTSHD":
-		model = "tts-1-hd" // High definition
-	case "tts-1", "tts-1-hd":
-		// Already in correct format
-		model = modelStr
-	default:
-		// Default to standard TTS
-		model = "tts-1"
-	}
+	model := string(tts.Model)
 
 	return &domain.AudioGenerationRequest{
 		Model:          model,
@@ -76,16 +60,7 @@ func (b *ImageRequestBuilder) BuildRequest(task *domain.FieldTask, context *doma
 		size = string(img.Size)
 	}
 
-	// Determine model
-	var model string
-	switch img.Model {
-	case jsonSchema.OpenAiDalle2:
-		model = "dall-e-2"
-	case jsonSchema.OpenAiDalle3:
-		model = "dall-e-3"
-	default:
-		return nil, fmt.Errorf("unsupported image model: %s", img.Model)
-	}
+	model := string(img.Model)
 
 	return &domain.ImageGenerationRequest{
 		Model:          model,
@@ -122,18 +97,7 @@ func (b *STTRequestBuilder) BuildRequest(task *domain.FieldTask, context *domain
 		responseFormat = "srt"
 	}
 
-	// Map model type to actual OpenAI model name
-	var model string
-	modelStr := string(stt.Model)
-	switch modelStr {
-	case "OpenAiWhisper", "whisper":
-		model = "whisper-1"
-	case "whisper-1":
-		model = modelStr
-	default:
-		// Default to whisper-1
-		model = "whisper-1"
-	}
+	model := string(stt.Model)
 
 	return &domain.AudioTranscriptionRequest{
 		Model:          model,

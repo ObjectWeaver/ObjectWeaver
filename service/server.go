@@ -29,23 +29,22 @@ func CreateNewServer() *Server {
 }
 
 func (s *Server) MountHandlers() {
-	// Mount all middleware here
 	s.Router.Use(cors.Handler(cors.Options{
 		AllowedMethods:   []string{"GET", "POST"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Session-Id", "Content-Encoding"},
 		ExposedHeaders:   []string{"Link", "Set-Cookie"},
 		AllowCredentials: true,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
+		MaxAge:           300,
 	}))
 
 	s.Router.Use(middleware.RequestID)
 	s.Router.Use(middleware.RealIP)
-	// s.Router.Use(middleware.Logger) // Disabled for performance
+	s.Router.Use(middleware.Logger)
 	s.Router.Use(middleware.Recoverer)
 	s.Router.Use(middleware.ThrottleWithOpts(middleware.ThrottleOpts{
-		Limit:          10000,
-		BacklogLimit:   5000,
-		BacklogTimeout: 60 * time.Second, // Max wait time before 503
+		Limit:          50000,            // increased from 10000 for high-load testing
+		BacklogLimit:   25000,            // increased from 5000 for high-load testing
+		BacklogTimeout: 60 * time.Second, // max wait time before 503
 		RetryAfterFn: func(ctxDone bool) time.Duration {
 			if ctxDone {
 				return 0
@@ -53,9 +52,9 @@ func (s *Server) MountHandlers() {
 			return 1 * time.Second
 		},
 	}))
-	s.Router.Use(GzipDecompression)      // Handle incoming gzip compressed requests
-	s.Router.Use(middleware.Compress(5)) // Enable gzip compression for responses
-	s.Router.Use(middleware.Timeout(30 * time.Second))
+	s.Router.Use(GzipDecompression)                     // handle incoming gzip compressed requests
+	s.Router.Use(middleware.Compress(5))                // enable gzip compression for responses
+	s.Router.Use(middleware.Timeout(300 * time.Second)) // 5 minute timeout for slow LLM responses
 	s.Router.Use(middleware.URLFormat)
 
 	s.Router.Get("/health", HealthCheck)
@@ -70,7 +69,7 @@ func (s *Server) MountHandlers() {
 	s.Router.Get("/debug/pprof/{cmd}", http.HandlerFunc(pprof.Index))
 
 	s.Router.Group(func(r chi.Router) {
-		r.Use(PrometheusMiddleware) //this can always be moved into more speficic areas
+		r.Use(PrometheusMiddleware)
 		r.Use(ValidatePassword)
 		r.Post("/api/objectGen", s.ObjectGenHandler)
 	})
@@ -82,6 +81,7 @@ func (s *Server) MountHandlers() {
 		s.Router.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
 		s.Router.Get("/", ServeIndexHTML)
+		s.Router.Post("/api/textToWeaver", s.TextToWeaver)
 	}
 }
 

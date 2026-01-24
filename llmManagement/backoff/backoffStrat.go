@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+
 // BackoffStrategy defines the type of backoff to use.
 type BackoffStrategy int
 

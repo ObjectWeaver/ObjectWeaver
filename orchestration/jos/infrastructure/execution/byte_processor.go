@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"objectweaver/logger"
 	"objectweaver/orchestration/jos/domain"
 
 	"github.com/objectweaver/go-sdk/jsonSchema"
@@ -86,8 +85,6 @@ func (p *ByteProcessor) Process(ctx context.Context, task *domain.FieldTask, exe
 
 // processTextToSpeech handles text-to-speech conversion
 func (p *ByteProcessor) processTextToSpeech(task *domain.FieldTask, context *domain.ExecutionContext, byteProvider domain.ByteOperationProvider) (*domain.TaskResult, error) {
-	logger.Printf("[ByteProcessor] Processing TTS for property '%s'", task.Key())
-
 	// Build request using the builder
 	request, err := p.ttsBuilder.BuildRequest(task, context)
 	if err != nil {
@@ -97,11 +94,8 @@ func (p *ByteProcessor) processTextToSpeech(task *domain.FieldTask, context *dom
 	// Delegate to the byte operation provider
 	audioBytes, metadata, err := byteProvider.GenerateAudio(request)
 	if err != nil {
-		logger.Printf("[ByteProcessor ERROR] TTS generation failed for property '%s': %v", task.Key(), err)
 		return nil, fmt.Errorf("TTS generation failed: %w", err)
 	}
-
-	logger.Printf("[ByteProcessor] TTS completed for property '%s', generated %d bytes", task.Key(), len(audioBytes))
 
 	// Encode to base64 for JSON compatibility
 	base64Audio := base64.StdEncoding.EncodeToString(audioBytes)
@@ -118,8 +112,6 @@ func (p *ByteProcessor) processTextToSpeech(task *domain.FieldTask, context *dom
 
 // processImageGeneration handles image generation
 func (p *ByteProcessor) processImageGeneration(task *domain.FieldTask, context *domain.ExecutionContext, byteProvider domain.ByteOperationProvider) (*domain.TaskResult, error) {
-	logger.Printf("[ByteProcessor] Processing Image Generation for property '%s'", task.Key())
-
 	// Build request using the builder
 	request, err := p.imageBuilder.BuildRequest(task, context)
 	if err != nil {
@@ -129,11 +121,8 @@ func (p *ByteProcessor) processImageGeneration(task *domain.FieldTask, context *
 	// Delegate to the byte operation provider
 	imageBytes, metadata, err := byteProvider.GenerateImage(request)
 	if err != nil {
-		logger.Printf("[ByteProcessor ERROR] Image generation failed for property '%s': %v", task.Key(), err)
 		return nil, fmt.Errorf("image generation failed: %w", err)
 	}
-
-	logger.Printf("[ByteProcessor] Image generation completed for property '%s', generated %d bytes", task.Key(), len(imageBytes))
 
 	// Encode to base64 for JSON compatibility
 	base64Image := base64.StdEncoding.EncodeToString(imageBytes)
@@ -150,8 +139,6 @@ func (p *ByteProcessor) processImageGeneration(task *domain.FieldTask, context *
 
 // processSpeechToText handles speech-to-text conversion
 func (p *ByteProcessor) processSpeechToText(task *domain.FieldTask, context *domain.ExecutionContext, byteProvider domain.ByteOperationProvider) (*domain.TaskResult, error) {
-	logger.Printf("[ByteProcessor] Processing STT for property '%s'", task.Key())
-
 	// Build request using the builder
 	request, err := p.sttBuilder.BuildRequest(task, context)
 	if err != nil {
@@ -161,17 +148,15 @@ func (p *ByteProcessor) processSpeechToText(task *domain.FieldTask, context *dom
 	// Delegate to the byte operation provider
 	transcriptionText, metadata, err := byteProvider.TranscribeAudio(request)
 	if err != nil {
-		logger.Printf("[ByteProcessor ERROR] STT failed for property '%s': %v", task.Key(), err)
 		return nil, fmt.Errorf("speech-to-text failed: %w", err)
 	}
-
-	logger.Printf("[ByteProcessor] STT completed for property '%s': %s", task.Key(), transcriptionText)
 
 	// Convert provider metadata to result metadata
 	resultMetadata := domain.NewResultMetadata()
 	resultMetadata.ModelUsed = metadata.Model
 	resultMetadata.Cost = metadata.Cost
 	resultMetadata.TokensUsed = metadata.TokensUsed
+	resultMetadata.VerboseData = metadata.VerboseData // Preserve verbose data from provider
 
 	result := domain.NewTaskResult(task.ID(), task.Key(), transcriptionText, resultMetadata)
 	return result.WithPath(task.Path()), nil

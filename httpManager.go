@@ -21,11 +21,11 @@ func NewHTTPManager(l net.Listener, r chan bool) *HTTPManager {
 		listener: l,
 		server: &http.Server{
 			Handler:           httpServer.Router,
-			ReadHeaderTimeout: 5 * time.Second,
-			ReadTimeout:       30 * time.Second,
-			WriteTimeout:      60 * time.Second,
-			IdleTimeout:       30 * time.Second,
-			MaxHeaderBytes:    1 << 20,          // 1 MB max header size
+			ReadHeaderTimeout: 10 * time.Second,
+			ReadTimeout:       5 * time.Minute, // Allow up to 5 minutes for reading request
+			WriteTimeout:      5 * time.Minute, // Allow up to 5 minutes for writing response
+			IdleTimeout:       2 * time.Minute, // Allow 2 minutes for keep-alive
+			MaxHeaderBytes:    1 << 20,         // 1 MB max header size
 		},
 		ready: r,
 	}

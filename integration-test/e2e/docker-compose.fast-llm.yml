@@ -1,0 +1,92 @@
+# Docker Compose for Fast LLM Testing (100ms latency)
+# Use this to test ObjectWeaver's TRUE throughput capacity without LLM bottleneck
+
+services:
+  # Mock LLM Server - Fast 100ms responses
+  mock-llm:
+    build:
+      context: ./mock-llm-server
+      dockerfile: Dockerfile
+    container_name: mock-llm-server
+    ports:
+      - "8080:8080"
+    environment:
+      MOCK_LLM_PORT: "8080"
+      MOCK_LLM_MIN_DELAY_MS: "100"   # 100ms instead of 5000ms
+      MOCK_LLM_MAX_DELAY_MS: "100"
+      MOCK_LLM_MAX_CONCURRENT: "100000"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    networks:
+      - fast-test
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # ObjectWeaver Server - Tuned for high throughput
+  objectweaver:
+    build:
+      context: ../..
+      dockerfile: dockerfile
+    container_name: objectweaver-fast-test
+    ports:
+      - "2008:2008"
+    environment:
+      ENVIRONMENT: "development"
+      PASSWORD: "test-password"
+      LLM_API_URL: "http://mock-llm:8080/v1/chat/completions"
+      LLM_API_KEY: "mock-api-key"
+      LLM_ENABLE_BATCH: "false"
+      LLM_HTTP_TIMEOUT_SECONDS: "30"
+      LLM_HTTP_CONNECTION_TIMEOUT_SECONDS: "5"
+      LLM_MAX_RETRIES: "0"
+      LLM_HTTP_MAX_IDLE_CONNS: "50000"
+      LLM_HTTP_MAX_IDLE_CONNS_PER_HOST: "50000"
+      LLM_HTTP_MAX_CONNS_PER_HOST: "50000"
+      # With 100ms LLM latency: 10k workers / 0.1s = 100,000 req/s theoretical
+      WORKER_POOL_SIZE: "10000"
+      LLM_SUBMITTER_TYPE: "direct"
+      LLM_CONCURRENCY: "50000"
+      LLM_MAX_REQUESTS_PER_MINUTE: "1000000"
+      LLM_MAX_TOKENS_PER_MINUTE: "1500000000"
+      ITEMS_MODEL: "gpt-4o-mini"
+      VERBOSE_LOGS: "false"
+      GRPC_UNSECURE: "true"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    networks:
+      - fast-test
+    depends_on:
+      mock-llm:
+        condition: service_healthy
+
+  # k6 Load Testing
+  k6:
+    image: grafana/k6:latest
+    container_name: k6-fast-test
+    environment:
+      BASE_URL: "http://objectweaver:2008"
+      PASSWORD: "test-password"
+      MAX_RPS: "${MAX_RPS:-10000}"
+      DURATION: "${DURATION:-60s}"
+      RAMP_UP_TIME: "${RAMP_UP_TIME:-30s}"
+      SCHEMA_TYPE: "${SCHEMA_TYPE:-minimal}"
+      LLM_LATENCY_MS: "100"
+    volumes:
+      - ./k6:/scripts:ro
+      - ./results:/results
+    networks:
+      - fast-test
+    depends_on:
+      - objectweaver
+
+networks:
+  fast-test:
+    name: fast-test

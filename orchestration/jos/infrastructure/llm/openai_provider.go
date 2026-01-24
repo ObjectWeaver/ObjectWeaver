@@ -7,6 +7,7 @@ import (
 	"objectweaver/logger"
 	"os"
 	"strings"
+	"time"
 
 	byteoperations "objectweaver/llmManagement/byteOperations"
 	"objectweaver/orchestration/jobSubmitter"
@@ -17,9 +18,11 @@ import (
 
 // OpenAIProvider adapts the existing job submitter to the LLMProvider interface
 type OpenAIProvider struct {
-	submitter    jobSubmitter.JobEntryPoint
-	defaultModel string
-	client       *gogpt.Client
+	submitter         jobSubmitter.JobEntryPoint
+	defaultModel      string
+	client            *gogpt.Client
+	throughputManager *DefaultThroughputManager
+	maxRetries        int
 }
 
 func NewOpenAIProvider() *OpenAIProvider {
@@ -34,10 +37,23 @@ func NewOpenAIProvider() *OpenAIProvider {
 	// Note: OpenAI byte operations don't support custom URLs like LLM_API_URL
 	// Those are only for text completion APIs
 
+	//setup for the throughput manager here
+	envModels := os.Getenv("THROUGHPUT_MODELS") // Comma-separated list of models to cycle through
+	models := []string{}
+	if envModels != "" {
+		models = strings.Split(envModels, ",")
+	}
+
+	if StandardThroughputManager == nil {
+		StandardThroughputManager = NewDefaultThroughputManager(models)
+	}
+
 	return &OpenAIProvider{
-		submitter:    jobSubmitter.NewDefaultJobEntryPoint(),
-		defaultModel: getDefaultModelForProvider(),
-		client:       gogpt.NewClientWithConfig(config),
+		submitter:         jobSubmitter.NewDefaultJobEntryPoint(),
+		defaultModel:      getDefaultModelForProvider(),
+		client:            gogpt.NewClientWithConfig(config),
+		throughputManager: StandardThroughputManager,
+		maxRetries:        3,
 	}
 }
 
@@ -47,7 +63,7 @@ func getDefaultModelForProvider() string {
 
 	switch provider {
 	case "gemini":
-		return "gemini-2.0-flash"
+		return "gemini-2.5-flash"
 	case "openai":
 		return "gpt-4o-mini"
 	case "local":
@@ -59,8 +75,8 @@ func getDefaultModelForProvider() string {
 			return "gpt-4o-mini"
 		}
 		// Default to Gemini Flash if using Gemini keys
-		if os.Getenv("GEMINI_API_KEY") != "" || os.Getenv("LLM_API_KEY") != "" {
-			return "gemini-2.0-flash"
+		if os.Getenv("GEMINI_API_KEY") != "" {
+			return "gemini-2.5-flash"
 		}
 		// Final fallback
 		return "gpt-4o-mini"
@@ -72,6 +88,16 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 	model := config.Model
 	if model == "" {
 		model = p.defaultModel
+	} else if os.Getenv("THROUGHPUT_MANAGER") == "true" {
+		// Override with model from throughput manager - use wait version to handle rate limits
+		model = p.throughputManager.GetModelForRequestWithWait()
+		if model == "" {
+			// fallback to default if throughput manager has no models configured
+			model = p.defaultModel
+			logger.Printf("[LLM] Throughput manager returned empty, falling back to default: %s", model)
+		} else {
+			logger.Printf("[LLM] Overriding model with throughput manager selection: %s", model)
+		}
 	}
 
 	// Log the request details in development mode
@@ -88,9 +114,41 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 
 	// Submit job with Definition (includes SendImage if present)
 	completion, _, err := p.submitter.SubmitJob(ctx, model, config.Definition, prompt, config.SystemPrompt, nil)
+
 	if err != nil {
-		logger.Printf("[LLM ERROR] Job submission failed: %v", err)
-		return "", nil, fmt.Errorf("job submission failed: %w", err)
+		if strings.Contains(err.Error(), "429") && os.Getenv("THROUGHPUT_MANAGER") == "true" {
+			p.throughputManager.ReportRateLimitError(model)
+		}
+
+		// retry with exponential backoff
+		for i := 0; i < p.maxRetries; i++ {
+			// exponential backoff: 500ms, 1s, 2s, 4s...
+			backoffDuration := time.Duration(500*(1<<i)) * time.Millisecond
+			logger.Printf("[LLM] Retrying job submission (%d/%d) after %v...", i+1, p.maxRetries, backoffDuration)
+			time.Sleep(backoffDuration)
+
+			// on rate limit, try to get a different model
+			if strings.Contains(err.Error(), "429") && os.Getenv("THROUGHPUT_MANAGER") == "true" {
+				newModel := p.throughputManager.GetModelForRequestWithWait()
+				if newModel != "" && newModel != model {
+					logger.Printf("[LLM] Switching to different model for retry: %s -> %s", model, newModel)
+					model = newModel
+				}
+			}
+
+			completion, _, err = p.submitter.SubmitJob(ctx, model, config.Definition, prompt, config.SystemPrompt, nil)
+			if err == nil {
+				break
+			}
+			if strings.Contains(err.Error(), "429") && os.Getenv("THROUGHPUT_MANAGER") == "true" {
+				p.throughputManager.ReportRateLimitError(model)
+			}
+		}
+
+		if err != nil {
+			logger.Printf("[LLM ERROR] Job submission failed after %d retries: %v", p.maxRetries, err)
+			return "", nil, fmt.Errorf("job submission failed: %w", err)
+		}
 	}
 
 	metadata := &domain.ProviderMetadata{
@@ -301,6 +359,15 @@ func (p *OpenAIProvider) TranscribeAudio(request *domain.AudioTranscriptionReque
 		// TODO: Add cost calculation for STT
 		Cost:       0,
 		TokensUsed: 0,
+	}
+
+	if request.ResponseFormat == "verbose_json" || request.ResponseFormat == "diarized_json" {
+		metadata.VerboseData = map[string]any{
+			"language": response.Language,
+			"duration": response.Duration,
+			"segments": response.Segments,
+			"words":    response.Words,
+		}
 	}
 
 	return response.Text, metadata, nil

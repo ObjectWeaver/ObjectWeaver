@@ -1,0 +1,13 @@
+{
+  "prompt": "Generate a schema that defines the technological landscape of the world",
+  "definition": {
+    "type": "object",
+    "instruction": "Defines the technological landscape of the world, including its level of advancement and notable innovations.",
+    "properties": {
+      "embedding": {
+        "type": "vector",
+        "model": "gemini-embedding-001"
+      }
+    }
+  }
+}

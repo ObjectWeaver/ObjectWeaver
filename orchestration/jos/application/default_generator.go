@@ -55,7 +55,7 @@ func (g *DefaultGenerator) Generate(request *domain.GenerationRequest) (*domain.
 
 	// Create context with timeout to prevent indefinite hangs
 	// Default to 120s, or use env var if needed (not implemented here for simplicity)
-	ctx, cancel := context.WithTimeout(reqCtx, 120*time.Second)
+	ctx, cancel := context.WithTimeout(reqCtx, 300*time.Second)
 	defer cancel()
 
 	// Phase 1: Pre-processing plugins

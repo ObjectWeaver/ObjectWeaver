@@ -16,6 +16,11 @@ func (s *Server) GenerateObjectV2(ctx context.Context, req *pb.RequestBody) (*pb
 	// Stage 1: Convert request
 	body := s.requestConverter.Convert(req)
 
+	// Validate that definition exists
+	if body.Definition == nil {
+		return nil, errors.New("invalid request: definition is required")
+	}
+
 	// Stage 2: Check for circular definitions
 	if s.circularChecker.Check(body.Definition) {
 		return nil, errors.New("circular definitions found")

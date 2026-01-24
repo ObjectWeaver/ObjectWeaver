@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"objectweaver/orchestration/jos/domain"
 	"strings"
 	"testing"
 	"time"
@@ -254,7 +255,7 @@ func TestResponse_JSONMarshalling(t *testing.T) {
 		DetailedData: map[string]*DetailedField{
 			"field1": {
 				Value: "value1",
-				Metadata: &FieldMetadata{
+				Metadata: &domain.ResultMetadata{
 					TokensUsed: 10,
 					Cost:       0.001,
 					ModelUsed:  "gpt-4",
@@ -286,7 +287,7 @@ func TestResponse_JSONMarshalling(t *testing.T) {
 func TestDetailedField_JSONMarshalling(t *testing.T) {
 	field := DetailedField{
 		Value: "test value",
-		Metadata: &FieldMetadata{
+		Metadata: &domain.ResultMetadata{
 			TokensUsed: 100,
 			Cost:       0.05,
 			ModelUsed:  "gpt-3.5-turbo",
@@ -312,8 +313,8 @@ func TestDetailedField_JSONMarshalling(t *testing.T) {
 	}
 }
 
-func TestFieldMetadata_AllFields(t *testing.T) {
-	metadata := FieldMetadata{
+func TestResultMetadata_AllFields(t *testing.T) {
+	metadata := domain.ResultMetadata{
 		TokensUsed: 500,
 		Cost:       0.25,
 		ModelUsed:  "gpt-4-turbo",
@@ -376,7 +377,7 @@ func TestResponse_WithDetailedData(t *testing.T) {
 		DetailedData: map[string]*DetailedField{
 			"test": {
 				Value: "value",
-				Metadata: &FieldMetadata{
+				Metadata: &domain.ResultMetadata{
 					TokensUsed: 10,
 					Cost:       0.001,
 					ModelUsed:  "test-model",

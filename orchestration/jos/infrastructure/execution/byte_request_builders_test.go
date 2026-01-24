@@ -22,7 +22,7 @@ func TestTTSRequestBuilder_BuildRequest_Success(t *testing.T) {
 		TextToSpeech: &jsonSchema.TextToSpeech{
 			StringToAudio: "Hello world",
 			Voice:         "alloy",
-			Model:         "tts",
+			Model:         "tts-1",
 		},
 	}
 	task := domain.NewFieldTask("test", def, nil)
@@ -73,40 +73,23 @@ func TestTTSRequestBuilder_BuildRequest_NilConfig(t *testing.T) {
 	}
 }
 
-func TestTTSRequestBuilder_BuildRequest_ModelMapping(t *testing.T) {
+func TestTTSRequestBuilder_BuildRequest_PassThrough(t *testing.T) {
 	builder := NewTTSRequestBuilder()
-
-	tests := []struct {
-		model    string
-		expected string
-	}{
-		{"tts", "tts-1"},
-		{"OpenAiTTS", "tts-1"},
-		{"tts-hd", "tts-1-hd"},
-		{"OpenAiTTSHD", "tts-1-hd"},
-		{"tts-1", "tts-1"},
-		{"tts-1-hd", "tts-1-hd"},
-		{"unknown", "tts-1"}, // default
+	model := "any-model"
+	def := &jsonSchema.Definition{
+		TextToSpeech: &jsonSchema.TextToSpeech{
+			StringToAudio: "test",
+			Voice:         "alloy",
+			Model:         model,
+		},
 	}
-
-	for _, test := range tests {
-		def := &jsonSchema.Definition{
-			TextToSpeech: &jsonSchema.TextToSpeech{
-				StringToAudio: "test",
-				Voice:         "alloy",
-				Model:         jsonSchema.TextToSpeechModel(test.model),
-			},
-		}
-		task := domain.NewFieldTask("test", def, nil)
-
-		request, err := builder.BuildRequest(task, nil)
-		if err != nil {
-			t.Fatalf("BuildRequest failed for model %s: %v", test.model, err)
-		}
-
-		if request.Model != test.expected {
-			t.Errorf("For model %s, expected '%s', got '%s'", test.model, test.expected, request.Model)
-		}
+	task := domain.NewFieldTask("test", def, nil)
+	request, err := builder.BuildRequest(task, nil)
+	if err != nil {
+		t.Fatalf("BuildRequest failed: %v", err)
+	}
+	if request.Model != model {
+		t.Errorf("Expected model '%s', got '%s'", model, request.Model)
 	}
 }
 
@@ -124,7 +107,7 @@ func TestImageRequestBuilder_BuildRequest_Success(t *testing.T) {
 		Instruction: "A beautiful sunset",
 		Image: &jsonSchema.Image{
 			Size:  "512x512",
-			Model: jsonSchema.OpenAiDalle3,
+			Model: "dall-e-3",
 		},
 	}
 	task := domain.NewFieldTask("test", def, nil)
@@ -180,7 +163,7 @@ func TestImageRequestBuilder_BuildRequest_NoPrompt(t *testing.T) {
 	def := &jsonSchema.Definition{
 		Instruction: "",
 		Image: &jsonSchema.Image{
-			Model: jsonSchema.OpenAiDalle3,
+			Model: "dall-e-3",
 		},
 	}
 	task := domain.NewFieldTask("test", def, nil)
@@ -203,7 +186,7 @@ func TestImageRequestBuilder_BuildRequest_DefaultSize(t *testing.T) {
 		Instruction: "test",
 		Image: &jsonSchema.Image{
 			Size:  "",
-			Model: jsonSchema.OpenAiDalle3,
+			Model: "dall-e-3",
 		},
 	}
 	task := domain.NewFieldTask("test", def, nil)
@@ -218,41 +201,22 @@ func TestImageRequestBuilder_BuildRequest_DefaultSize(t *testing.T) {
 	}
 }
 
-func TestImageRequestBuilder_BuildRequest_ModelMapping(t *testing.T) {
+func TestImageRequestBuilder_BuildRequest_PassThrough(t *testing.T) {
 	builder := NewImageRequestBuilder()
-
-	tests := []struct {
-		model    jsonSchema.ImageModel
-		expected string
-		hasError bool
-	}{
-		{jsonSchema.OpenAiDalle2, "dall-e-2", false},
-		{jsonSchema.OpenAiDalle3, "dall-e-3", false},
-		{jsonSchema.ImageModel("unknown"), "", true},
+	model := "dall-e-3"
+	def := &jsonSchema.Definition{
+		Instruction: "test",
+		Image: &jsonSchema.Image{
+			Model: model,
+		},
 	}
-
-	for _, test := range tests {
-		def := &jsonSchema.Definition{
-			Instruction: "test",
-			Image: &jsonSchema.Image{
-				Model: test.model,
-			},
-		}
-		task := domain.NewFieldTask("test", def, nil)
-
-		request, err := builder.BuildRequest(task, nil)
-		if test.hasError {
-			if err == nil {
-				t.Errorf("Expected error for model %v", test.model)
-			}
-		} else {
-			if err != nil {
-				t.Fatalf("BuildRequest failed for model %v: %v", test.model, err)
-			}
-			if request.Model != test.expected {
-				t.Errorf("For model %v, expected '%s', got '%s'", test.model, test.expected, request.Model)
-			}
-		}
+	task := domain.NewFieldTask("test", def, nil)
+	request, err := builder.BuildRequest(task, nil)
+	if err != nil {
+		t.Fatalf("BuildRequest failed: %v", err)
+	}
+	if request.Model != model {
+		t.Errorf("Expected model '%s', got '%s'", model, request.Model)
 	}
 }
 
@@ -272,7 +236,7 @@ func TestSTTRequestBuilder_BuildRequest_Success(t *testing.T) {
 			AudioToTranscribe: []byte("audio data"),
 			Language:          "en",
 			ToString:          true,
-			Model:             "whisper",
+			Model:             "whisper-1",
 		},
 	}
 	task := domain.NewFieldTask("test", def, nil)
@@ -379,35 +343,21 @@ func TestSTTRequestBuilder_BuildRequest_ResponseFormat(t *testing.T) {
 	}
 }
 
-func TestSTTRequestBuilder_BuildRequest_ModelMapping(t *testing.T) {
+func TestSTTRequestBuilder_BuildRequest_PassThrough(t *testing.T) {
 	builder := NewSTTRequestBuilder()
-
-	tests := []struct {
-		model    string
-		expected string
-	}{
-		{"OpenAiWhisper", "whisper-1"},
-		{"whisper", "whisper-1"},
-		{"whisper-1", "whisper-1"},
-		{"unknown", "whisper-1"}, // default
+	model := "whisper-1"
+	def := &jsonSchema.Definition{
+		SpeechToText: &jsonSchema.SpeechToText{
+			AudioToTranscribe: []byte("audio"),
+			Model:             model,
+		},
 	}
-
-	for _, test := range tests {
-		def := &jsonSchema.Definition{
-			SpeechToText: &jsonSchema.SpeechToText{
-				AudioToTranscribe: []byte("audio"),
-				Model:             jsonSchema.SpeechToTextModel(test.model),
-			},
-		}
-		task := domain.NewFieldTask("test", def, nil)
-
-		request, err := builder.BuildRequest(task, nil)
-		if err != nil {
-			t.Fatalf("BuildRequest failed for model %s: %v", test.model, err)
-		}
-
-		if request.Model != test.expected {
-			t.Errorf("For model %s, expected '%s', got '%s'", test.model, test.expected, request.Model)
-		}
+	task := domain.NewFieldTask("test", def, nil)
+	request, err := builder.BuildRequest(task, nil)
+	if err != nil {
+		t.Fatalf("BuildRequest failed: %v", err)
+	}
+	if request.Model != model {
+		t.Errorf("Expected model '%s', got '%s'", model, request.Model)
 	}
 }

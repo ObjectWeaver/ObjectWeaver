@@ -2,6 +2,7 @@ package clientManager
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -86,14 +87,18 @@ func (a *GeminiClientAdapter) processChat(inputs *llmManagement.Inputs) (*domain
 	}
 
 	// Use the model from the built request (already converted by request builder)
-	// openaiReq.Model is already in Gemini format (e.g., "gemini-2.0-flash-lite")
 	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s",
 		a.baseURL, openaiReq.Model, a.apiKey)
 
 	logger.Printf("[Gemini DEBUG] Using model: %s", openaiReq.Model)
 	logger.Printf("[Gemini DEBUG] API URL: %s", url)
 
-	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqBytes))
+	ctx := inputs.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(reqBytes))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create http request: %w", err)
 	}
@@ -104,6 +109,10 @@ func (a *GeminiClientAdapter) processChat(inputs *llmManagement.Inputs) (*domain
 		return nil, fmt.Errorf("gemini api request failed: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return nil, fmt.Errorf("gemini api rate limit exceeded (status %d)", resp.StatusCode)
+	}
 
 	// 4. Handle non-200 status codes
 	if resp.StatusCode != http.StatusOK {
@@ -144,7 +153,12 @@ func (a *GeminiClientAdapter) processEmbedding(inputs *llmManagement.Inputs) (*d
 	logger.Printf("[Gemini DEBUG] Using embedding model: %s", openaiReq.Model)
 	logger.Printf("[Gemini DEBUG] Embedding API URL: %s", url)
 
-	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqBytes))
+	ctx := inputs.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(reqBytes))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create http request: %w", err)
 	}

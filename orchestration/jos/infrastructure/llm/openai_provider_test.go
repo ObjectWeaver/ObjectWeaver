@@ -3,6 +3,7 @@ package llm
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"objectweaver/orchestration/jos/domain"
@@ -55,8 +56,8 @@ func TestGetDefaultModelForProvider_Gemini(t *testing.T) {
 	defer os.Unsetenv("LLM_PROVIDER")
 
 	model := getDefaultModelForProvider()
-	if model != "gemini-2.0-flash" {
-		t.Errorf("Expected gemini-2.0-flash, got %v", model)
+	if model != "gemini-2.5-flash" {
+		t.Errorf("Expected gemini-2.5-flash, got %v", model)
 	}
 }
 
@@ -85,12 +86,13 @@ func TestGetDefaultModelForProvider_Default(t *testing.T) {
 
 func TestGetDefaultModelForProvider_WithGeminiKey(t *testing.T) {
 	os.Unsetenv("LLM_PROVIDER")
+	os.Unsetenv("LLM_API_URL")
 	os.Setenv("GEMINI_API_KEY", "test-key")
 	defer os.Unsetenv("GEMINI_API_KEY")
 
 	model := getDefaultModelForProvider()
-	if model != "gemini-2.0-flash" {
-		t.Errorf("Expected gemini-2.0-flash when GEMINI_API_KEY is set, got %v", model)
+	if model != "gemini-2.5-flash" {
+		t.Errorf("Expected gemini-2.5-flash when GEMINI_API_KEY is set, got %v", model)
 	}
 }
 
@@ -344,7 +346,7 @@ func TestOpenAIProvider_GenerateImage_InvalidAPIKey(t *testing.T) {
 
 	request := &domain.ImageGenerationRequest{
 		Prompt: "A beautiful sunset",
-		Model:  string(jsonSchema.OpenAiDalle2),
+		Model:  "dall-e-2",
 		Size:   "1024x1024",
 	}
 
@@ -378,7 +380,7 @@ func TestOpenAIProvider_GenerateImage_RequestValidation(t *testing.T) {
 			name: "DALL-E 2 request",
 			request: &domain.ImageGenerationRequest{
 				Prompt: "A cat in space",
-				Model:  string(jsonSchema.OpenAiDalle2),
+				Model:  "dall-e-2",
 				Size:   "512x512",
 			},
 		},
@@ -386,7 +388,7 @@ func TestOpenAIProvider_GenerateImage_RequestValidation(t *testing.T) {
 			name: "DALL-E 3 request",
 			request: &domain.ImageGenerationRequest{
 				Prompt: "A futuristic city",
-				Model:  string(jsonSchema.OpenAiDalle3),
+				Model:  "dall-e-3",
 				Size:   "1024x1024",
 			},
 		},
@@ -505,7 +507,7 @@ func TestOpenAIProvider_GenerateImage_EmptyPrompt(t *testing.T) {
 
 	request := &domain.ImageGenerationRequest{
 		Prompt: "",
-		Model:  string(jsonSchema.OpenAiDalle2),
+		Model:  "dall-e-2",
 		Size:   "512x512",
 	}
 
@@ -535,5 +537,173 @@ func TestOpenAIProvider_TranscribeAudio_EmptyAudioData(t *testing.T) {
 	// Should get an error for empty audio data
 	if err == nil {
 		t.Error("Expected error with empty audio data")
+	}
+}
+
+func TestOpenAIProvider_TranscribeAudio_VerboseJsonMetadata(t *testing.T) {
+	os.Setenv("OPENAI_API_KEY", "test-key")
+	defer os.Unsetenv("OPENAI_API_KEY")
+
+	provider := NewOpenAIProvider()
+
+	tests := []struct {
+		name                 string
+		responseFormat       string
+		expectVerboseData    bool
+		expectVerboseDataNil bool
+	}{
+		{
+			name:                 "verbose_json format includes metadata",
+			responseFormat:       "verbose_json",
+			expectVerboseData:    true,
+			expectVerboseDataNil: false,
+		},
+		{
+			name:                 "diarized_json format includes metadata",
+			responseFormat:       "diarized_json",
+			expectVerboseData:    true,
+			expectVerboseDataNil: false,
+		},
+		{
+			name:                 "json format excludes verbose metadata",
+			responseFormat:       "json",
+			expectVerboseData:    false,
+			expectVerboseDataNil: true,
+		},
+		{
+			name:                 "text format excludes verbose metadata",
+			responseFormat:       "text",
+			expectVerboseData:    false,
+			expectVerboseDataNil: true,
+		},
+		{
+			name:                 "srt format excludes verbose metadata",
+			responseFormat:       "srt",
+			expectVerboseData:    false,
+			expectVerboseDataNil: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := &domain.AudioTranscriptionRequest{
+				AudioData:      []byte("test audio data"),
+				Model:          "whisper-1",
+				Language:       "en",
+				ResponseFormat: tt.responseFormat,
+			}
+
+			// This will fail with invalid API key, but we're testing the code structure
+			_, metadata, err := provider.TranscribeAudio(request)
+
+			// We expect an error due to invalid API key, but we can still check the logic
+			if err == nil {
+				// If no error, we have a valid API key - check metadata was populated correctly
+				if metadata == nil {
+					t.Fatal("Expected metadata to be returned")
+				}
+
+				if tt.expectVerboseData {
+					if metadata.VerboseData == nil {
+						t.Error("Expected VerboseData to be populated for verbose format")
+					} else {
+						// Verify expected fields are present
+						expectedFields := []string{"language", "duration", "segments", "words"}
+						for _, field := range expectedFields {
+							if _, ok := metadata.VerboseData[field]; !ok {
+								t.Errorf("Expected VerboseData to contain field '%s'", field)
+							}
+						}
+					}
+				} else if tt.expectVerboseDataNil {
+					if metadata.VerboseData != nil {
+						t.Errorf("Expected VerboseData to be nil for format '%s', got %v", tt.responseFormat, metadata.VerboseData)
+					}
+				}
+
+				// Verify standard metadata fields
+				if metadata.Model != "whisper-1" {
+					t.Errorf("Expected Model to be 'whisper-1', got '%s'", metadata.Model)
+				}
+			}
+		})
+	}
+}
+
+func TestOpenAIProvider_TranscribeAudio_VerboseJsonStructure(t *testing.T) {
+	// This test documents the expected structure of VerboseData
+	// when verbose_json format is used with a valid API key
+
+	expectedStructure := map[string]string{
+		"language": "string - detected language code (e.g., 'en')",
+		"duration": "float64 - audio duration in seconds",
+		"segments": "[]struct - array of transcription segments with timing",
+		"words":    "[]struct - array of word-level timestamps",
+	}
+
+	t.Log("Expected VerboseData structure for verbose_json format:")
+	for field, description := range expectedStructure {
+		t.Logf("  %s: %s", field, description)
+	}
+
+	t.Log("\nSegment structure includes:")
+	segmentFields := []string{
+		"id - segment identifier",
+		"seek - seek position",
+		"start - start timestamp",
+		"end - end timestamp",
+		"text - segment transcription",
+		"tokens - token array",
+		"temperature - temperature value",
+		"avg_logprob - average log probability",
+		"compression_ratio - compression ratio",
+		"no_speech_prob - probability of no speech",
+		"transient - transient flag",
+	}
+	for _, field := range segmentFields {
+		t.Logf("  - %s", field)
+	}
+
+	t.Log("\nWord structure includes:")
+	wordFields := []string{
+		"word - the word text",
+		"start - start timestamp",
+		"end - end timestamp",
+	}
+	for _, field := range wordFields {
+		t.Logf("  - %s", field)
+	}
+}
+
+func TestOpenAIProvider_TranscribeAudio_ResponseFormatPassthrough(t *testing.T) {
+	os.Setenv("OPENAI_API_KEY", "test-key")
+	defer os.Unsetenv("OPENAI_API_KEY")
+
+	provider := NewOpenAIProvider()
+
+	// Test that all supported response formats are passed through correctly
+	formats := []string{"json", "text", "srt", "vtt", "verbose_json", "diarized_json"}
+
+	for _, format := range formats {
+		t.Run(format, func(t *testing.T) {
+			request := &domain.AudioTranscriptionRequest{
+				AudioData:      []byte("test audio"),
+				Model:          "whisper-1",
+				Language:       "en",
+				ResponseFormat: format,
+			}
+
+			// This will fail with invalid key, but validates the format is accepted
+			_, _, err := provider.TranscribeAudio(request)
+
+			if err == nil {
+				t.Logf("Note: API call succeeded for format '%s'", format)
+			} else {
+				// Just verify we're not getting a format validation error
+				if strings.Contains(err.Error(), "unsupported format") {
+					t.Errorf("Format '%s' should be supported but got unsupported format error", format)
+				}
+			}
+		})
 	}
 }

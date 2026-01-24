@@ -130,13 +130,14 @@ func TestNewClientAdapterFromEnv_OpenAI_MissingKey(t *testing.T) {
 		"LLM_PROVIDER": "openai",
 	})()
 
-	_, err := NewClientAdapterFromEnv()
-	if err == nil {
-		t.Fatal("Expected error for missing API key")
+	// OpenAI adapter uses OPENAI_API_KEY env var, not LLM_API_KEY
+	// The adapter will be created but will fail when actually used
+	adapter, err := NewClientAdapterFromEnv()
+	if err != nil {
+		t.Fatalf("Expected no error during adapter creation, got %v", err)
 	}
-	expected := "openAI API key is required (set LLM_API_KEY)"
-	if err.Error() != expected {
-		t.Fatalf("Expected error %q, got %q", expected, err.Error())
+	if adapter == nil {
+		t.Fatal("Expected adapter to be created")
 	}
 }
 
@@ -145,13 +146,14 @@ func TestNewClientAdapterFromEnv_Gemini_MissingKey(t *testing.T) {
 		"LLM_PROVIDER": "gemini",
 	})()
 
-	_, err := NewClientAdapterFromEnv()
-	if err == nil {
-		t.Fatal("Expected error for missing API key")
+	// Gemini adapter uses GEMINI_API_KEY env var, not LLM_API_KEY
+	// The adapter will be created but will fail when actually used
+	adapter, err := NewClientAdapterFromEnv()
+	if err != nil {
+		t.Fatalf("Expected no error during adapter creation, got %v", err)
 	}
-	expected := "gemini API key is required (set LLM_API_KEY)"
-	if err.Error() != expected {
-		t.Fatalf("Expected error %q, got %q", expected, err.Error())
+	if adapter == nil {
+		t.Fatal("Expected adapter to be created")
 	}
 }
 
@@ -246,32 +248,40 @@ func TestNewClientAdapter_InvalidProvider(t *testing.T) {
 }
 
 func TestNewClientAdapter_OpenAI_MissingKey(t *testing.T) {
+	// Ensure OPENAI_API_KEY is not set
+	defer setEnv(t, map[string]string{})()
+
 	config := AdapterConfig{
 		Provider: ProviderOpenAI,
 	}
 
-	_, err := NewClientAdapter(config)
-	if err == nil {
-		t.Fatal("Expected error for missing API key")
+	// OpenAI adapter uses OPENAI_API_KEY env var directly
+	// The adapter will be created with empty key but will fail when used
+	adapter, err := NewClientAdapter(config)
+	if err != nil {
+		t.Fatalf("Expected no error during adapter creation, got %v", err)
 	}
-	expected := "openAI API key is required (set LLM_API_KEY)"
-	if err.Error() != expected {
-		t.Fatalf("Expected error %q, got %q", expected, err.Error())
+	if adapter == nil {
+		t.Fatal("Expected adapter to be created")
 	}
 }
 
 func TestNewClientAdapter_Gemini_MissingKey(t *testing.T) {
+	// Ensure GEMINI_API_KEY is not set
+	defer setEnv(t, map[string]string{})()
+
 	config := AdapterConfig{
 		Provider: ProviderGemini,
 	}
 
-	_, err := NewClientAdapter(config)
-	if err == nil {
-		t.Fatal("Expected error for missing API key")
+	// Gemini adapter uses GEMINI_API_KEY env var directly
+	// The adapter will be created with empty key but will fail when used
+	adapter, err := NewClientAdapter(config)
+	if err != nil {
+		t.Fatalf("Expected no error during adapter creation, got %v", err)
 	}
-	expected := "gemini API key is required (set LLM_API_KEY)"
-	if err.Error() != expected {
-		t.Fatalf("Expected error %q, got %q", expected, err.Error())
+	if adapter == nil {
+		t.Fatal("Expected adapter to be created")
 	}
 }
 

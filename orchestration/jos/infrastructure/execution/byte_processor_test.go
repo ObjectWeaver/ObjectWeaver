@@ -208,7 +208,7 @@ func TestByteProcessor_Process_ImageGeneration_Success(t *testing.T) {
 		Type: jsonSchema.Byte,
 		Image: &jsonSchema.Image{
 			Size:  "1024x1024",
-			Model: jsonSchema.OpenAiDalle3,
+			Model: "dall-e-3",
 		},
 		Instruction: "A beautiful sunset",
 	}
@@ -336,7 +336,7 @@ func TestByteProcessor_Process_ImageGeneration_Error(t *testing.T) {
 	schema := &jsonSchema.Definition{
 		Type: jsonSchema.Byte,
 		Image: &jsonSchema.Image{
-			Model: jsonSchema.OpenAiDalle3,
+			Model: "dall-e-3",
 		},
 		Instruction: "Generate image",
 	}
@@ -379,6 +379,216 @@ func TestByteProcessor_Process_SpeechToText_Error(t *testing.T) {
 
 	if !contains(err.Error(), "speech-to-text failed") {
 		t.Errorf("Expected transcription error, got: %v", err)
+	}
+}
+
+func TestByteProcessor_Process_SpeechToText_VerboseJsonMetadata(t *testing.T) {
+	// Mock provider that simulates returning verbose metadata based on request format
+	llmProvider := &mockByteOperationProvider{
+		supportsByteOps: true,
+		transcribeAudioFunc: func(request *domain.AudioTranscriptionRequest) (string, *domain.ProviderMetadata, error) {
+			metadata := &domain.ProviderMetadata{
+				Cost:       0.05,
+				Model:      "whisper-1",
+				TokensUsed: 10,
+			}
+
+			// Simulate OpenAI behavior: return verbose data for specific formats
+			// Note: In current implementation, verbose_json must be explicitly set in request
+			// This test validates that when provider returns VerboseData, it flows through correctly
+			if request.ResponseFormat == "json" {
+				// Simulate that even "json" format returns verbose data from OpenAI
+				// (this is the current behavior - we could use this for testing)
+				metadata.VerboseData = map[string]any{
+					"language": "en",
+					"duration": 3.5,
+					"segments": []any{
+						map[string]any{
+							"id":    0,
+							"start": 0.0,
+							"end":   3.5,
+							"text":  "transcribed text",
+						},
+					},
+					"words": []any{
+						map[string]any{
+							"word":  "transcribed",
+							"start": 0.0,
+							"end":   1.0,
+						},
+						map[string]any{
+							"word":  "text",
+							"start": 1.5,
+							"end":   3.5,
+						},
+					},
+				}
+			}
+
+			return "transcribed text", metadata, nil
+		},
+	}
+	promptBuilder := &mockPromptBuilder{}
+	processor := NewByteProcessor(llmProvider, promptBuilder)
+
+	tests := []struct {
+		name              string
+		toString          bool
+		toCaptions        bool
+		expectVerboseData bool
+	}{
+		{
+			name:              "json format with verbose data from provider",
+			toString:          false,
+			toCaptions:        false,
+			expectVerboseData: true, // Provider returns verbose data
+		},
+		{
+			name:              "text format excludes verbose metadata",
+			toString:          true,
+			toCaptions:        false,
+			expectVerboseData: false, // Provider doesn't return verbose data
+		},
+		{
+			name:              "srt format excludes verbose metadata",
+			toString:          false,
+			toCaptions:        true,
+			expectVerboseData: false, // Provider doesn't return verbose data
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			schema := &jsonSchema.Definition{
+				Type: jsonSchema.Byte,
+				SpeechToText: &jsonSchema.SpeechToText{
+					AudioToTranscribe: []byte("audio data"),
+					Language:          "en",
+					ToString:          tt.toString,
+					ToCaptions:        tt.toCaptions,
+					Model:             "whisper",
+				},
+				Instruction: "Transcribe this audio",
+			}
+			task := domain.NewFieldTask("textField", schema, nil)
+			context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
+
+			result, err := processor.Process(testContext(t), task, context)
+			if err != nil {
+				t.Fatalf("Process failed: %v", err)
+			}
+
+			// Check standard fields
+			if result.Key() != "textField" {
+				t.Errorf("Expected key 'textField', got %v", result.Key())
+			}
+			if result.Value() != "transcribed text" {
+				t.Errorf("Expected 'transcribed text', got %v", result.Value())
+			}
+
+			// Check metadata
+			if result.Metadata() == nil {
+				t.Fatal("Expected metadata to be populated")
+			}
+
+			if tt.expectVerboseData {
+				if result.Metadata().VerboseData == nil {
+					t.Error("Expected VerboseData to be populated when provider returns it")
+				} else {
+					// Verify verbose data fields
+					verboseData := result.Metadata().VerboseData
+					if verboseData["language"] != "en" {
+						t.Errorf("Expected language 'en', got %v", verboseData["language"])
+					}
+					if verboseData["duration"] != 3.5 {
+						t.Errorf("Expected duration 3.5, got %v", verboseData["duration"])
+					}
+					if verboseData["segments"] == nil {
+						t.Error("Expected segments to be populated")
+					}
+					if verboseData["words"] == nil {
+						t.Error("Expected words to be populated")
+					}
+				}
+			} else {
+				if result.Metadata().VerboseData != nil {
+					t.Errorf("Expected VerboseData to be nil when provider doesn't return it, got %v", result.Metadata().VerboseData)
+				}
+			}
+		})
+	}
+}
+
+func TestByteProcessor_Process_SpeechToText_VerboseDataPreservation(t *testing.T) {
+	// Test that verbose data flows through the entire pipeline correctly
+	expectedVerboseData := map[string]any{
+		"language": "es",
+		"duration": 5.2,
+		"segments": []any{
+			map[string]any{"id": 0, "text": "Hola mundo", "start": 0.0, "end": 2.0},
+			map[string]any{"id": 1, "text": "Esto es una prueba", "start": 2.5, "end": 5.2},
+		},
+		"words": []any{
+			map[string]any{"word": "Hola", "start": 0.0, "end": 0.5},
+			map[string]any{"word": "mundo", "start": 0.6, "end": 2.0},
+		},
+	}
+
+	llmProvider := &mockByteOperationProvider{
+		supportsByteOps: true,
+		transcribeAudioFunc: func(request *domain.AudioTranscriptionRequest) (string, *domain.ProviderMetadata, error) {
+			return "Hola mundo. Esto es una prueba", &domain.ProviderMetadata{
+				Cost:        0.08,
+				Model:       "whisper-1",
+				TokensUsed:  15,
+				VerboseData: expectedVerboseData,
+			}, nil
+		},
+	}
+	promptBuilder := &mockPromptBuilder{}
+	processor := NewByteProcessor(llmProvider, promptBuilder)
+
+	schema := &jsonSchema.Definition{
+		Type: jsonSchema.Byte,
+		SpeechToText: &jsonSchema.SpeechToText{
+			AudioToTranscribe: []byte("audio data"),
+			Language:          "es",
+			Model:             "whisper",
+		},
+	}
+	task := domain.NewFieldTask("transcription", schema, nil)
+	context := domain.NewExecutionContext(domain.NewGenerationRequest("test", schema))
+
+	result, err := processor.Process(testContext(t), task, context)
+	if err != nil {
+		t.Fatalf("Process failed: %v", err)
+	}
+
+	// Verify verbose data is preserved exactly
+	if result.Metadata().VerboseData == nil {
+		t.Fatal("Expected VerboseData to be preserved")
+	}
+
+	verboseData := result.Metadata().VerboseData
+
+	// Check language
+	if lang, ok := verboseData["language"].(string); !ok || lang != "es" {
+		t.Errorf("Expected language 'es', got %v", verboseData["language"])
+	}
+
+	// Check duration
+	if dur, ok := verboseData["duration"].(float64); !ok || dur != 5.2 {
+		t.Errorf("Expected duration 5.2, got %v", verboseData["duration"])
+	}
+
+	// Check segments exist
+	if verboseData["segments"] == nil {
+		t.Error("Expected segments to be preserved")
+	}
+
+	// Check words exist
+	if verboseData["words"] == nil {
+		t.Error("Expected words to be preserved")
 	}
 }
 

@@ -153,12 +153,13 @@ func (r *GenerationResult) HasDetailedData() bool {
 
 // ResultMetadata contains metrics about the generation
 type ResultMetadata struct {
-	TokensUsed int
-	Cost       float64
-	Duration   time.Duration
-	ModelUsed  string
-	FieldCount int
-	Choices    []Choice
+	TokensUsed  int            `json:"tokensUsed"`
+	Cost        float64        `json:"cost"`
+	Duration    time.Duration  `json:"duration,omitempty"`
+	ModelUsed   string         `json:"modelUsed,omitempty"`
+	FieldCount  int            `json:"fieldCount,omitempty"`
+	Choices     []Choice       `json:"choices,omitempty"`
+	VerboseData map[string]any `json:"verboseData,omitempty"` // Optional verbose data from providers (e.g., STT segments, timestamps)
 }
 
 func NewResultMetadata() *ResultMetadata {

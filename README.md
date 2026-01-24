@@ -5,24 +5,27 @@
 [![License](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/objectweaver/objectweaver/blob/main/LICENSE.txt)
 [![Docker](https://img.shields.io/badge/Docker-Ready-brightgreen.svg)](https://hub.docker.com/r/objectweaver/objectweaver)
 [![Documentation](https://img.shields.io/badge/Docs-objectweaver.dev-orange.svg)](https://objectweaver.dev/docs)
-![Coverage](https://img.shields.io/badge/Coverage-73.9%25-yellow)
 [![Codeleft Checks](https://github.com/ObjectWeaver/ObjectWeaver/actions/workflows/codeleft-test.yaml/badge.svg)](https://github.com/ObjectWeaver/ObjectWeaver/actions/workflows/codeleft-test.yaml)
 
 </div>
 
-ObjectWeaver is an "AI" Orchestration Service for generating structured objects in JSON format. It guarantees 100% valid JSON output by decomposing schemas into field-level tasks, routing them to optimal language models, and processing them in parallel. This approach not only ensures reliability but can also reduces costs and improves performance by using the best model for each task.
+ObjectWeaver is the schema-first LLM orchestration engine that turns chaos into structure. It allows you to define your data model, route to the best models, and get guaranteed JSON back every time. By decomposing schemas into field-level tasks and processing them in parallel, ObjectWeaver ensures 100% valid output, reduces costs through model specialization, and improves performance.
 
-For complete documentation, examples, and guides, visit [our documentation](https://objectweaver.dev/docs/intro).
+For complete documentation, examples, and guides, visit [our documentation](https://objectweaver.dev/docs).
+
+<div align="center">
+  <img src="demo.gif" alt="ObjectWeaver Demo" width="800"/>
+</div>
 
 ## Why ObjectWeaver?
 
-Traditional JSON generation with LLMs often fails, with success rates as low as 35-65%. While grammar-constrained alternatives can guarantee syntax, they force a one-size-fits-all approach, using a single model and prompt for all fields. ObjectWeaver solves this by providing intelligent, field-level orchestration that offers several key advantages:
+Traditional JSON generation with LLMs often fails, with success rates as low as [35-65%](https://composio.dev/blog/gpt-4-function-calling-example). While grammar-constrained alternatives can guarantee syntax, they force a one-size-fits-all approach, using a single model and prompt for all fields. ObjectWeaver solves this by providing field-level orchestration that offers several key advantages:
 
 - <img src="https://api.iconify.design/lucide/circle-check-big.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Guaranteed JSON Output**: Field-level type validation and compositional assembly ensure 100% valid JSON every time.
 - <img src="https://api.iconify.design/lucide/zap.svg?color=%23006329" width="16" height="16" style="vertical-align: text-bottom;" /> **Parallel Generation**: Independent fields are generated concurrently, leading to significantly faster processing times.
 - <img src="https://api.iconify.design/lucide/sparkles.svg?color=%23007431" width="16" height="16" style="vertical-align: text-bottom;" /> **Model Specialization**: Route simple tasks to efficient models and complex reasoning to more powerful ones, reducing costs by 10-20x.
 - <img src="https://api.iconify.design/lucide/expand.svg?color=%2300943d" width="16" height="16" style="vertical-align: text-bottom;" /> **Break Context Limits**: Generate massive datasets and comprehensive documents that exceed the context window of a single model.
-- <img src="https://api.iconify.design/lucide/workflow.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Field Dependencies**: Create complex workflows where the output of one field can be used as input for another.
+- <img src="https://api.iconify.design/lucide/bot.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Composable Intelligence**: Move beyond simple prompts by treating your schema as a system of composable agents. Chain fields together to fetch data, make decisions, and pass context, allowing you to build complex applications with the simplicity of a JSON definition.
 
 ## Getting Started
 
@@ -78,17 +81,17 @@ curl -X POST http://localhost:2008/api/objectGen \
 '
 ```
 
-Find more different language examples here[https://objectweaver.dev/docs/api-reference/curl-examples]
+Find more different language examples [here](https://objectweaver.dev/docs/api-reference/curl-examples).
 
 ## Features
 
 ObjectWeaver is designed for production use and includes several powerful features to handle real-world complexity:
 
--   <img src="https://api.iconify.design/lucide/layers.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Batch Processing & Priority System**: Optimize costs by up to 50% by routing non-urgent requests to OpenAI's Batch API. You can assign priorities to different fields to balance speed and cost.
 -   <img src="https://api.iconify.design/lucide/git-branch.svg?color=%23006329" width="16" height="16" style="vertical-align: text-bottom;" /> **Decision Points**: Embed adaptive intelligence in your schemas to dynamically alter the generation process based on the output of other fields.
--   <img src="https://api.iconify.design/lucide/radio.svg?color=%23007431" width="16" height="16" style="vertical-align: text-bottom;" /> **Streaming Requests**: Stream data as it's generated for real-time applications.
 -   <img src="https://api.iconify.design/lucide/shield-check.svg?color=%2300943d" width="16" height="16" style="vertical-align: text-bottom;" /> **Epistemic Validation**: Implement validation and retry logic to ensure the quality and accuracy of the generated data.
 -   <img src="https://api.iconify.design/lucide/download.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Data Fetching**: Fetch data from external sources and use it as context for generation.
+-   <img src="https://api.iconify.design/lucide/radio.svg?color=%23007431" width="16" height="16" style="vertical-align: text-bottom;" /> **Streaming Requests**: Stream data as it's generated for real-time applications.
+-   <img src="https://api.iconify.design/lucide/layers.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Batch Processing & Priority System**: Optimize costs by up to 50% by routing non-urgent requests to OpenAI's Batch API. You can assign priorities to different fields to balance speed and cost.
 
 ## Configuration
 
@@ -128,6 +131,7 @@ You're also able to find the compiled binaries in the [releases](https://github.
 
 ## Community and Support
 
+-   <img src="https://api.iconify.design/lucide/star.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Star on GitHub**: If you find ObjectWeaver useful, please [give us a star on GitHub](https://github.com/objectweaver/objectweaver)! It helps others discover the project.
 -   **Documentation**: For detailed guides, examples, and API references, visit our [documentation website](https://objectweaver.dev/docs).
 -   **GitHub Issues**: If you encounter a bug or have a feature request, please [open an issue on GitHub](https://github.com/objectweaver/objectweaver/issues).
 -   **Contact Us**: For enterprise inquiries, please [contact us](https://objectweaver.dev/enterprise).
@@ -142,8 +146,10 @@ ObjectWeaver uses a **dual licensing model**:
 
 ### Community Edition (AGPL-3)
 
-The ObjectWeaver Community Edition is available under the GNU Affero General Public License v3. This means it is free to use, modify, and distribute, but if you offer it as a network service, you must make your modified source code available under the same license.
+The ObjectWeaver Community Edition is available under the GNU Affero General Public License v3. It is free for internal tools, development, and open-source projects. There are no restrictions on self-hosted deployments within your organization. However, if you offer it as a network service to third parties (e.g. SaaS), you must make your modified source code available under the same license.
 
-### Enterprise Edition
+### Commercial License
 
-The code in the `ee/` directory is licensed under the ObjectWeaver Commercial License and requires a valid ObjectWeaver Enterprise Edition subscription for production use. This edition includes more advanced management features. Currently it is a placeholder to make everything easier to manage later down the line. If you've got any questions about the features etc. we are building please contact us at enterprise@objectweaver.dev 
+Building a SaaS product or proprietary service? The Commercial License removes open-source obligations and includes enterprise-grade support, legal protection, and compliance assistance. The code in the `ee/` directory is licensed under this commercial license.
+
+For commercial licensing inquiries, visit [our enterprise page](https://objectweaver.dev/enterprise) or contact enterprise@objectweaver.dev. 

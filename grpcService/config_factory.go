@@ -18,6 +18,10 @@ func NewDefaultConfigFactory() ConfigFactory {
 func (f *DefaultConfigFactory) CreateConfig(schema *jsonSchema.Definition) *factory.GeneratorConfig {
 	config := factory.DefaultGeneratorConfig()
 
+	if schema == nil {
+		return config
+	}
+
 	// Check if streaming is enabled
 	if schema.Stream {
 		// For non-streaming gRPC calls, we still use sync mode

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"objectweaver/orchestration/jos/domain"
+	"sync"
 	"testing"
 	"time"
 
@@ -151,6 +152,7 @@ func TestProcessFields_SimpleFields(t *testing.T) {
 
 // TestProcessFields_SequentialProcessing tests ordered field processing
 func TestProcessFields_SequentialProcessing(t *testing.T) {
+	var mu sync.Mutex
 	callOrder := []string{}
 	llmProvider := &mockLLMProvider{
 		generateFunc: func(prompt string, config *domain.GenerationConfig) (any, *domain.ProviderMetadata, error) {
@@ -160,7 +162,9 @@ func TestProcessFields_SequentialProcessing(t *testing.T) {
 	}
 	promptBuilder := &mockPromptBuilder{
 		buildFunc: func(task *domain.FieldTask, context *domain.PromptContext) (string, error) {
+			mu.Lock()
 			callOrder = append(callOrder, task.Key())
+			mu.Unlock()
 			return "prompt", nil
 		},
 	}
@@ -176,8 +180,19 @@ func TestProcessFields_SequentialProcessing(t *testing.T) {
 			"third":  {Type: jsonSchema.String},
 			"fourth": {Type: jsonSchema.String},
 		},
-		ProcessingOrder: []string{"first", "second"},
+		// All fields in ProcessingOrder to ensure sequential processing
+		// first and second have no dependencies so they batch together
+		// third depends on first, fourth depends on second - forcing them to a later batch
+		ProcessingOrder: []string{"first", "second", "third", "fourth"},
 	}
+	// Add SelectFields to create dependencies that force batching order
+	thirdDef := schema.Properties["third"]
+	thirdDef.SelectFields = []string{"first"}
+	schema.Properties["third"] = thirdDef
+	
+	fourthDef := schema.Properties["fourth"]
+	fourthDef.SelectFields = []string{"second"}
+	schema.Properties["fourth"] = fourthDef
 	request := domain.NewGenerationRequest("test", schema)
 	execContext := domain.NewExecutionContext(request)
 	execContext.SetWorkerPool(NewWorkerPool(0))

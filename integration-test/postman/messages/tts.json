@@ -1,0 +1,19 @@
+{
+  "prompt": "",
+  "definition": {
+    "type": "object",
+    "instruction": "Represents the comprehensive world building for a story, encompassing its environment, mechanics, and technology.",
+    "properties": {
+        "audio": {
+            "type": "byte",
+            "instruction": "",
+            "textToSpeech": {
+                "model": "tts-1",
+                "stringToAudio": "ObjectWeaver is great!",
+                "voice": "alloy",
+                "format": "srt"
+            }
+        }
+    }
+    }
+}
