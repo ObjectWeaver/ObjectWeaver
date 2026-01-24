@@ -1,7 +1,7 @@
 name: Codeleft Checks
 
 on:
-  push:
+  pull_request:
     branches:
       - main
 
