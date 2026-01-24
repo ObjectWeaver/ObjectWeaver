@@ -15,13 +15,7 @@
     "cleanCodePro": false
   },
   "safetyCritical": {
-    "misraCpp": {
-      "enabled": false,
-      "mode": "standard",
-      "concurrency": 10,
-      "useHeuristics": true,
-      "generateReport": true
-    }
+    "misraCpp": false
   },
   "testing": {
     "functionalCoverage": false
