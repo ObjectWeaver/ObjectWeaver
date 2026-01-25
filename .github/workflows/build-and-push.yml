@@ -7,6 +7,14 @@ on:
       - main
   # Also runs on pull requests, but will not push the image
   pull_request:
+  # Manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (skip tag creation and docker push)'
+        required: false
+        default: 'false'
+        type: boolean
 
 jobs:
   build-and-push:
@@ -39,73 +47,20 @@ jobs:
         with:
           go-version: '1.25'
 
-      # Step 2: Determine the next version number - only on main
-      - name: Calculate next version
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      # Step 2: Bump version and push tag - only on main (or manual trigger)
+      - name: Bump version and push tag
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
         id: tag_version
-        run: |
-          # Get ALL tags (both git and what's been pushed to Docker Hub)
-          # Since we can't reliably check Docker Hub API, we'll use git tags as source of truth
-          # and keep incrementing until we find one that doesn't exist
-          
-          echo "All git tags:"
-          git tag -l 'v*.*.*' | sort -V
-          
-          # Get the latest semver tag
-          LATEST_TAG=$(git tag -l 'v*.*.*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
-          echo "Latest semver tag: $LATEST_TAG"
-          
-          if [ -z "$LATEST_TAG" ]; then
-            MAJOR=1
-            MINOR=0
-            PATCH=0
-          else
-            VERSION=${LATEST_TAG#v}
-            MAJOR=$(echo $VERSION | cut -d. -f1)
-            MINOR=$(echo $VERSION | cut -d. -f2)
-            PATCH=$(echo $VERSION | cut -d. -f3)
-            # Start from next patch version
-            PATCH=$((PATCH + 1))
-          fi
-          
-          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
-          
-          # Double-check this tag doesn't already exist in git
-          while git tag -l | grep -q "^${NEW_TAG}$"; do
-            echo "Tag $NEW_TAG already exists in git, incrementing..."
-            PATCH=$((PATCH + 1))
-            NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
-          done
-          
-          echo "New tag will be: $NEW_TAG"
-          echo "new_tag=${NEW_TAG}" >> $GITHUB_OUTPUT
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.ADMIN_TOKEN }}
+          default_bump: patch
+          tag_prefix: v
+          create_annotated_tag: true
+          # Dry run mode - don't actually create the tag
+          dry_run: ${{ inputs.dry_run || false }}
 
-      - name: Push Tag via API
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          NEW_TAG="${{ steps.tag_version.outputs.new_tag }}"
-          echo "Attempting to create tag $NEW_TAG via API..."
-          
-          # Check if tag already exists
-          EXISTING=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$NEW_TAG)
-          
-          if [ "$EXISTING" = "200" ]; then
-            echo "Tag $NEW_TAG already exists, skipping creation"
-          else
-            curl -X POST \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              https://api.github.com/repos/${{ github.repository }}/git/refs \
-              -d "{
-                \"ref\": \"refs/tags/$NEW_TAG\",
-                \"sha\": \"${{ github.sha }}\"
-              }"
-          fi
-
-      # Step 3: Prepare Docker tags - only on main
+      # Step 3: Prepare Docker tags - only on main (or manual non-dry-run)
       - name: Prepare Docker tags
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: prep_tags
