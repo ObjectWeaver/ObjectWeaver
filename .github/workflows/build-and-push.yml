@@ -97,9 +97,7 @@ jobs:
         id: prep_tags
         run: |
           FULL_VERSION=${{ steps.tag_version.outputs.new_tag }}
-          MAJOR_MINOR="v$(echo ${FULL_VERSION#v} | cut -d. -f1,2)"
           echo "full_version=${FULL_VERSION}" >> $GITHUB_OUTPUT
-          echo "major_minor=${MAJOR_MINOR}" >> $GITHUB_OUTPUT
 
       # Step 4: Set up Docker Buildx
       - name: Set up Docker Buildx
@@ -126,7 +124,6 @@ jobs:
           images: objectweaver/objectweaver
           tags: |
             type=raw,value=${{ steps.prep_tags.outputs.full_version }}
-            type=raw,value=${{ steps.prep_tags.outputs.major_minor }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       # Step 8: Build Docker image (PR only - just verify it builds)
