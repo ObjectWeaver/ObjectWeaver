@@ -2,7 +2,7 @@ ARG BUILDKIT_SBOM_SCAN_STAGE=true
 ARG TARGETOS
 ARG TARGETARCH
 
-FROM --platform=$BUILDPLATFORM golang:1.25-alpine3.21 AS build
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine3.23 AS build
 
 WORKDIR /go/src/app
 COPY . .
