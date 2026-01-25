@@ -39,7 +39,7 @@ jobs:
         with:
           go-version: '1.25'
 
-      # Step 2: Determine the next version number (MATH ONLY) - only on main
+      # Step 2: Determine the next version number (MATH ONLY)
       - name: Calculate next version
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: tag_version
