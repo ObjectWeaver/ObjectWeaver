@@ -26,7 +26,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
           token: ${{ secrets.ADMIN_TOKEN }}
+
+      # Ensure all tags are fetched (belt and suspenders)
+      - name: Fetch all tags
+        run: git fetch --tags --force
 
       # Step 1.5: Set up Go
       - name: Set up Go
@@ -34,8 +39,9 @@ jobs:
         with:
           go-version: '1.25'
 
-      # Step 2: Determine the next version number (MATH ONLY)
+      # Step 2: Determine the next version number (MATH ONLY) - only on main
       - name: Calculate next version
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: tag_version
         uses: anothrNick/github-tag-action@1.67.0
         env:
@@ -46,21 +52,33 @@ jobs:
           GIT_API_TAGGING: false
 
       - name: Push Tag via API
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           NEW_TAG="${{ steps.tag_version.outputs.new_tag }}"
           echo "Attempting to create tag $NEW_TAG via API..."
           
-          curl -X POST \
+          # Check if tag already exists
+          EXISTING=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/git/refs \
-            -d "{
-              \"ref\": \"refs/tags/$NEW_TAG\",
-              \"sha\": \"${{ github.sha }}\"
-            }"
+            https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$NEW_TAG)
+          
+          if [ "$EXISTING" = "200" ]; then
+            echo "Tag $NEW_TAG already exists, skipping creation"
+          else
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              https://api.github.com/repos/${{ github.repository }}/git/refs \
+              -d "{
+                \"ref\": \"refs/tags/$NEW_TAG\",
+                \"sha\": \"${{ github.sha }}\"
+              }"
+          fi
 
-      # Step 3: Prepare Docker tags
+      # Step 3: Prepare Docker tags - only on main
       - name: Prepare Docker tags
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: prep_tags
         run: |
           FULL_VERSION=${{ steps.tag_version.outputs.new_tag }}
@@ -76,15 +94,17 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      # Step 6: Login to Docker Hub
+      # Step 6: Login to Docker Hub - only on main
       - name: Login to DockerHub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Step 7: Extract Docker metadata
+      # Step 7: Extract Docker metadata - only on main
       - name: Extract Docker metadata
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -94,18 +114,29 @@ jobs:
             type=raw,value=${{ steps.prep_tags.outputs.major_minor }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-      # Step 8: Build and push Docker image
-      - name: Build and push Docker image with SBOM and provenance
+      # Step 8: Build Docker image (PR only - just verify it builds)
+      - name: Build Docker image (PR validation)
+        if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
+          platforms: linux/amd64
+
+      # Step 9: Build and push Docker image (main only)
+      - name: Build and push Docker image with SBOM and provenance
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           sbom: true
           provenance: mode=max
           platforms: linux/amd64, linux/arm64, linux/ppc64le, linux/s390x, linux/386, linux/arm/v7, linux/arm/v6
 
-      # Step 9: Print new tag
+      # Step 10: Print new tag - only on main
       - name: Print new tag
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: echo "The new tag is ${{ steps.tag_version.outputs.new_tag }}"
