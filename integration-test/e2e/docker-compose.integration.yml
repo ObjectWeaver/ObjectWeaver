@@ -18,6 +18,8 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    mem_limit: ${MOCK_LLM_MEM_LIMIT:-4g}
+    cpus: ${MOCK_LLM_CPUS:-2.0}
     networks:
       - integration-test
     healthcheck:
@@ -83,15 +85,26 @@ services:
       
       # gRPC settings
       GRPC_UNSECURE: "true"
+
+      # Cache (Redis) settings
+      CACHE_ACTIVE: "true"
+      CACHE_ADDRESS: "redis:6379"
+      CACHE_PASSWORD: ""
+      CACHE_DB: "0"
+      CACHE_TTL_SECONDS: "3600"
     ulimits:
       nofile:
         soft: 65536
         hard: 65536
+    mem_limit: ${OBJECTWEAVER_MEM_LIMIT:-8g}
+    cpus: ${OBJECTWEAVER_CPUS:-6.0}
     networks:
       - integration-test
     depends_on:
       mock-llm:
         condition: service_healthy
+      redis:
+        condition: service_started
 
   # Prometheus - Metrics collection and visualization
   prometheus:
@@ -115,6 +128,8 @@ services:
     depends_on:
       - objectweaver
     restart: unless-stopped
+    mem_limit: ${PROMETHEUS_MEM_LIMIT:-2g}
+    cpus: ${PROMETHEUS_CPUS:-1.0}
 
   # Grafana - Optional: Metrics visualization dashboard
   grafana:
@@ -135,6 +150,8 @@ services:
     depends_on:
       - prometheus
     restart: unless-stopped
+    mem_limit: ${GRAFANA_MEM_LIMIT:-2g}
+    cpus: ${GRAFANA_CPUS:-1.0}
 
   # Load Testing with k6
   k6:
@@ -150,6 +167,25 @@ services:
     command: ["run", "/scripts/load-test.js"]
     profiles:
       - load-test
+    mem_limit: ${K6_MEM_LIMIT:-8g}
+    cpus: ${K6_CPUS:-6.0}
+
+  # Redis - Cache for queued responses
+  redis:
+    image: redis:7-alpine
+    container_name: redis-test
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      - integration-test
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    mem_limit: ${REDIS_MEM_LIMIT:-1g}
+    cpus: ${REDIS_CPUS:-1.0}
 
 networks:
   integration-test:

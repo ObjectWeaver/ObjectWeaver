@@ -4,16 +4,21 @@ go 1.25.1
 
 require (
 	github.com/go-chi/chi/v5 v5.2.4
+	github.com/google/uuid v1.6.0
 	github.com/objectweaver/go-sdk v0.0.0-20251129102717-2a3db11c5f9d
+	github.com/redis/go-redis/v9 v9.17.3
 	github.com/sashabaranov/go-openai v1.41.2
 	golang.org/x/sync v0.18.0
 	google.golang.org/genai v1.36.0
 )
 
 require (
+	github.com/alicebob/miniredis/v2 v2.36.1 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/klauspost/compress v1.18.1 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 )

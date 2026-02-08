@@ -72,6 +72,8 @@ func (s *Server) MountHandlers() {
 		r.Use(PrometheusMiddleware)
 		r.Use(ValidatePassword)
 		r.Post("/api/objectGen", s.ObjectGenHandler)
+		r.Post("/api/objectGenQueued", s.ObjectGenQueded)
+		r.Get("/api/getObjectQueued", s.GetObjectQueued)
 	})
 
 	// if this isn't in production then don't provide this as an option

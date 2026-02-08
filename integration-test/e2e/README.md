@@ -13,14 +13,44 @@ make integration-test-light    # 100 req/s
 make integration-test-medium   # 500 req/s
 make integration-test-heavy    # 1000 req/s
 make integration-test-extreme  # 2000 req/s
+make integration-test-2k       # 2000 req/s
+make integration-test-3k       # 3000 req/s
+make integration-test-4k       # 4000 req/s
 make integration-test-5k 
 make integration-test-10k
+
+# Run Redis queued-cache integration test
+make integration-test-cache
+
+# Separate load tests (2k / 3k / 4k req/s)
+make integration-test-2k
+make integration-test-3k
+make integration-test-4k
 
 # View results
 make integration-test-results
 
 # Stop services
 make integration-test-down
+```
+
+## Redis Queued-Cache Test Suite
+
+The queued endpoints now store results in Redis and serve them via
+`/api/getObjectQueued`. This test validates that:
+
+1. Queue submission is fast (enqueue latency).
+2. Results are retrieved successfully from Redis.
+3. End-to-end completion time matches expected LLM latency.
+
+Defaults (override with environment variables):
+
+```bash
+QUEUED_RPS=50
+DURATION=60s
+RAMP_UP_TIME=15s
+POLL_INTERVAL_MS=200
+POLL_TIMEOUT_MS=120000
 ```
 
 ## Test Results

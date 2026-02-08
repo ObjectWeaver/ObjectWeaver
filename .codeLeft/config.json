@@ -1,475 +1,144 @@
 {
   "threshold": "A",
   "security": {
-    "owasp": false,
-    "cweTop25": false
+    "owasp": {
+      "enabled": true,
+      "mode": "standard",
+      "minSeverity": "low",
+      "analyzeOnSave": false,
+      "showNotifications": true,
+      "enabledCategories": {
+        "0": "brokenAccessControl",
+        "1": "cryptographicFailures",
+        "2": "injection",
+        "3": "insecureDesign",
+        "4": "securityMisconfiguration",
+        "5": "vulnerableComponents",
+        "6": "authenticationFailures",
+        "7": "integrityFailures",
+        "8": "loggingMonitoringFailures",
+        "9": "ssrf"
+      }
+    },
+    "cwe": {
+      "enabled": true,
+      "mode": "standard",
+      "minSeverity": "low",
+      "analyzeOnSave": false,
+      "showNotifications": true,
+      "enabledCategories": {
+        "0": "outOfBoundsWrite",
+        "1": "xss",
+        "2": "sqlInjection",
+        "3": "useAfterFree",
+        "4": "osCommandInjection",
+        "5": "improperInputValidation",
+        "6": "outOfBoundsRead",
+        "7": "pathTraversal",
+        "8": "csrf",
+        "9": "unrestrictedUpload",
+        "10": "missingAuthorization",
+        "11": "nullPointerDereference",
+        "12": "improperAuthentication",
+        "13": "integerOverflow",
+        "14": "insecureDeserialization",
+        "15": "commandInjection",
+        "16": "bufferOverflow",
+        "17": "hardcodedCredentials",
+        "18": "ssrf",
+        "19": "missingAuthentication",
+        "20": "raceCondition",
+        "21": "improperPrivilegeManagement",
+        "22": "codeInjection",
+        "23": "incorrectAuthorization",
+        "24": "incorrectPermissions"
+      }
+    }
   },
   "quality": {
-    "solid": true,
-    "cleanCode": false,
-    "prReady": false,
-    "complexity": false,
-    "complexityPro": false,
-    "testability": false,
-    "solidPro": false,
-    "cleanCodePro": false
+    "solid": {
+      "enabled": true,
+      "mode": "standard",
+      "lspDepth": 2,
+      "useHeuristics": true,
+      "crossFileAnalysis": true,
+      "minSeverity": "minor"
+    },
+    "cleanCode": {
+      "enabled": false,
+      "mode": "standard",
+      "lspDepth": 2,
+      "useHeuristics": true,
+      "crossFileAnalysis": true,
+      "minSeverity": "minor"
+    },
+    "prReady": true,
+    "complexity": {
+      "enabled": true,
+      "thresholds": {
+        "cyclomaticComplexity": {
+          "low": 5,
+          "medium": 10,
+          "high": 20,
+          "critical": 30
+        },
+        "nestingDepth": {
+          "low": 2,
+          "medium": 3,
+          "high": 4,
+          "critical": 5
+        },
+        "functionCount": {
+          "low": 10,
+          "medium": 20,
+          "high": 30,
+          "critical": 50
+        },
+        "dependencyCount": {
+          "low": 5,
+          "medium": 10,
+          "high": 15,
+          "critical": 25
+        },
+        "functionLength": {
+          "low": 20,
+          "medium": 40,
+          "high": 60,
+          "critical": 100
+        },
+        "parameterCount": {
+          "low": 3,
+          "medium": 5,
+          "high": 7,
+          "critical": 10
+        }
+      }
+    }
   },
   "safetyCritical": {
-    "misraCpp": false
+    "misraCpp": {
+      "enabled": false,
+      "mode": "standard",
+      "concurrency": 10,
+      "useHeuristics": true,
+      "generateReport": true
+    }
   },
   "testing": {
     "functionalCoverage": false
   },
+  "codeReviewType": {
+    "pro": true
+  }, 
   "ignore": {
     "fileEndings": [
       "_test.go"
     ],
-    "files": [
-      {
-        "name": "config.json",
-        "path": ".codeLeft/config.json"
-      }
-    ],
     "folders": [
-      "static",
-      "testInstructions",
+      ".codeLeft",
       ".github",
-      ".documentation",
-      "toolCalling",
-      "grpc",
-      "integration-test"
+      "components",
+      "content"
     ]
-  },
-  "codeReviewType": {
-    "pro": true
-  },
-  "qualitySentry": {
-    "tdd": false
-  },
-  "testGeneration": {
-    "active": false,
-    "override": false,
-    "language": "Golang",
-    "testType": "Unit",
-    "library": "Ginkgo"
-  },
-  "advanced": {
-    "llmPreference": {
-      "models": [
-        {
-          "model": "gpt-4.1",
-          "provider": "copilot"
-        }
-      ]
-    },
-    "performance": {
-      "lastMonth": false,
-      "last3Months": false,
-      "onlyPresentUser": false
-    },
-    "costBreakdown": {
-      "currencySymbol": "£",
-      "technicalDebt": {
-        "developerHourlyRate": 50,
-        "hoursPerLOCToRefactor": 0.05,
-        "acceptableTechnicalDebt": 100
-      },
-      "securityDebt": {
-        "acceptableTechnicalDebt": 1000,
-        "developerHourlyRate": 50,
-        "baseHoursPerVulnerability": {
-          "critical": 16,
-          "high": 8,
-          "medium": 4,
-          "low": 2
-        },
-        "damageMultipliers": {
-          "owasp": {
-            "brokenAccessControl": {
-              "critical": 250000,
-              "high": 100000,
-              "medium": 50000,
-              "low": 10000
-            },
-            "cryptographicFailures": {
-              "critical": 500000,
-              "high": 200000,
-              "medium": 75000,
-              "low": 25000
-            },
-            "injection": {
-              "critical": 300000,
-              "high": 150000,
-              "medium": 60000,
-              "low": 20000
-            },
-            "insecureDesign": {
-              "critical": 200000,
-              "high": 80000,
-              "medium": 40000,
-              "low": 15000
-            },
-            "securityMisconfiguration": {
-              "critical": 150000,
-              "high": 60000,
-              "medium": 30000,
-              "low": 10000
-            },
-            "vulnerableOutdatedComponents": {
-              "critical": 400000,
-              "high": 180000,
-              "medium": 70000,
-              "low": 25000
-            },
-            "identificationAuthentication": {
-              "critical": 350000,
-              "high": 140000,
-              "medium": 55000,
-              "low": 18000
-            },
-            "softwareDataIntegrity": {
-              "critical": 300000,
-              "high": 120000,
-              "medium": 45000,
-              "low": 15000
-            },
-            "securityLoggingMonitoring": {
-              "critical": 100000,
-              "high": 40000,
-              "medium": 20000,
-              "low": 8000
-            },
-            "serverSideRequestForgery": {
-              "critical": 200000,
-              "high": 90000,
-              "medium": 35000,
-              "low": 12000
-            }
-          },
-          "cwe": {
-            "improperInputValidation": {
-              "critical": 300000,
-              "high": 150000,
-              "medium": 60000,
-              "low": 20000
-            },
-            "injection": {
-              "critical": 350000,
-              "high": 175000,
-              "medium": 70000,
-              "low": 25000
-            },
-            "improperAuthentication": {
-              "critical": 400000,
-              "high": 200000,
-              "medium": 80000,
-              "low": 30000
-            },
-            "brokenAccessControl": {
-              "critical": 300000,
-              "high": 120000,
-              "medium": 50000,
-              "low": 15000
-            },
-            "cryptographicFailures": {
-              "critical": 500000,
-              "high": 250000,
-              "medium": 100000,
-              "low": 40000
-            },
-            "securityLoggingMonitoring": {
-              "critical": 150000,
-              "high": 60000,
-              "medium": 25000,
-              "low": 10000
-            },
-            "securityMisconfiguration": {
-              "critical": 200000,
-              "high": 80000,
-              "medium": 35000,
-              "low": 15000
-            },
-            "codeInjection": {
-              "critical": 450000,
-              "high": 225000,
-              "medium": 90000,
-              "low": 35000
-            },
-            "osCommandInjection": {
-              "critical": 500000,
-              "high": 250000,
-              "medium": 100000,
-              "low": 40000
-            },
-            "pathTraversal": {
-              "critical": 250000,
-              "high": 125000,
-              "medium": 50000,
-              "low": 20000
-            },
-            "crossSiteRequestForgery": {
-              "critical": 200000,
-              "high": 100000,
-              "medium": 40000,
-              "low": 15000
-            },
-            "improperNeutralizationOfInput": {
-              "critical": 300000,
-              "high": 150000,
-              "medium": 60000,
-              "low": 25000
-            },
-            "nullPointerDereference": {
-              "critical": 100000,
-              "high": 50000,
-              "medium": 20000,
-              "low": 8000
-            },
-            "outOfBoundsRead": {
-              "critical": 200000,
-              "high": 100000,
-              "medium": 40000,
-              "low": 15000
-            },
-            "integerOverflowOrWraparound": {
-              "critical": 250000,
-              "high": 125000,
-              "medium": 50000,
-              "low": 20000
-            },
-            "improperRestrictionOfOperations": {
-              "critical": 300000,
-              "high": 150000,
-              "medium": 60000,
-              "low": 25000
-            },
-            "useOfHardCodedCredentials": {
-              "critical": 400000,
-              "high": 200000,
-              "medium": 80000,
-              "low": 30000
-            },
-            "missingReleaseOfResourceAfterEffectiveLifetime": {
-              "critical": 150000,
-              "high": 75000,
-              "medium": 30000,
-              "low": 12000
-            },
-            "improperPrivilegeManagement": {
-              "critical": 350000,
-              "high": 175000,
-              "medium": 70000,
-              "low": 28000
-            },
-            "incorrectPermissionAssignment": {
-              "critical": 300000,
-              "high": 150000,
-              "medium": 60000,
-              "low": 25000
-            },
-            "uncontrolledResourceConsumption": {
-              "critical": 200000,
-              "high": 100000,
-              "medium": 40000,
-              "low": 16000
-            },
-            "improperRestrictionOfXmlExternalEntityReference": {
-              "critical": 250000,
-              "high": 125000,
-              "medium": 50000,
-              "low": 20000
-            },
-            "deserializationOfUntrustedData": {
-              "critical": 400000,
-              "high": 200000,
-              "medium": 80000,
-              "low": 32000
-            },
-            "unrestrictedUploadOfFileWithDangerousType": {
-              "critical": 350000,
-              "high": 175000,
-              "medium": 70000,
-              "low": 28000
-            },
-            "exposureOfSensitiveInformation": {
-              "critical": 450000,
-              "high": 225000,
-              "medium": 90000,
-              "low": 36000
-            },
-            "uncontrolledSearchPathElement": {
-              "critical": 200000,
-              "high": 100000,
-              "medium": 40000,
-              "low": 16000
-            },
-            "useOfOneWayHashWithoutSalt": {
-              "critical": 300000,
-              "high": 150000,
-              "medium": 60000,
-              "low": 24000
-            }
-          },
-          "misra": {
-            "languageIndependent": {
-              "critical": 800000,
-              "high": 400000,
-              "medium": 150000,
-              "low": 50000
-            },
-            "generalPrincipals": {
-              "critical": 600000,
-              "high": 300000,
-              "medium": 120000,
-              "low": 40000
-            },
-            "lexicalConventions": {
-              "critical": 200000,
-              "high": 100000,
-              "medium": 40000,
-              "low": 15000
-            },
-            "basicConcepts": {
-              "critical": 400000,
-              "high": 200000,
-              "medium": 80000,
-              "low": 30000
-            },
-            "standardConversions": {
-              "critical": 500000,
-              "high": 250000,
-              "medium": 100000,
-              "low": 40000
-            },
-            "expressions": {
-              "critical": 600000,
-              "high": 300000,
-              "medium": 120000,
-              "low": 45000
-            },
-            "statements": {
-              "critical": 400000,
-              "high": 200000,
-              "medium": 80000,
-              "low": 30000
-            },
-            "declarations": {
-              "critical": 300000,
-              "high": 150000,
-              "medium": 60000,
-              "low": 25000
-            },
-            "declarators": {
-              "critical": 250000,
-              "high": 125000,
-              "medium": 50000,
-              "low": 20000
-            },
-            "specialMemberFunctions": {
-              "critical": 350000,
-              "high": 175000,
-              "medium": 70000,
-              "low": 28000
-            },
-            "derivedClasses": {
-              "critical": 400000,
-              "high": 200000,
-              "medium": 80000,
-              "low": 32000
-            },
-            "memberAccessControl": {
-              "critical": 300000,
-              "high": 150000,
-              "medium": 60000,
-              "low": 25000
-            },
-            "overloading": {
-              "critical": 250000,
-              "high": 125000,
-              "medium": 50000,
-              "low": 20000
-            },
-            "templates": {
-              "critical": 300000,
-              "high": 150000,
-              "medium": 60000,
-              "low": 25000
-            },
-            "exceptionHandling": {
-              "critical": 700000,
-              "high": 350000,
-              "medium": 140000,
-              "low": 55000
-            },
-            "preprocessingDirectives": {
-              "critical": 200000,
-              "high": 100000,
-              "medium": 40000,
-              "low": 16000
-            },
-            "languageSupportLibrary": {
-              "critical": 400000,
-              "high": 200000,
-              "medium": 80000,
-              "low": 32000
-            },
-            "dianogsticsLibrary": {
-              "critical": 150000,
-              "high": 75000,
-              "medium": 30000,
-              "low": 12000
-            },
-            "generalUtilitiesLibrary": {
-              "critical": 250000,
-              "high": 125000,
-              "medium": 50000,
-              "low": 20000
-            },
-            "stringsLibrary": {
-              "critical": 300000,
-              "high": 150000,
-              "medium": 60000,
-              "low": 25000
-            },
-            "localizationLibrary": {
-              "critical": 200000,
-              "high": 100000,
-              "medium": 40000,
-              "low": 16000
-            },
-            "containersLibrary": {
-              "critical": 350000,
-              "high": 175000,
-              "medium": 70000,
-              "low": 28000
-            },
-            "algorthirmsLibrary": {
-              "critical": 300000,
-              "high": 150000,
-              "medium": 60000,
-              "low": 25000
-            },
-            "ioLibrary": {
-              "critical": 400000,
-              "high": 200000,
-              "medium": 80000,
-              "low": 32000
-            },
-            "programExecution": {
-              "critical": 800000,
-              "high": 400000,
-              "medium": 160000,
-              "low": 65000
-            }
-          },
-          "default": {
-            "critical": 250000,
-            "high": 125000,
-            "medium": 50000,
-            "low": 20000
-          }
-        }
-      }
-    }
   }
 }
