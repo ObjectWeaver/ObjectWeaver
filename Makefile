@@ -31,6 +31,10 @@ help:
 	@echo "  make integration-test-full   - Run complete integration test cycle"
 	@echo "  make integration-test-up     - Start services (ObjectWeaver + Prometheus)"
 	@echo "  make integration-test-run    - Run load test (1000 req/s)"
+	@echo "  make integration-test-cache  - Run Redis queued-cache test suite"
+	@echo "  make integration-test-2k     - Load test (2000 req/s)"
+	@echo "  make integration-test-3k     - Load test (3000 req/s)"
+	@echo "  make integration-test-4k     - Load test (4000 req/s)"
 	@echo "  make integration-test-5k     - Run very heavy load test (5000 req/s) with monitoring"
 	@echo "  make integration-test-10k    - Run ultra load test (10000 req/s)"
 	@echo "  make monitor-goroutines      - Monitor goroutines during tests (standalone)"
@@ -209,6 +213,10 @@ integration-test-help:
 	@echo ""
 	@echo "Running Tests:"
 	@echo "  make integration-test-run   - Run load test (ramping to 1000 req/s over 60s)"
+	@echo "  make integration-test-cache - Run Redis queued-cache test suite"
+	@echo "  make integration-test-2k    - Load test (2000 req/s)"
+	@echo "  make integration-test-3k    - Load test (3000 req/s)"
+	@echo "  make integration-test-4k    - Load test (4000 req/s)"
 	@echo "  make integration-test-full  - Full test: up + run + results + down"
 	@echo ""
 	@echo "Custom Load Tests:"
@@ -320,6 +328,66 @@ integration-test-run:
 	@echo ""
 	@echo "✓ Load test completed!"
 	@echo "Results saved to: integration-test/e2e/results/"
+
+# Redis queued-cache integration test
+integration-test-cache:
+	@echo "Running Redis queued-cache integration test..."
+	@mkdir -p integration-test/e2e/results
+	@echo "Rebuilding and starting services..."
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml up -d --build objectweaver mock-llm redis
+	@sleep 5
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
+		-e QUEUED_RPS=1000 \
+		-e DURATION=60s \
+		-e RAMP_UP_TIME=15s \
+		-e POLL_INTERVAL_MS=250 \
+		-e PREALLOCATED_VUS=1000 \
+		-e MAX_VUS=10000 \
+		-e BASE_URL=http://objectweaver:2008 \
+		-e PASSWORD=test-password \
+		k6 run /scripts/redis-queue-test.js
+
+# 2k load test
+integration-test-2k:
+	@echo "Running load test (2,000 req/s)..."
+	@mkdir -p integration-test/e2e/results
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
+		-e MAX_RPS=2000 \
+		-e DURATION=60s \
+		-e RAMP_UP_TIME=40s \
+		-e MAX_VUS=6000 \
+		-e PREALLOCATED_VUS=600 \
+		-e BASE_URL=http://objectweaver:2008 \
+		-e PASSWORD=test-password \
+		k6 run /scripts/load-test.js
+
+# 3k load test
+integration-test-3k:
+	@echo "Running load test (3,000 req/s)..."
+	@mkdir -p integration-test/e2e/results
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
+		-e MAX_RPS=3000 \
+		-e DURATION=60s \
+		-e RAMP_UP_TIME=45s \
+		-e MAX_VUS=8000 \
+		-e PREALLOCATED_VUS=800 \
+		-e BASE_URL=http://objectweaver:2008 \
+		-e PASSWORD=test-password \
+		k6 run /scripts/load-test.js
+
+# 4k load test
+integration-test-4k:
+	@echo "Running load test (4,000 req/s)..."
+	@mkdir -p integration-test/e2e/results
+	cd integration-test/e2e && docker-compose -f docker-compose.integration.yml run --rm \
+		-e MAX_RPS=4000 \
+		-e DURATION=60s \
+		-e RAMP_UP_TIME=50s \
+		-e MAX_VUS=10000 \
+		-e PREALLOCATED_VUS=1000 \
+		-e BASE_URL=http://objectweaver:2008 \
+		-e PASSWORD=test-password \
+		k6 run /scripts/load-test.js
 
 # Light load test (100 req/s)
 integration-test-light:

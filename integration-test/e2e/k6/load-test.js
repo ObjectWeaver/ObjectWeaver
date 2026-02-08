@@ -22,10 +22,14 @@ const PASSWORD = __ENV.PASSWORD || 'test-password';
 // For 2000 req/s, we need: 2000 / 0.2 = 10,000 VUs minimum
 // Adding 50% buffer: 15,000 VUs
 const targetRps = parseInt(MAX_RPS);
-const estimatedLatency = 6;  // 5s LLM + 1s buffer
-const VU_BUFFER = 1.5;  // 50% extra for burst handling
+const estimatedLatency = parseFloat(__ENV.ESTIMATED_LATENCY_SECONDS || '6');  // 5s LLM + 1s buffer
+const VU_BUFFER = parseFloat(__ENV.VU_BUFFER || '1.5');  // 50% extra for burst handling
 const calculatedMaxVUs = Math.ceil(targetRps * estimatedLatency * VU_BUFFER);
-const maxVUs = Math.max(calculatedMaxVUs, 500);  // Minimum 500 VUs
+const maxVUs = Math.max(parseInt(__ENV.MAX_VUS || calculatedMaxVUs, 10), 500);  // Minimum 500 VUs
+const preAllocatedVUs = Math.min(
+  parseInt(__ENV.PREALLOCATED_VUS || Math.ceil(maxVUs / 10), 10),
+  maxVUs
+);
 
 export const options = {
   scenarios: {
@@ -33,7 +37,7 @@ export const options = {
       executor: 'ramping-arrival-rate',
       startRate: 1,                    // Start with 1 req/sec
       timeUnit: '1s',
-      preAllocatedVUs: Math.min(200, Math.ceil(maxVUs / 10)),  // Pre-allocate 10%
+      preAllocatedVUs: preAllocatedVUs,
       maxVUs: maxVUs,                  // VUs = RPS × latency × buffer
       stages: [
         { duration: RAMP_UP_TIME, target: parseInt(MAX_RPS) },  // Ramp up to MAX_RPS

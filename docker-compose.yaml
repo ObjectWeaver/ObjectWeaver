@@ -33,6 +33,23 @@ services:
       GRPC_UNSECURE: ${GRPC_UNSECURE}
       CERT_FILE: ${CERT_FILE}
       KEY_FILE: ${KEY_FILE}
+      CACHE_ACTIVE: ${CACHE_ACTIVE}
+      CACHE_ADDRESS: ${CACHE_ADDRESS}
+      CACHE_PASSWORD: ${CACHE_PASSWORD}
+      CACHE_DB: ${CACHE_DB}
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS}
+    depends_on:
+      - redis
+    networks:
+      - monitoring
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
     networks:
       - monitoring
 
@@ -41,4 +58,5 @@ networks:
 
 volumes:
   grafana-storage:
+  redis-data:
 

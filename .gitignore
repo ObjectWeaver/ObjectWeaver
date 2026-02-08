@@ -7,3 +7,6 @@ objectweaver
 integration-test/results/*
 integration-test/e2e/k6/results/*
 integration-test/e2e/results/*
+.codeLeft/dynamicAnalysis/latest.json
+.codeLeft/dynamicAnalysis/results.ndjson
+.codeLeft/profiles/pprof_wrapper.go
