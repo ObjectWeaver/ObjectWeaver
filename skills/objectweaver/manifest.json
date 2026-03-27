@@ -1,0 +1,68 @@
+{
+  "name": "objectweaver-skills-pack",
+  "version": "1.0.0",
+  "updated": "2026-02-13",
+  "entrypoint": "README.md",
+  "skills": [
+    {
+      "id": "ow-core",
+      "file": "core.md",
+      "use_when": ["need architecture context", "need ObjectWeaver terminology"],
+      "outputs": ["schema strategy", "field orchestration plan"]
+    },
+    {
+      "id": "ow-schema-reference",
+      "file": "schema-reference.md",
+      "use_when": ["building or validating definition objects"],
+      "outputs": ["valid field mapping", "request schema"]
+    },
+    {
+      "id": "ow-simple-object",
+      "file": "recipes/simple-object.md",
+      "use_when": ["generate a single structured object"],
+      "outputs": ["objectGen payload", "parsing checklist"]
+    },
+    {
+      "id": "ow-array-recursive",
+      "file": "recipes/arrays-and-recursion.md",
+      "use_when": ["generate lists", "build nested recursive outputs"],
+      "outputs": ["array schema", "recursive refinement plan"]
+    },
+    {
+      "id": "ow-decision-routing",
+      "file": "recipes/decision-routing.md",
+      "use_when": ["quality routing", "branching workflows"],
+      "outputs": ["scoring + decisionPoint schema"]
+    },
+    {
+      "id": "ow-context-control",
+      "file": "recipes/context-control.md",
+      "use_when": ["need selectFields/systemPrompt/narrowFocus"],
+      "outputs": ["minimal-context generation flow"]
+    },
+    {
+      "id": "ow-data-fetching",
+      "file": "recipes/data-fetching.md",
+      "use_when": ["enrich generation with external request"],
+      "outputs": ["req-enabled field definition"]
+    },
+    {
+      "id": "ow-byte-ops",
+      "file": "recipes/byte-ops.md",
+      "use_when": ["image generation", "tts", "stt"],
+      "outputs": ["byte operation definition"]
+    },
+    {
+      "id": "ow-streaming-batch",
+      "file": "ops/streaming-batch-throughput.md",
+      "use_when": ["real-time streaming", "cost optimization", "reliability tuning"],
+      "outputs": ["runtime mode decision", "ops config"]
+    },
+    {
+      "id": "ow-pitfalls",
+      "file": "guardrails/pitfalls.md",
+      "use_when": ["preflight review", "debugging bad outputs"],
+      "outputs": ["risk checklist", "fix actions"]
+    }
+  ]
+}
