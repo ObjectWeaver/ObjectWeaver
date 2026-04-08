@@ -31,7 +31,9 @@ func (p *DefaultSystemPromptProvider) GetSystemPrompt(dataType jsonSchema.DataTy
 		prompt := "The value being generated for this is a byte value. Return only the byte value."
 		return &prompt
 	default:
-		return nil
+		prompt := "The value being generated for this is of type " + string(dataType) + ". Return only the value without any additional formatting."
+		return &prompt
+		//return nil
 	}
 }
 
