@@ -76,8 +76,12 @@ func TestDefaultSystemPromptProvider_GetSystemPrompt_Byte(t *testing.T) {
 func TestDefaultSystemPromptProvider_GetSystemPrompt_Unsupported(t *testing.T) {
 	provider := NewDefaultSystemPromptProvider()
 	prompt := provider.GetSystemPrompt(jsonSchema.Object)
-	if prompt != nil {
-		t.Error("Expected nil for unsupported type")
+	if prompt == nil {
+		t.Error("Expected non-nil for unsupported type")
+	}
+	expected := "The value being generated for this is of type object. Return only the value without any additional formatting."
+	if *prompt != expected {
+		t.Errorf("Expected %q, got %q", expected, *prompt)
 	}
 }
 
