@@ -3,8 +3,8 @@ package factory
 import (
 	"testing"
 
-	"objectweaver/orchestration/jos/application"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/application"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 )
 
 func TestNewGeneratorFactory_NilConfig_UsesDefault(t *testing.T) {

@@ -2,12 +2,12 @@ package execution
 
 import (
 	"context"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 	"strings"
 	"sync"
 	"testing"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // TestSpeculativeProcessing_WithSelectFieldsDependencies tests that speculative processing

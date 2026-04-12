@@ -1,11 +1,11 @@
 package LLM
 
 import (
-	"objectweaver/llmManagement"
-	"objectweaver/llmManagement/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/domain"
 	"testing"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
 	gogpt "github.com/sashabaranov/go-openai"
 )

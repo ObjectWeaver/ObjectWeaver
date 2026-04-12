@@ -4,10 +4,10 @@ import (
 	"context"
 	"crypto/tls"
 	"log"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"os"
 
-	pb "objectweaver/grpc"
+	pb "github.com/ObjectWeaver/ObjectWeaver/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"

@@ -1,10 +1,10 @@
 package grpcService
 
 import (
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 	"testing"
 
-	pb "objectweaver/grpc"
+	pb "github.com/ObjectWeaver/ObjectWeaver/grpc"
 )
 
 func TestDefaultRequestConverter_Convert(t *testing.T) {

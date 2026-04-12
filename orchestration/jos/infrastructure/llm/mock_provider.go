@@ -3,10 +3,10 @@ package llm
 import (
 	"fmt"
 	"math/rand"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 	"time"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // MockProvider is a test implementation that generates random data without calling real APIs

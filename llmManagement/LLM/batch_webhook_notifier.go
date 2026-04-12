@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"objectweaver/llmManagement/client"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/client"
 )
 
 // IBatchWebhookNotifier defines the interface for sending batch completion notifications

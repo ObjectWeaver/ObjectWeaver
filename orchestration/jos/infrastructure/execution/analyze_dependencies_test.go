@@ -3,7 +3,7 @@ package execution
 import (
 	"testing"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // TestAnalyzeFieldDependencies_WithSelectFields tests that SelectFields dependencies are respected

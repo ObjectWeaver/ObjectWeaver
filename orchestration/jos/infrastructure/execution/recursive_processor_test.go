@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 	"os"
 	"testing"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // mockTypeProcessor for testing base processor delegation

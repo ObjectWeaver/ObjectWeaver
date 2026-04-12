@@ -3,10 +3,10 @@ package grpcService
 import (
 	"context"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
-	"objectweaver/orchestration/jos/domain"
-	"objectweaver/orchestration/jos/factory"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/factory"
 )
 
 // DefaultGeneratorService is the default implementation of GeneratorService

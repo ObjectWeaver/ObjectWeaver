@@ -2,7 +2,7 @@ package assembly
 
 import (
 	"fmt"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 )
 
 // PathBasedAssembler assembles nested object structures from flat results using path information

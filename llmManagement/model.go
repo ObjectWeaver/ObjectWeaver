@@ -3,7 +3,7 @@ package llmManagement
 import (
 	"context"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 type Inputs struct {

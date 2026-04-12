@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"objectweaver/llmManagement"
-	"objectweaver/llmManagement/client"
-	"objectweaver/llmManagement/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/client"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/domain"
 ) // mockRoundTripper implements http.RoundTripper for testing
 type mockRoundTripper struct {
 	roundTripFunc func(req *http.Request) (*http.Response, error)

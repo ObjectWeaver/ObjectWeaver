@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"objectweaver/logger"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 type KMeanEngine struct {

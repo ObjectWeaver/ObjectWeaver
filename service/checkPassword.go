@@ -2,7 +2,7 @@ package service
 
 import (
 	"net/http"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"os"
 	"strings"
 )

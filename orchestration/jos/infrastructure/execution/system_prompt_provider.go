@@ -1,7 +1,7 @@
 package execution
 
 import (
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // SystemPromptProvider provides type-specific system prompts

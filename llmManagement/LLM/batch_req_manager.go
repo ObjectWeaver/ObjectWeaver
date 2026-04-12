@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"objectweaver/llmManagement/client"
-	"objectweaver/llmManagement/domain"
-	"objectweaver/llmManagement/modelConverter"
-	"objectweaver/llmManagement/requestManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/client"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/modelConverter"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/requestManagement"
 
 	"github.com/sashabaranov/go-openai"
 )

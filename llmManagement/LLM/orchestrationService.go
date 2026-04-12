@@ -1,10 +1,10 @@
 package LLM
 
 import (
-	"objectweaver/llmManagement/backoff"
-	"objectweaver/llmManagement/client"
-	"objectweaver/llmManagement/clientManager"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/backoff"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/client"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/clientManager"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"os"
 	"strconv"
 	"strings"

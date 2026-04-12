@@ -3,10 +3,10 @@ package service
 import (
 	"encoding/json"
 	"net/http"
-	"objectweaver/logger"
-	texttoweaver "objectweaver/textToWeaver"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
+	texttoweaver "github.com/ObjectWeaver/ObjectWeaver/textToWeaver"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 type TtwRequest struct {

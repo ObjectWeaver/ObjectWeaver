@@ -2,7 +2,7 @@ package LLM
 
 import (
 	"fmt"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"time"
 )
 

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"strings"
 )
 

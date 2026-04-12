@@ -1,7 +1,7 @@
 package llm
 
 import (
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"sync"
 	"time"
 )

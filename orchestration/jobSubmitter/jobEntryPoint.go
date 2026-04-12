@@ -2,15 +2,15 @@ package jobSubmitter
 
 import (
 	"context"
-	"objectweaver/llmManagement"
-	"objectweaver/llmManagement/LLM"
-	"objectweaver/llmManagement/domain"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/LLM"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"os"
 	"strings"
 	"time"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
 	"github.com/sashabaranov/go-openai"
 )

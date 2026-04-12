@@ -3,9 +3,9 @@ package prompt
 import (
 	"testing"
 
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 func TestNewDefaultPromptBuilder(t *testing.T) {

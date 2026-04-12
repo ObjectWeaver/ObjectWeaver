@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"math"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 	"sync"
 	"testing"
 	"time"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // TestNewFieldProcessor tests the constructor

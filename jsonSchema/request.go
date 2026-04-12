@@ -1,6 +1,6 @@
 package jsonSchema
 
-import pb "objectweaver/grpc"
+import pb "github.com/ObjectWeaver/ObjectWeaver/grpc"
 
 type RequestBody struct {
 	Prompt     string                 `json:"prompt"`

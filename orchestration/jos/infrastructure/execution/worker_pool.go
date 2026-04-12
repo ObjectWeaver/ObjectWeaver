@@ -3,7 +3,7 @@ package execution
 import (
 	"container/heap"
 	"context"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"os"
 	"runtime"
 	"strconv"

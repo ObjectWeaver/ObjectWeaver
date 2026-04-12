@@ -1,9 +1,9 @@
 package grpcService
 
 import (
-	"objectweaver/orchestration/jos/factory"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/factory"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // DefaultConfigFactory is the default implementation of ConfigFactory

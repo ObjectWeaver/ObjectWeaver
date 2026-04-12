@@ -1,7 +1,7 @@
 package requestManagement
 
 import (
-	"objectweaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
 
 	"github.com/sashabaranov/go-openai"
 )

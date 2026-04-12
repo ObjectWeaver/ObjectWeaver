@@ -1,7 +1,7 @@
 package LLM
 
 import (
-	"objectweaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
 	"sync"
 	"testing"
 )

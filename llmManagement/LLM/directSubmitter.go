@@ -3,11 +3,11 @@ package LLM
 import (
 	"context"
 	"errors"
-	"objectweaver/llmManagement/clientManager"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/clientManager"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"sync/atomic"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
 	gogpt "github.com/sashabaranov/go-openai"
 	"golang.org/x/sync/semaphore"

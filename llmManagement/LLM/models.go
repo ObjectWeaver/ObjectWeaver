@@ -1,8 +1,8 @@
 package LLM
 
 import (
-	"objectweaver/llmManagement"
-	"objectweaver/llmManagement/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/domain"
 	"time"
 
 	"github.com/sashabaranov/go-openai"

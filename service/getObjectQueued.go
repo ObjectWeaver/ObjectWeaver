@@ -2,8 +2,8 @@ package service
 
 import (
 	"net/http"
-	"objectweaver/cache"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/cache"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"os"
 )
 

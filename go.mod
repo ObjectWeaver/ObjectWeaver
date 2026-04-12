@@ -1,4 +1,4 @@
-module objectweaver
+module github.com/ObjectWeaver/ObjectWeaver
 
 go 1.25.1
 

@@ -1,11 +1,11 @@
 package requestManagement
 
 import (
-	"objectweaver/llmManagement"
-	"objectweaver/llmManagement/modelConverter"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/modelConverter"
 	"testing"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
 	gogpt "github.com/sashabaranov/go-openai"
 )

@@ -1,6 +1,6 @@
 package domain
 
-import "objectweaver/jsonSchema"
+import "github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
 // SchemaAnalyzer - Analyzes and breaks down schemas into processable components
 //

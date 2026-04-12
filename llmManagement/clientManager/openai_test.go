@@ -2,10 +2,10 @@ package clientManager
 
 import (
 	"errors"
-	"objectweaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
 	"testing"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
 	"github.com/sashabaranov/go-openai"
 )

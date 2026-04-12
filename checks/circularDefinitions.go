@@ -1,6 +1,6 @@
 package checks
 
-import "objectweaver/jsonSchema"
+import "github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
 // CheckCircularDefinitions checks for circular definitions in the provided Definition structure.
 func CheckCircularDefinitions(def *jsonSchema.Definition) bool {

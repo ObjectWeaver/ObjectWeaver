@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"os"
 	"strings"
 	"time"
 
-	"objectweaver/orchestration/jobSubmitter"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jobSubmitter"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 
 	gogpt "github.com/sashabaranov/go-openai"
 )

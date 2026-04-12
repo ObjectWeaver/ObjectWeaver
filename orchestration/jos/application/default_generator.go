@@ -3,11 +3,11 @@ package application
 import (
 	"context"
 	"fmt"
-	"objectweaver/logger"
-	"objectweaver/orchestration/jos/domain"
-	"objectweaver/orchestration/jos/infrastructure/assembly"
-	"objectweaver/orchestration/jos/infrastructure/epstimic"
-	"objectweaver/orchestration/jos/infrastructure/execution"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/infrastructure/assembly"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/infrastructure/epstimic"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/infrastructure/execution"
 	"time"
 )
 

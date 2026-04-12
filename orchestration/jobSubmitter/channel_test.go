@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"objectweaver/llmManagement/LLM"
-	"objectweaver/llmManagement/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/LLM"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/domain"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
 	"github.com/sashabaranov/go-openai"
 )

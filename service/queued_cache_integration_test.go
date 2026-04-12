@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"objectweaver/cache"
+	"github.com/ObjectWeaver/ObjectWeaver/cache"
 
 	"github.com/alicebob/miniredis/v2"
 )

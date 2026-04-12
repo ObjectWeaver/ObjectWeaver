@@ -1,6 +1,6 @@
 package texttoweaver
 
-import "objectweaver/jsonSchema"
+import "github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
 func DefinitionForDefinition() *jsonSchema.Definition {
 	fieldDescriptor := &jsonSchema.Definition{

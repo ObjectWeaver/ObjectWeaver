@@ -3,12 +3,12 @@ package execution
 import (
 	stdcontext "context"
 	"fmt"
-	"objectweaver/orchestration/jos/domain"
-	"objectweaver/orchestration/jos/infrastructure/llm"
-	"objectweaver/orchestration/jos/infrastructure/prompt"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/infrastructure/llm"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/infrastructure/prompt"
 	"testing"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // BenchmarkProcessFields tests the concurrent processing of fields
