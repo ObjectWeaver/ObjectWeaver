@@ -8,96 +8,41 @@ import "google/protobuf/struct.proto";
 
 // Definition message
 message Definition {
-  string type = 1; // Corresponds to Go's DataType field (as a string)
-  string instruction = 2; // Corresponds to Go's Instruction field
-  map<string, Definition> properties = 3; // Corresponds to Go's Properties field
-  Definition items = 4; // Corresponds to Go's Items field
-  string model = 5; // Corresponds to Go's ModelType field (as a string)
-  repeated string processingOrder = 6; // Corresponds to Go's ProcessingOrder field
-  string systemPrompt = 7; // Corresponds to Go's SystemPrompt field
-  RequestFormat req = 8; // Corresponds to Go's Req field
-  Focus narrowFocus = 9; // Corresponds to Go's NarrowFocus field
-  repeated string selectFields = 10; // Corresponds to Go's SelectFields field
-  HashMap hashMap = 11; // Corresponds to Go's HashMap field
-  TextToSpeech textToSpeech = 12; // Corresponds to Go's Audio field
-  SpeechToText speechToText = 13; // Corresponds to Go's Speech field
-  Image image = 14; // Corresponds to Go's Image field
-  SendImage sendImage = 15; // Corresponds to Go's SendImage field
+  string type = 1;
+  string instruction = 2;
+  map<string, Definition> properties = 3;
+  Definition items = 4;
+  string model = 5;
+  repeated string processingOrder = 6;
+  string systemPrompt = 7;
+  HashMap hashMap = 8;
+  TextToSpeech textToSpeech = 9;
+  SpeechToText speechToText = 10;
+  Image image = 11;
+  RequestFormat req = 12;
+  Focus narrowFocus = 13;
+  repeated string selectFields = 14;
+  SendImage sendImage = 15;
   bool stream = 16;
-  string overridePrompt = 17; // Corresponds to Go's OverridePrompt field
+  string overridePrompt = 17;
   int32 priority = 18;
-  DecisionPoint decisionPoint = 19; // Corresponds to Go's DecisionPoint field
-  ScoringCriteria scoringCriteria = 20; // Corresponds to Go's ScoringCriteria field
-  RecursiveLoop recursiveLoop = 21; // Corresponds to Go's RecursiveLoop field
-  EpistemicValidation epistemic = 22; // Corresponds to Go's Epistemic field
-  ModelConfig modelConfig = 23; // Corresponds to Go's ModelConfig field
+  DecisionPoint decisionPoint = 19;
+  ScoringCriteria scoringCriteria = 20;
+  RecursiveLoop recursiveLoop = 21;
+  EpistemicValidation epistemic = 22;
+  ModelConfig modelConfig = 23;
 }
 
-// Audio message
-message TextToSpeech {
-  string model = 1; // Corresponds to Go's TextToSpeechModel field
-  string stringToAudio = 2; // Corresponds to Go's StringToAudio field
-  string format = 3; // Corresponds to Go's Format field
-  string voice = 4; // Corresponds to Go's Voice field
-}
-
-// SpeechToText message
-message SpeechToText {
-  string model = 1; // Corresponds to Go's SpeechToTextModel field
-  bytes audioToTranscribe = 2; // Corresponds to Go's AudioToTranscribe field
-  string language = 3; // Corresponds to Go's Language field
-  string format = 4; // Corresponds to Go's Format field
-  bool toString = 5; // Corresponds to Go's ToString field
-  bool toCaptions = 6; // Corresponds to Go's ToCaptions field
-}
-
-
-// Image message
-message Image {
-  string model = 1; // Corresponds to Go's ImageModel field
-  string size = 2; // Corresponds to Go's ImageSize field
-}
-
-// Choices message
-message Choices {
-  int32 number = 1; // Corresponds to Go's Number field
-  repeated string options = 2; // Corresponds to Go's Options field
-}
-
-// HashMap message
-message HashMap {
-  string keyInstruction = 1; // Corresponds to Go's KeyInstruction field
-  Definition fieldDefinition = 2; // Corresponds to Go's FieldDefinition field
-}
-
-// Focus message
-message Focus {
-  string prompt = 1; // Corresponds to Go's Prompt field
-  repeated string fields = 2; // Corresponds to Go's Fields field
-  bool keepOriginal = 3; // Corresponds to Go's KeepOriginal field
-}
-
-//SendImage message
-message SendImage {
-  repeated bytes imagesData = 1;
-}
-
-// RequestFormat message
-message RequestFormat {
-  string url = 1;
-  string method = 2;
-  map<string, string> headers = 3;
-  google.protobuf.Struct body = 4; // This corresponds to Go's Body field as map[string]interface{}
-  string authorization = 5;
-  repeated string requireFields = 6;
-}
-
-// DecisionPoint message
-message DecisionPoint {
-  string name = 1;
-  string evaluationPrompt = 2;
-  repeated ConditionalBranch branches = 3;
-  string strategy = 4; // RoutingStrategy as string
+// Condition message
+message Condition {
+  string field = 1;
+  string operator = 2;
+  oneof value {
+    double number_value = 3;
+    string string_value = 4;
+    bool bool_value = 5;
+  }
+  string fieldPath = 6;
 }
 
 // ConditionalBranch message
@@ -109,52 +54,37 @@ message ConditionalBranch {
   int32 priority = 5;
 }
 
-// Condition message
-message Condition {
-  string field = 1;
-  string operator = 2; // ComparisonOperator as string
-  oneof value {
-    double number_value = 3;
-    string string_value = 4;
-    bool bool_value = 5;
-  }
-  string fieldPath = 6;
-}
-
-// ScoringCriteria message
-message ScoringCriteria {
-  map<string, ScoringDimension> dimensions = 1;
-  string evaluationModel = 2;
-  string aggregationMethod = 3; // AggregationMethod as string
-}
-
-// ScoringDimension message
-message ScoringDimension {
-  string description = 1;
-  ScoreScale scale = 2;
-  string type = 3; // ScoreType as string
-  double weight = 4;
-}
-
-// ScoreScale message
-message ScoreScale {
-  int32 min = 1;
-  int32 max = 2;
-}
-
-// RecursiveLoop message
-message RecursiveLoop {
-  int32 maxIterations = 1;
-  string selection = 2; // SelectionStrategy as string
-  DecisionPoint terminationPoint = 3;
-  string feedbackPrompt = 4;
-  bool includePreviousAttempts = 5;
+// DecisionPoint message
+message DecisionPoint {
+  string name = 1;
+  string evaluationPrompt = 2;
+  repeated ConditionalBranch branches = 3;
+  string strategy = 4;
 }
 
 // EpistemicValidation message
 message EpistemicValidation {
   bool active = 1;
   int32 judges = 2;
+}
+
+// Focus message
+message Focus {
+  string prompt = 1;
+  repeated string fields = 2;
+  bool keepOriginal = 3;
+}
+
+// HashMap message
+message HashMap {
+  string keyInstruction = 1;
+  Definition fieldDefinition = 2;
+}
+
+// Image message
+message Image {
+  string model = 1;
+  string size = 2;
 }
 
 // ModelConfig message
@@ -176,6 +106,90 @@ message ModelConfig {
   string reasoningEffort = 15;
   map<string, string> metadata = 16;
   google.protobuf.Struct chatTemplateKwargs = 17;
+}
+
+// RecursiveLoop message
+message RecursiveLoop {
+  int32 maxIterations = 1;
+  string selection = 2;
+  DecisionPoint terminationPoint = 3;
+  string feedbackPrompt = 4;
+  bool includePreviousAttempts = 5;
+}
+
+// RequestBody message
+message RequestBody {
+  string prompt = 1;
+  Definition definition = 2;
+}
+
+// RequestFormat message
+message RequestFormat {
+  string url = 1;
+  string method = 2;
+  map<string, string> headers = 3;
+  google.protobuf.Struct body = 4;
+  string authorization = 5;
+  repeated string requireFields = 6;
+}
+
+// Response message
+message Response {
+  google.protobuf.Struct data = 1;
+  double usdCost = 2;
+  map<string, DetailedField> detailedData = 3;
+}
+
+// ScoreScale message
+message ScoreScale {
+  int32 min = 1;
+  int32 max = 2;
+}
+
+// ScoringCriteria message
+message ScoringCriteria {
+  map<string, ScoringDimension> dimensions = 1;
+  string evaluationModel = 2;
+  string aggregationMethod = 3;
+}
+
+// ScoringDimension message
+message ScoringDimension {
+  string description = 1;
+  ScoreScale scale = 2;
+  string type = 3;
+  double weight = 4;
+}
+
+// SendImage message
+message SendImage {
+  repeated bytes imagesData = 1;
+}
+
+// SpeechToText message
+message SpeechToText {
+  string model = 1;
+  bytes audioToTranscribe = 2;
+  string language = 3;
+  string format = 4;
+  bool toString = 5;
+  bool toCaptions = 6;
+  string chunkingStrategy = 7;
+  google.protobuf.Struct extraBody = 8;
+}
+
+// SubordinateFunction message
+message SubordinateFunction {
+  string name = 1;
+  Definition definition = 2;
+}
+
+// TextToSpeech message
+message TextToSpeech {
+  string model = 1;
+  string stringToAudio = 2;
+  string voice = 3;
+  string format = 4;
 }
 
 // Choice message for epistemic validation results
@@ -200,25 +214,12 @@ message DetailedField {
   FieldMetadata metadata = 2;
 }
 
-// RequestBody message for the GenerateObject RPC
-message RequestBody {
-  string prompt = 1; // Corresponds to Go's Prompt field
-  Definition definition = 2; // Corresponds to Go's Definition field
-}
-
-// Updated Response message for the GenerateObject RPC
-message Response {
-  google.protobuf.Struct data = 1;  // Use Struct to hold a dynamic map<string, any>
-  double usdCost = 2;
-  map<string, DetailedField> detailedData = 3;  // Detailed data with metadata per field
-}
-
 // StreamingResponse message for the stream method
 message StreamingResponse {
-  google.protobuf.Struct data = 1;  // Same as above, using Struct for map<string, any>
+  google.protobuf.Struct data = 1;
   double usdCost = 2;
-  string status = 3;  // A status message for each streamed response
-  map<string, DetailedField> detailedData = 4;  // Detailed data with metadata per field
+  string status = 3;
+  map<string, DetailedField> detailedData = 4;
 }
 
 // The JSONSchemaService defines a service for generating JSON objects based on a schema definition.
@@ -226,6 +227,6 @@ service JSONSchemaService {
   // Standard request-response RPC
   rpc GenerateObject(RequestBody) returns (Response);
 
-  // New method: Server-side streaming RPC
+  // Server-side streaming RPC
   rpc StreamGeneratedObjects(RequestBody) returns (stream StreamingResponse);
 }

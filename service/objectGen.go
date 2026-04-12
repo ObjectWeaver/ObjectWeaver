@@ -7,13 +7,12 @@ import (
 	"fmt"
 	"net/http"
 	"objectweaver/checks"
+	"objectweaver/jsonSchema"
 	"objectweaver/logger"
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/factory"
 	"os"
 	"sync"
-
-	"github.com/objectweaver/go-sdk/client"
 )
 
 // DetailedField contains both the value and metadata for a field
@@ -32,14 +31,22 @@ type Response struct {
 // In objectGen.go
 var generatorCache sync.Pool
 
+// generatorConfig allows tests to override the default generator configuration
+// (e.g., to inject a mock LLM provider for benchmarks)
+var generatorConfig *factory.GeneratorConfig
+
 func getGenerator() domain.Generator {
 	if g := generatorCache.Get(); g != nil {
 		return g.(domain.Generator)
 	}
 	// Create new generator
-	generatorFactory := factory.NewGeneratorFactory(&factory.GeneratorConfig{
-		Mode: factory.ModeParallel,
-	})
+	config := generatorConfig
+	if config == nil {
+		config = &factory.GeneratorConfig{
+			Mode: factory.ModeParallel,
+		}
+	}
+	generatorFactory := factory.NewGeneratorFactory(config)
 	generator, err := generatorFactory.Create()
 	if err != nil {
 		panic(err)
@@ -82,7 +89,7 @@ func (s *Server) ObjectGenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse the request body
-	body := &client.RequestBody{}
+	body := &jsonSchema.RequestBody{}
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&body); err != nil {
 		logger.Printf("Error decoding request body: %v", err)
@@ -132,7 +139,7 @@ func PrettyPrintJSON(jsonBytes []byte) {
 	fmt.Println(string(prettyJSON))
 }
 
-func processObjectGenRequest(body client.RequestBody, r *http.Request) (*Response, error) {
+func processObjectGenRequest(body jsonSchema.RequestBody, r *http.Request) (*Response, error) {
 	generator := getGenerator()
 	defer returnGenerator(generator)
 

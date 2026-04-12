@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 type FieldProcessor struct {

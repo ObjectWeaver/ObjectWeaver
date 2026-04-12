@@ -179,13 +179,14 @@ func chatCompletionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// log.Printf("Received request for model: %s, messages: %d", req.Model, len(req.Messages))
-	// if len(req.Messages) > 0 {
-	// 	log.Printf("Last message content (first 200 chars): %s", truncate(req.Messages[len(req.Messages)-1].Content, 200))
-	// }
+	count := requestCount.Load()
+	log.Printf("[REQ #%d] model=%s messages=%d", count, req.Model, len(req.Messages))
+	if len(req.Messages) > 0 {
+		log.Printf("[REQ #%d] last_message: %.200s", count, req.Messages[len(req.Messages)-1].Content)
+	}
 
 	response := generateMockResponse(&req)
-	// log.Printf("Returning response: %s", response.Choices[0].Message.Content)
+	log.Printf("[RES #%d] content=%s", count, truncate(response.Choices[0].Message.Content, 100))
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {

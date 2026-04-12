@@ -6,7 +6,8 @@ import (
 	"objectweaver/llmManagement/LLM"
 	"objectweaver/llmManagement/domain"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
+
 	"github.com/sashabaranov/go-openai"
 )
 

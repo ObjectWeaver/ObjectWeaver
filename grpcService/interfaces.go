@@ -2,10 +2,9 @@ package grpcService
 
 import (
 	"context"
+	"objectweaver/jsonSchema"
 
-	"github.com/objectweaver/go-sdk/client"
-	pb "github.com/objectweaver/go-sdk/grpc"
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	pb "objectweaver/grpc"
 
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/factory"
@@ -13,7 +12,7 @@ import (
 
 // RequestConverter converts protobuf requests to internal request format
 type RequestConverter interface {
-	Convert(req *pb.RequestBody) *client.RequestBody
+	Convert(req *pb.RequestBody) *jsonSchema.RequestBody
 }
 
 // CircularDefinitionChecker checks for circular definitions in schemas

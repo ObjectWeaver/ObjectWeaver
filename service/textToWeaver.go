@@ -6,8 +6,7 @@ import (
 	"objectweaver/logger"
 	texttoweaver "objectweaver/textToWeaver"
 
-	"github.com/objectweaver/go-sdk/client"
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 type TtwRequest struct {
@@ -29,7 +28,7 @@ func (s *Server) TextToWeaver(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//create the request body
-	body := client.RequestBody{
+	body := jsonSchema.RequestBody{
 		Prompt:     req.Prompt,
 		Definition: texttoweaver.DefinitionForDefinition(),
 	}

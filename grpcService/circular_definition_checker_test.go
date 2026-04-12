@@ -3,7 +3,7 @@ package grpcService
 import (
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 func TestDefaultCircularDefinitionChecker_Check(t *testing.T) {

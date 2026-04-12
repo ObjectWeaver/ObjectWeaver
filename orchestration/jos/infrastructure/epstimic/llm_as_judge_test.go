@@ -5,7 +5,7 @@ import (
 	"objectweaver/orchestration/jos/domain"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 func TestNewLLMAsJudge(t *testing.T) {

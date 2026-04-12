@@ -4,7 +4,8 @@ import (
 	"objectweaver/llmManagement"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
+
 	"github.com/sashabaranov/go-openai"
 )
 

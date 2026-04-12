@@ -1,10 +1,10 @@
 package grpcService
 
 import (
+	"objectweaver/jsonSchema"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/client"
-	pb "github.com/objectweaver/go-sdk/grpc"
+	pb "objectweaver/grpc"
 )
 
 func TestDefaultRequestConverter_Convert(t *testing.T) {
@@ -13,7 +13,7 @@ func TestDefaultRequestConverter_Convert(t *testing.T) {
 	tests := []struct {
 		name     string
 		req      *pb.RequestBody
-		validate func(*testing.T, *client.RequestBody)
+		validate func(*testing.T, *jsonSchema.RequestBody)
 	}{
 		{
 			name: "basic request with prompt",
@@ -23,7 +23,7 @@ func TestDefaultRequestConverter_Convert(t *testing.T) {
 					Type: "object",
 				},
 			},
-			validate: func(t *testing.T, body *client.RequestBody) {
+			validate: func(t *testing.T, body *jsonSchema.RequestBody) {
 				if body.Prompt != "Test prompt" {
 					t.Errorf("Expected prompt 'Test prompt', got '%s'", body.Prompt)
 				}
@@ -38,7 +38,7 @@ func TestDefaultRequestConverter_Convert(t *testing.T) {
 				Prompt:     "Test",
 				Definition: nil,
 			},
-			validate: func(t *testing.T, body *client.RequestBody) {
+			validate: func(t *testing.T, body *jsonSchema.RequestBody) {
 				if body.Definition != nil {
 					t.Error("Expected definition to be nil")
 				}
@@ -56,7 +56,7 @@ func TestDefaultRequestConverter_Convert(t *testing.T) {
 					},
 				},
 			},
-			validate: func(t *testing.T, body *client.RequestBody) {
+			validate: func(t *testing.T, body *jsonSchema.RequestBody) {
 				if body.Definition == nil {
 					t.Fatal("Expected definition to be non-nil")
 				}

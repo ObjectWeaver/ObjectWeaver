@@ -6,7 +6,7 @@ import (
 	"errors"
 	"os"
 
-	pb "github.com/objectweaver/go-sdk/grpc"
+	pb "objectweaver/grpc"
 
 	"objectweaver/service"
 )

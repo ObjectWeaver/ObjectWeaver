@@ -4,8 +4,8 @@ import (
 	"errors"
 	"objectweaver/logger"
 
-	"github.com/objectweaver/go-sdk/converison"
-	pb "github.com/objectweaver/go-sdk/grpc"
+	"objectweaver/converison"
+	pb "objectweaver/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"objectweaver/orchestration/jos/domain"

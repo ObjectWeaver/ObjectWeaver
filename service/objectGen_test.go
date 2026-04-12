@@ -11,8 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/objectweaver/go-sdk/client"
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // Helper function to create a test server
@@ -86,7 +85,7 @@ func TestObjectGen_CircularDefinition(t *testing.T) {
 		},
 	}
 
-	reqBody := &client.RequestBody{
+	reqBody := &jsonSchema.RequestBody{
 		Prompt:     "test",
 		Definition: def,
 	}
@@ -97,7 +96,7 @@ func TestObjectGen_CircularDefinition(t *testing.T) {
 		t.Fatalf("Failed to marshal request: %v", err)
 	}
 
-	var decoded client.RequestBody
+	var decoded jsonSchema.RequestBody
 	if err := json.Unmarshal(bodyBytes, &decoded); err != nil {
 		t.Fatalf("Failed to unmarshal request: %v", err)
 	}
@@ -110,7 +109,7 @@ func TestObjectGen_CircularDefinition(t *testing.T) {
 func TestObjectGen_ContextCancellation(t *testing.T) {
 	// Test that cancelled context is detected at entry
 	s := createTestServer()
-	reqBody := &client.RequestBody{
+	reqBody := &jsonSchema.RequestBody{
 		Prompt: "test",
 		Definition: &jsonSchema.Definition{
 			Type: jsonSchema.String,
@@ -144,7 +143,7 @@ func TestObjectGen_ContextTimeout(t *testing.T) {
 	// Wait for timeout
 	time.Sleep(5 * time.Millisecond)
 
-	reqBody := &client.RequestBody{
+	reqBody := &jsonSchema.RequestBody{
 		Prompt: "test",
 		Definition: &jsonSchema.Definition{
 			Type: jsonSchema.String,
@@ -164,7 +163,7 @@ func TestObjectGen_ContextTimeout(t *testing.T) {
 }
 
 func TestObjectGen_ValidRequestStructure(t *testing.T) {
-	reqBody := &client.RequestBody{
+	reqBody := &jsonSchema.RequestBody{
 		Prompt: "Generate a test string",
 		Definition: &jsonSchema.Definition{
 			Type:        jsonSchema.String,
@@ -178,7 +177,7 @@ func TestObjectGen_ValidRequestStructure(t *testing.T) {
 	}
 
 	// Verify the request body is valid JSON
-	var decoded client.RequestBody
+	var decoded jsonSchema.RequestBody
 	if err := json.Unmarshal(bodyBytes, &decoded); err != nil {
 		t.Errorf("Request body is not valid JSON: %v", err)
 	}

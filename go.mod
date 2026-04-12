@@ -6,7 +6,6 @@ require (
 	github.com/alicebob/miniredis/v2 v2.36.1
 	github.com/go-chi/chi/v5 v5.2.4
 	github.com/google/uuid v1.6.0
-	github.com/objectweaver/go-sdk v0.0.0-20251129102717-2a3db11c5f9d
 	github.com/redis/go-redis/v9 v9.17.3
 	github.com/sashabaranov/go-openai v1.41.2
 	golang.org/x/sync v0.19.0

@@ -5,7 +5,7 @@ import (
 	"objectweaver/orchestration/extractor"
 	"objectweaver/orchestration/jos/domain"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // DefaultPromptBuilder builds prompts for field generation

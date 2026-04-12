@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // PrimitiveProcessor handles primitive types (string, number, boolean, byte)

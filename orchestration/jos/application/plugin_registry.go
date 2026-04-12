@@ -3,7 +3,7 @@ package application
 import (
 	"objectweaver/orchestration/jos/domain"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // PluginRegistry manages plugins for generators

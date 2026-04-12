@@ -4,7 +4,7 @@ import (
 	"context"
 	"objectweaver/orchestration/jos/domain"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // MapProcessor handles map-type fields

@@ -24,6 +24,7 @@ type GeneratorConfig struct {
 	EnableValidation    bool
 	EnableObservability bool
 	LLMProvider         string
+	CustomLLMProvider   domain.LLMProvider
 	Plugins             []domain.Plugin
 	Granularity         domain.StreamGranularity
 	StreamChannel       chan<- *domain.StreamChunk

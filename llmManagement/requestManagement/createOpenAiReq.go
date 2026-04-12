@@ -171,8 +171,11 @@ func (b *defaultOpenAIReqBuilder) BuildRequest(inputs *llmManagement.Inputs) (go
 		FrequencyPenalty:    frequencyPenalty,
 		MaxCompletionTokens: maxCompletionTokens,
 		LogProbs:            logProbs,
-		ReasoningEffort:     reasoningEffort,
 		ChatTemplateKwargs:  chatTemplateKwargs,
+	}
+
+	if reasoningEffort != "" {
+		req.ReasoningEffort = reasoningEffort
 	}
 
 	return req, nil

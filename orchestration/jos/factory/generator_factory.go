@@ -54,6 +54,9 @@ func (f *GeneratorFactory) Create() (domain.Generator, error) {
 
 // createLLMProvider currently just returns the openAi provider so that the requests are sent out in the openAI format. Which is the main standard for API requests.
 func (f *GeneratorFactory) createLLMProvider() domain.LLMProvider {
+	if f.config.CustomLLMProvider != nil {
+		return f.config.CustomLLMProvider
+	}
 	return llm.NewOpenAIProvider()
 }
 

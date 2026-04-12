@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"objectweaver/cache"
+	"objectweaver/jsonSchema"
 	"objectweaver/logger"
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/objectweaver/go-sdk/client"
 )
 
 type QueuedResponse struct {
@@ -32,7 +32,7 @@ func (s *Server) ObjectGenQueded(w http.ResponseWriter, r *http.Request) {
 		logger.Printf("Request received: %s %s", r.Method, r.URL.Path)
 	}
 
-	body := &client.RequestBody{}
+	body := &jsonSchema.RequestBody{}
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(body); err != nil {
 		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
@@ -45,7 +45,7 @@ func (s *Server) ObjectGenQueded(w http.ResponseWriter, r *http.Request) {
 	// Detach from request context so the queued job isn't cancelled when the HTTP request finishes.
 	queuedReq := r.Clone(context.Background())
 
-	go func(body *client.RequestBody, id string, req *http.Request) {
+	go func(body *jsonSchema.RequestBody, id string, req *http.Request) {
 		response, err := processObjectGenRequest(*body, req)
 		if err != nil {
 			logger.Printf("Queued generation error for id %s: %v", id, err)

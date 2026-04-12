@@ -6,7 +6,7 @@ import (
 	"objectweaver/orchestration/jos/domain"
 	"time"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // MockProvider is a test implementation that generates random data without calling real APIs

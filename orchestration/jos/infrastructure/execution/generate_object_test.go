@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // TestNewFieldProcessor tests the constructor
@@ -189,7 +189,7 @@ func TestProcessFields_SequentialProcessing(t *testing.T) {
 	thirdDef := schema.Properties["third"]
 	thirdDef.SelectFields = []string{"first"}
 	schema.Properties["third"] = thirdDef
-	
+
 	fourthDef := schema.Properties["fourth"]
 	fourthDef.SelectFields = []string{"second"}
 	schema.Properties["fourth"] = fourthDef

@@ -3,7 +3,7 @@ package grpcService
 import (
 	"context"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/factory"

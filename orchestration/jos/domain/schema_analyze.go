@@ -1,6 +1,6 @@
 package domain
 
-import "github.com/objectweaver/go-sdk/jsonSchema"
+import "objectweaver/jsonSchema"
 
 // SchemaAnalyzer - Analyzes and breaks down schemas into processable components
 //

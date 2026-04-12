@@ -4,124 +4,44 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"objectweaver/llmManagement"
-	"objectweaver/llmManagement/clientManager"
-	"objectweaver/llmManagement/domain"
+	"objectweaver/orchestration/jos/factory"
+	"objectweaver/orchestration/jos/infrastructure/llm"
+	"os"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/objectweaver/go-sdk/client"
-	"github.com/objectweaver/go-sdk/jsonSchema"
-	"github.com/sashabaranov/go-openai"
+	"objectweaver/jsonSchema"
 )
 
-// MockClientAdapter is a mock implementation of ClientAdapter that returns predefined responses
-type MockClientAdapter struct {
-	delay          time.Duration
-	failureRate    float64
-	requestCounter int
-	mu             sync.Mutex
-}
+// setupMockBenchServer creates an HTTP test server with a MockProvider injected
+// so benchmarks never hit real LLM endpoints.
+func setupMockBenchServer(b *testing.B) *httptest.Server {
+	b.Helper()
+	os.Setenv("ENVIRONMENT", "development")
 
-// NewMockClientAdapter creates a new mock client adapter
-func NewMockClientAdapter(delay time.Duration, failureRate float64) *MockClientAdapter {
-	return &MockClientAdapter{
-		delay:       delay,
-		failureRate: failureRate,
+	// Inject MockProvider into the generator cache
+	generatorConfig = &factory.GeneratorConfig{
+		Mode:              factory.ModeParallel,
+		CustomLLMProvider: llm.NewMockProvider(),
 	}
-}
+	// Clear the pool so new generators pick up the mock config
+	generatorCache = sync.Pool{}
 
-// Process simulates LLM processing with configurable delay and failure rate
-func (m *MockClientAdapter) Process(inputs *llmManagement.Inputs) (*domain.JobResult, error) {
-	m.mu.Lock()
-	m.requestCounter++
-	reqNum := m.requestCounter
-	m.mu.Unlock()
-
-	// Simulate processing time
-	if m.delay > 0 {
-		time.Sleep(m.delay)
-	}
-
-	// Simulate random failures if configured
-	if m.failureRate > 0 && float64(reqNum%100)/100.0 < m.failureRate {
-		return nil, fmt.Errorf("simulated LLM failure")
-	}
-
-	// Return mock response based on the prompt
-	result := &domain.JobResult{
-		ChatRes: &openai.ChatCompletionResponse{
-			ID:      fmt.Sprintf("mock-response-%d", reqNum),
-			Object:  "chat.completion",
-			Created: time.Now().Unix(),
-			Model:   "mock-model",
-			Choices: []openai.ChatCompletionChoice{
-				{
-					Index: 0,
-					Message: openai.ChatCompletionMessage{
-						Role:    "assistant",
-						Content: generateMockContent(inputs.Prompt),
-					},
-					FinishReason: "stop",
-				},
-			},
-			Usage: openai.Usage{
-				PromptTokens:     100,
-				CompletionTokens: 50,
-				TotalTokens:      150,
-			},
-		},
-		EmbeddingRes: nil,
-	}
-
-	return result, nil
-}
-
-// ProcessBatch simulates batch processing (not used in benchmarks but required by interface)
-func (m *MockClientAdapter) ProcessBatch(jobs []any) (*openai.ChatCompletionResponse, error) {
-	return &openai.ChatCompletionResponse{}, nil
-}
-
-// generateMockContent generates realistic mock JSON content based on the prompt
-func generateMockContent(prompt string) string {
-	// Generate a simple JSON response
-	mockData := map[string]interface{}{
-		"name":        "John Doe",
-		"email":       "john.doe@example.com",
-		"age":         30,
-		"active":      true,
-		"score":       95.5,
-		"description": "This is a mock generated response for benchmarking purposes",
-		"timestamp":   time.Now().Unix(),
-	}
-
-	jsonBytes, _ := json.Marshal(mockData)
-	return string(jsonBytes)
-}
-
-// MockClientAdapterFactory creates mock client adapters for testing
-type MockClientAdapterFactory struct {
-	delay       time.Duration
-	failureRate float64
-}
-
-func NewMockClientAdapterFactory(delay time.Duration, failureRate float64) *MockClientAdapterFactory {
-	return &MockClientAdapterFactory{
-		delay:       delay,
-		failureRate: failureRate,
-	}
-}
-
-func (f *MockClientAdapterFactory) Create(provider string, model string) (clientManager.ClientAdapter, error) {
-	return NewMockClientAdapter(f.delay, f.failureRate), nil
+	server := NewHttpServer()
+	ts := httptest.NewServer(server.Router)
+	b.Cleanup(func() {
+		ts.Close()
+		generatorConfig = nil
+		generatorCache = sync.Pool{}
+	})
+	return ts
 }
 
 // createBenchmarkRequest creates a sample request for benchmarking
-func createBenchmarkRequest(complexity string) *client.RequestBody {
+func createBenchmarkRequest(complexity string) *jsonSchema.RequestBody {
 	var definition *jsonSchema.Definition
 
 	switch complexity {
@@ -226,7 +146,7 @@ func createBenchmarkRequest(complexity string) *client.RequestBody {
 		}
 	}
 
-	return &client.RequestBody{
+	return &jsonSchema.RequestBody{
 		Prompt:     "Generate a sample object",
 		Definition: definition,
 	}
@@ -264,11 +184,7 @@ func BenchmarkServerConcurrency(b *testing.B) {
 
 // benchmarkConcurrentRequests performs the actual concurrent request benchmark
 func benchmarkConcurrentRequests(b *testing.B, concurrency int, complexity string, mockDelay time.Duration, failureRate float64) {
-	// Note: In production, you'd inject the mock client adapter here
-	// For now, this benchmarks the actual server infrastructure
-	server := NewHttpServer()
-	ts := httptest.NewServer(server.Router)
-	defer ts.Close()
+	ts := setupMockBenchServer(b)
 
 	// Create the request body
 	reqBody := createBenchmarkRequest(complexity)
@@ -340,9 +256,7 @@ func benchmarkConcurrentRequests(b *testing.B, concurrency int, complexity strin
 
 // BenchmarkServerThroughput measures maximum throughput
 func BenchmarkServerThroughput(b *testing.B) {
-	server := NewHttpServer()
-	ts := httptest.NewServer(server.Router)
-	defer ts.Close()
+	ts := setupMockBenchServer(b)
 
 	reqBody := createBenchmarkRequest("simple")
 	bodyBytes, _ := json.Marshal(reqBody)
@@ -383,9 +297,7 @@ func BenchmarkServerLatency(b *testing.B) {
 
 	for _, tc := range testCases {
 		b.Run(tc.name, func(b *testing.B) {
-			server := NewHttpServer()
-			ts := httptest.NewServer(server.Router)
-			defer ts.Close()
+			ts := setupMockBenchServer(b)
 
 			reqBody := createBenchmarkRequest(tc.complexity)
 			bodyBytes, _ := json.Marshal(reqBody)
@@ -431,9 +343,7 @@ func BenchmarkServerMemoryPressure(b *testing.B) {
 
 	for _, tc := range testCases {
 		b.Run(tc.name, func(b *testing.B) {
-			server := NewHttpServer()
-			ts := httptest.NewServer(server.Router)
-			defer ts.Close()
+			ts := setupMockBenchServer(b)
 
 			reqBody := createBenchmarkRequest("medium")
 			bodyBytes, _ := json.Marshal(reqBody)
@@ -487,9 +397,7 @@ func BenchmarkEndToEnd(b *testing.B) {
 
 	for _, tc := range testCases {
 		b.Run(tc.name, func(b *testing.B) {
-			server := NewHttpServer()
-			ts := httptest.NewServer(server.Router)
-			defer ts.Close()
+			ts := setupMockBenchServer(b)
 
 			reqBody := createBenchmarkRequest(tc.complexity)
 			bodyBytes, _ := json.Marshal(reqBody)

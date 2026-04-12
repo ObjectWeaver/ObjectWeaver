@@ -7,7 +7,8 @@ import (
 	"objectweaver/logger"
 	"sync/atomic"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
+
 	gogpt "github.com/sashabaranov/go-openai"
 	"golang.org/x/sync/semaphore"
 )

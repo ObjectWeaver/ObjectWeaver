@@ -7,7 +7,7 @@ import (
 	"objectweaver/logger"
 	"os"
 
-	pb "github.com/objectweaver/go-sdk/grpc"
+	pb "objectweaver/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"

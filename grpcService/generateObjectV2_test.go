@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/client"
-	pb "github.com/objectweaver/go-sdk/grpc"
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
+
+	pb "objectweaver/grpc"
 
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/factory"
@@ -16,14 +16,14 @@ import (
 // Mock implementations for testing
 
 type mockRequestConverter struct {
-	convertFunc func(*pb.RequestBody) *client.RequestBody
+	convertFunc func(*pb.RequestBody) *jsonSchema.RequestBody
 }
 
-func (m *mockRequestConverter) Convert(req *pb.RequestBody) *client.RequestBody {
+func (m *mockRequestConverter) Convert(req *pb.RequestBody) *jsonSchema.RequestBody {
 	if m.convertFunc != nil {
 		return m.convertFunc(req)
 	}
-	return &client.RequestBody{
+	return &jsonSchema.RequestBody{
 		Prompt:     req.Prompt,
 		Definition: &jsonSchema.Definition{Type: "object"},
 	}

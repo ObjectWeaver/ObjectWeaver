@@ -6,7 +6,7 @@ import (
 
 	"objectweaver/orchestration/jos/factory"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 func TestDefaultGeneratorService_CreateGenerator(t *testing.T) {
