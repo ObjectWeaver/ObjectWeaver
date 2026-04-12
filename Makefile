@@ -1,7 +1,7 @@
 # ObjectWeaver Makefile
 # Testing, benchmarking, and deployment utilities
 
-.PHONY: help test lint fmt build clean-profiles benchmark-server benchmark-server-concurrency benchmark-server-throughput benchmark-server-latency benchmark-server-memory benchmark-server-profile-cpu benchmark-server-profile-mem benchmark-server-stress benchmark-server-fast benchmark-server-compare
+.PHONY: help test lint fmt build proto clean-profiles benchmark-server benchmark-server-concurrency benchmark-server-throughput benchmark-server-latency benchmark-server-memory benchmark-server-profile-cpu benchmark-server-profile-mem benchmark-server-stress benchmark-server-fast benchmark-server-compare
 
 # Default target
 help:
@@ -13,6 +13,7 @@ help:
 	@echo "  make lint              - Run linters (vet, fmt)"
 	@echo "  make fmt               - Format code"
 	@echo "  make build             - Build the project"
+	@echo "  make proto             - Generate proto from jsonSchema types and compile gRPC"
 	@echo ""
 	@echo "Server Benchmarks (with Mock LLM):"
 	@echo "  make benchmark-server             - Run all server benchmarks"
@@ -30,7 +31,7 @@ help:
 	@echo "  make integration-test-help   - Show all integration test commands"
 	@echo "  make integration-test-full   - Run complete integration test cycle"
 	@echo "  make integration-test-up     - Start services (ObjectWeaver + Prometheus)"
-	@echo "  make integration-test-run    - Run load test (1000 req/s)"
+	@echo "  make integration-test-run    - Run load test (500 req/s)"
 	@echo "  make integration-test-cache  - Run Redis queued-cache test suite"
 	@echo "  make integration-test-2k     - Load test (2000 req/s)"
 	@echo "  make integration-test-3k     - Load test (3000 req/s)"
@@ -66,6 +67,11 @@ build:
 	@echo "Building ObjectWeaver..."
 	@go build -v ./...
 
+# Generate proto from jsonSchema types and compile gRPC
+proto:
+	@echo "Generating proto from jsonSchema types..."
+	@go run ./scripts/generate_proto/
+
 # Clean generated files
 clean-profiles:
 	@echo "Cleaning profile files..."
@@ -100,7 +106,7 @@ benchmark-server-throughput:
 	@echo "Measuring server throughput..."
 	@echo "=============================="
 	@echo ""
-	@ENVIRONMENT=development go test -bench=BenchmarkServerThroughput -benchmem -benchtime=10s ./service/ | tee benchmark-server-throughput-results.txt
+	@ENVIRONMENT=development go test -bench=BenchmarkServerThroughput -benchmem -benchtime=3s -run='^$$' ./service/ | tee benchmark-server-throughput-results.txt
 	@echo ""
 	@echo "Results saved to benchmark-server-throughput-results.txt"
 

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"objectweaver/orchestration/jos/domain"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // ByteProcessor handles byte data type for TTS, Image Generation, and STT

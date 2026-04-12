@@ -1,11 +1,11 @@
 package grpcService
 
 import (
+	"objectweaver/converison"
+	"objectweaver/jsonSchema"
 	"objectweaver/logger"
 
-	"github.com/objectweaver/go-sdk/client"
-	"github.com/objectweaver/go-sdk/converison"
-	pb "github.com/objectweaver/go-sdk/grpc"
+	pb "objectweaver/grpc"
 )
 
 // DefaultRequestConverter is the default implementation of RequestConverter
@@ -17,7 +17,7 @@ func NewDefaultRequestConverter() RequestConverter {
 }
 
 // Convert converts a protobuf request to internal request format
-func (c *DefaultRequestConverter) Convert(req *pb.RequestBody) *client.RequestBody {
+func (c *DefaultRequestConverter) Convert(req *pb.RequestBody) *jsonSchema.RequestBody {
 	if req.Definition != nil {
 		// Check nested properties
 		if req.Definition.Properties != nil {
@@ -29,7 +29,7 @@ func (c *DefaultRequestConverter) Convert(req *pb.RequestBody) *client.RequestBo
 	}
 
 	// Convert protobuf request to internal format
-	body := &client.RequestBody{
+	body := &jsonSchema.RequestBody{
 		Prompt:     req.Prompt,
 		Definition: converison.ConvertProtoToModel(req.Definition),
 	}

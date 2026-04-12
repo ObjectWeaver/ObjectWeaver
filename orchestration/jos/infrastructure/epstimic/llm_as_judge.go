@@ -6,7 +6,7 @@ import (
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/infrastructure"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 //this will process the list of temp results and return the best one along with the updated metadata containing the information from all results

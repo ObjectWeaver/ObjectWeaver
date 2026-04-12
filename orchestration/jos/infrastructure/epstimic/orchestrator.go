@@ -4,7 +4,7 @@ import (
 	"objectweaver/orchestration/jos/domain"
 	"objectweaver/orchestration/jos/infrastructure"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // orchestrator will handle the overall tasks of processing

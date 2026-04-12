@@ -4,7 +4,7 @@ import (
 	"objectweaver/orchestration/jos/domain"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 func TestNewMapProcessor(t *testing.T) {

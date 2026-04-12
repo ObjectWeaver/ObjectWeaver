@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	pb "github.com/objectweaver/go-sdk/grpc"
+	pb "objectweaver/grpc"
 )
 
 func TestNewGRPCServer_Unsecure(t *testing.T) {

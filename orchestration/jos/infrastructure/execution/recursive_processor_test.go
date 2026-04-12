@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // mockTypeProcessor for testing base processor delegation

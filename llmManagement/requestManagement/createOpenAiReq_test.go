@@ -5,7 +5,8 @@ import (
 	"objectweaver/llmManagement/modelConverter"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
+
 	gogpt "github.com/sashabaranov/go-openai"
 )
 

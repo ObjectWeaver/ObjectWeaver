@@ -1,6 +1,6 @@
 package domain
 
-import "github.com/objectweaver/go-sdk/jsonSchema"
+import "objectweaver/jsonSchema"
 
 // ValidationPlugin - Validates results
 type ValidationPlugin interface {

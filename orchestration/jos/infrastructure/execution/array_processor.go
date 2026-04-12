@@ -7,7 +7,8 @@ import (
 	"objectweaver/orchestration/jos/domain"
 	"strings"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
+
 	"golang.org/x/sync/semaphore"
 )
 

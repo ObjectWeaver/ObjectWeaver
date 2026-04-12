@@ -5,7 +5,7 @@ import (
 	"objectweaver/orchestration/jos/domain"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // TestSelectFields_NestedObjectAccess tests that SelectFields can access nested object fields

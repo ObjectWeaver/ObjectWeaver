@@ -3,7 +3,7 @@ package llmManagement
 import (
 	"context"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 type Inputs struct {

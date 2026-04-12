@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // TestNewStreamingGenerator tests the constructor

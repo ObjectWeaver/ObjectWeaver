@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // TypeProcessor - Handles generation for specific JSON schema types

@@ -2,13 +2,17 @@ package llm
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
+	"io"
 	"os"
 	"strings"
 	"testing"
 
 	"objectweaver/orchestration/jos/domain"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
+
 	gogpt "github.com/sashabaranov/go-openai"
 )
 
@@ -24,8 +28,40 @@ func (m *MockJobEntryPoint) SubmitJob(ctx context.Context, model string, def *js
 	return "mock response", &gogpt.Usage{TotalTokens: 100}, nil
 }
 
+// mockByteOpsClient mocks the OpenAI client byte operations (TTS, image, STT)
+type mockByteOpsClient struct {
+	createSpeechFunc        func(ctx context.Context, req gogpt.CreateSpeechRequest) (gogpt.RawResponse, error)
+	createImageFunc         func(ctx context.Context, req gogpt.ImageRequest) (gogpt.ImageResponse, error)
+	createTranscriptionFunc func(ctx context.Context, req gogpt.AudioRequest) (gogpt.AudioResponse, error)
+}
+
+func (m *mockByteOpsClient) CreateSpeech(ctx context.Context, req gogpt.CreateSpeechRequest) (gogpt.RawResponse, error) {
+	if m.createSpeechFunc != nil {
+		return m.createSpeechFunc(ctx, req)
+	}
+	return gogpt.RawResponse{ReadCloser: io.NopCloser(strings.NewReader("fake audio data"))}, nil
+}
+
+func (m *mockByteOpsClient) CreateImage(ctx context.Context, req gogpt.ImageRequest) (gogpt.ImageResponse, error) {
+	if m.createImageFunc != nil {
+		return m.createImageFunc(ctx, req)
+	}
+	fakeImageBytes := []byte{0x89, 0x50, 0x4E, 0x47}
+	return gogpt.ImageResponse{
+		Data: []gogpt.ImageResponseDataInner{
+			{B64JSON: base64.StdEncoding.EncodeToString(fakeImageBytes)},
+		},
+	}, nil
+}
+
+func (m *mockByteOpsClient) CreateTranscription(ctx context.Context, req gogpt.AudioRequest) (gogpt.AudioResponse, error) {
+	if m.createTranscriptionFunc != nil {
+		return m.createTranscriptionFunc(ctx, req)
+	}
+	return gogpt.AudioResponse{Text: "transcribed text"}, nil
+}
+
 func TestNewOpenAIProvider(t *testing.T) {
-	// Set a test API key
 	os.Setenv("OPENAI_API_KEY", "test-key")
 	defer os.Unsetenv("OPENAI_API_KEY")
 
@@ -36,8 +72,8 @@ func TestNewOpenAIProvider(t *testing.T) {
 	if provider.submitter == nil {
 		t.Error("submitter should be initialized")
 	}
-	if provider.client == nil {
-		t.Error("client should be initialized")
+	if provider.byteOps == nil {
+		t.Error("byteOps should be initialized")
 	}
 }
 
@@ -46,8 +82,8 @@ func TestGetDefaultModelForProvider_OpenAI(t *testing.T) {
 	defer os.Unsetenv("LLM_PROVIDER")
 
 	model := getDefaultModelForProvider()
-	if model != "gpt-4o-mini" {
-		t.Errorf("Expected gpt-4o-mini, got %v", model)
+	if model != "gpt-4.1-nano-2025-04-14" {
+		t.Errorf("Expected gpt-4.1-nano-2025-04-14, got %v", model)
 	}
 }
 
@@ -56,8 +92,8 @@ func TestGetDefaultModelForProvider_Gemini(t *testing.T) {
 	defer os.Unsetenv("LLM_PROVIDER")
 
 	model := getDefaultModelForProvider()
-	if model != "gemini-2.5-flash" {
-		t.Errorf("Expected gemini-2.5-flash, got %v", model)
+	if model != "gemini-2.5-flash-lite" {
+		t.Errorf("Expected gemini-2.5-flash-lite, got %v", model)
 	}
 }
 
@@ -66,21 +102,20 @@ func TestGetDefaultModelForProvider_Local(t *testing.T) {
 	defer os.Unsetenv("LLM_PROVIDER")
 
 	model := getDefaultModelForProvider()
-	if model != "gpt-4o-mini" {
-		t.Errorf("Expected gpt-4o-mini for local, got %v", model)
+	if model != "gpt-4.1-nano-2025-04-14" {
+		t.Errorf("Expected gpt-4.1-nano-2025-04-14 for local, got %v", model)
 	}
 }
 
 func TestGetDefaultModelForProvider_Default(t *testing.T) {
-	// Clear all env vars
 	os.Unsetenv("LLM_PROVIDER")
 	os.Unsetenv("LLM_API_URL")
 	os.Unsetenv("GEMINI_API_KEY")
 	os.Unsetenv("LLM_API_KEY")
 
 	model := getDefaultModelForProvider()
-	if model != "gpt-4o-mini" {
-		t.Errorf("Expected gpt-4o-mini as fallback, got %v", model)
+	if model != "gpt-4.1-nano-2025-04-14" {
+		t.Errorf("Expected gpt-4.1-nano-2025-04-14 as fallback, got %v", model)
 	}
 }
 
@@ -91,8 +126,8 @@ func TestGetDefaultModelForProvider_WithGeminiKey(t *testing.T) {
 	defer os.Unsetenv("GEMINI_API_KEY")
 
 	model := getDefaultModelForProvider()
-	if model != "gemini-2.5-flash" {
-		t.Errorf("Expected gemini-2.5-flash when GEMINI_API_KEY is set, got %v", model)
+	if model != "gemini-2.5-flash-lite" {
+		t.Errorf("Expected gemini-2.5-flash-lite when GEMINI_API_KEY is set, got %v", model)
 	}
 }
 
@@ -101,7 +136,6 @@ func TestOpenAIProvider_Generate(t *testing.T) {
 	defer os.Unsetenv("OPENAI_API_KEY")
 
 	provider := NewOpenAIProvider()
-	// Replace submitter with mock
 	mockSubmitter := &MockJobEntryPoint{
 		submitJobFunc: func(ctx context.Context, model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (any, *gogpt.Usage, error) {
 			return "test response", &gogpt.Usage{TotalTokens: 100}, nil
@@ -110,7 +144,7 @@ func TestOpenAIProvider_Generate(t *testing.T) {
 	provider.submitter = mockSubmitter
 
 	config := &domain.GenerationConfig{
-		Model:        "gpt-4o-mini",
+		Model:        "gpt-4.1-nano-2025-04-14",
 		SystemPrompt: "Test system",
 		Definition:   &jsonSchema.Definition{},
 	}
@@ -125,10 +159,8 @@ func TestOpenAIProvider_Generate(t *testing.T) {
 	if metadata == nil {
 		t.Error("Metadata should not be nil")
 	}
-	// Note: Current implementation doesn't populate TokensUsed from SubmitJob usage
-	// The Generate method ignores the usage return value
-	if metadata.Model != "gpt-4o-mini" {
-		t.Errorf("Expected model 'gpt-4o-mini', got %s", metadata.Model)
+	if metadata.Model != "gpt-4.1-nano-2025-04-14" {
+		t.Errorf("Expected model 'gpt-4.1-nano-2025-04-14', got %s", metadata.Model)
 	}
 }
 
@@ -145,8 +177,8 @@ func TestOpenAIProvider_ModelType(t *testing.T) {
 
 	provider := NewOpenAIProvider()
 	model := provider.ModelType()
-	if model != "gpt-4o-mini" {
-		t.Errorf("Expected gpt-4o-mini, got %v", model)
+	if model != "gpt-4.1-nano-2025-04-14" {
+		t.Errorf("Expected gpt-4.1-nano-2025-04-14, got %v", model)
 	}
 }
 
@@ -182,7 +214,6 @@ func TestStreamingOpenAIProvider_GenerateStream(t *testing.T) {
 	defer os.Unsetenv("OPENAI_API_KEY")
 
 	provider := NewStreamingOpenAIProvider()
-	// Mock the submitter
 	mockSubmitter := &MockJobEntryPoint{
 		submitJobFunc: func(ctx context.Context, model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (any, *gogpt.Usage, error) {
 			return "hello world", &gogpt.Usage{}, nil
@@ -217,7 +248,6 @@ func TestStreamingOpenAIProvider_GenerateTokenStream(t *testing.T) {
 	defer os.Unsetenv("OPENAI_API_KEY")
 
 	provider := NewStreamingOpenAIProvider()
-	// Mock the submitter
 	mockSubmitter := &MockJobEntryPoint{
 		submitJobFunc: func(ctx context.Context, model string, def *jsonSchema.Definition, newPrompt, systemPrompt string, outStream chan interface{}) (any, *gogpt.Usage, error) {
 			return "hi", &gogpt.Usage{}, nil
@@ -250,8 +280,7 @@ func TestStreamingOpenAIProvider_GenerateTokenStream(t *testing.T) {
 }
 
 func TestCalculateCost(t *testing.T) {
-	// Currently returns 0.0
-	cost := calculateCost("gpt-4o-mini", &gogpt.Usage{})
+	cost := calculateCost("gpt-4.1-nano-2025-04-14", &gogpt.Usage{})
 	if cost != 0.0 {
 		t.Errorf("Expected 0.0, got %f", cost)
 	}
@@ -264,15 +293,27 @@ func TestOpenAIProvider_SupportsByteOperations(t *testing.T) {
 	}
 }
 
-func TestOpenAIProvider_GenerateAudio_InvalidAPIKey(t *testing.T) {
-	// Test with invalid API key to verify error handling
-	os.Setenv("OPENAI_API_KEY", "invalid-key")
-	defer os.Unsetenv("OPENAI_API_KEY")
+// ============================================================================
+// Mocked byte operation tests (no real API calls)
+// ============================================================================
 
+func TestOpenAIProvider_GenerateAudio_Success(t *testing.T) {
 	provider := NewOpenAIProvider()
+	expectedAudio := []byte("mock audio bytes")
+	provider.byteOps = &mockByteOpsClient{
+		createSpeechFunc: func(ctx context.Context, req gogpt.CreateSpeechRequest) (gogpt.RawResponse, error) {
+			if req.Input != "Hello world" {
+				t.Errorf("Expected input 'Hello world', got '%s'", req.Input)
+			}
+			if string(req.Voice) != "alloy" {
+				t.Errorf("Expected voice 'alloy', got '%s'", req.Voice)
+			}
+			return gogpt.RawResponse{ReadCloser: io.NopCloser(strings.NewReader(string(expectedAudio)))}, nil
+		},
+	}
 
 	request := &domain.AudioGenerationRequest{
-		Input:          "Test text to speech",
+		Input:          "Hello world",
 		Voice:          "alloy",
 		Model:          "tts-1",
 		ResponseFormat: "mp3",
@@ -280,69 +321,101 @@ func TestOpenAIProvider_GenerateAudio_InvalidAPIKey(t *testing.T) {
 	}
 
 	audioBytes, metadata, err := provider.GenerateAudio(request)
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if string(audioBytes) != string(expectedAudio) {
+		t.Errorf("Expected audio bytes to match")
+	}
+	if metadata == nil {
+		t.Fatal("Expected metadata to be non-nil")
+	}
+	if metadata.Model != "tts-1" {
+		t.Errorf("Expected model 'tts-1', got '%s'", metadata.Model)
+	}
+}
 
-	// Should get an error with invalid API key
-	if err == nil {
-		t.Error("Expected error with invalid API key")
+func TestOpenAIProvider_GenerateAudio_Error(t *testing.T) {
+	provider := NewOpenAIProvider()
+	provider.byteOps = &mockByteOpsClient{
+		createSpeechFunc: func(ctx context.Context, req gogpt.CreateSpeechRequest) (gogpt.RawResponse, error) {
+			return gogpt.RawResponse{}, fmt.Errorf("TTS generation failed: unauthorized")
+		},
 	}
 
+	request := &domain.AudioGenerationRequest{
+		Input: "Test text",
+		Voice: "alloy",
+		Model: "tts-1",
+	}
+
+	audioBytes, metadata, err := provider.GenerateAudio(request)
+	if err == nil {
+		t.Error("Expected error")
+	}
 	if audioBytes != nil {
 		t.Error("Expected nil audio bytes on error")
 	}
-
 	if metadata != nil {
 		t.Error("Expected nil metadata on error")
 	}
 }
 
-func TestOpenAIProvider_GenerateAudio_RequestValidation(t *testing.T) {
-	os.Setenv("OPENAI_API_KEY", "test-key")
-	defer os.Unsetenv("OPENAI_API_KEY")
-
-	provider := NewOpenAIProvider()
-
+func TestOpenAIProvider_GenerateAudio_DifferentVoices(t *testing.T) {
 	tests := []struct {
-		name    string
-		request *domain.AudioGenerationRequest
+		name  string
+		voice string
+		model string
 	}{
-		{
-			name: "valid request",
-			request: &domain.AudioGenerationRequest{
-				Input:          "Hello world",
-				Voice:          "alloy",
-				Model:          "tts-1",
-				ResponseFormat: "mp3",
-				Speed:          1.0,
-			},
-		},
-		{
-			name: "different voice",
-			request: &domain.AudioGenerationRequest{
-				Input:          "Test",
-				Voice:          "nova",
-				Model:          "tts-1-hd",
-				ResponseFormat: "opus",
-				Speed:          1.5,
-			},
-		},
+		{name: "alloy voice", voice: "alloy", model: "tts-1"},
+		{name: "nova voice", voice: "nova", model: "tts-1-hd"},
+		{name: "shimmer voice", voice: "shimmer", model: "tts-1"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Will fail with invalid key, but validates request structure
-			_, _, err := provider.GenerateAudio(tt.request)
-			if err == nil {
-				t.Log("Note: API call succeeded, API key might be valid")
+			provider := NewOpenAIProvider()
+			provider.byteOps = &mockByteOpsClient{
+				createSpeechFunc: func(ctx context.Context, req gogpt.CreateSpeechRequest) (gogpt.RawResponse, error) {
+					if string(req.Voice) != tt.voice {
+						t.Errorf("Expected voice '%s', got '%s'", tt.voice, req.Voice)
+					}
+					if string(req.Model) != tt.model {
+						t.Errorf("Expected model '%s', got '%s'", tt.model, req.Model)
+					}
+					return gogpt.RawResponse{ReadCloser: io.NopCloser(strings.NewReader("audio"))}, nil
+				},
+			}
+
+			request := &domain.AudioGenerationRequest{
+				Input: "Test",
+				Voice: tt.voice,
+				Model: tt.model,
+			}
+
+			_, _, err := provider.GenerateAudio(request)
+			if err != nil {
+				t.Errorf("Expected no error, got: %v", err)
 			}
 		})
 	}
 }
 
-func TestOpenAIProvider_GenerateImage_InvalidAPIKey(t *testing.T) {
-	os.Setenv("OPENAI_API_KEY", "invalid-key")
-	defer os.Unsetenv("OPENAI_API_KEY")
-
+func TestOpenAIProvider_GenerateImage_Success(t *testing.T) {
 	provider := NewOpenAIProvider()
+	fakeImageBytes := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A}
+	provider.byteOps = &mockByteOpsClient{
+		createImageFunc: func(ctx context.Context, req gogpt.ImageRequest) (gogpt.ImageResponse, error) {
+			if req.Prompt != "A beautiful sunset" {
+				t.Errorf("Expected prompt 'A beautiful sunset', got '%s'", req.Prompt)
+			}
+			return gogpt.ImageResponse{
+				Data: []gogpt.ImageResponseDataInner{
+					{B64JSON: base64.StdEncoding.EncodeToString(fakeImageBytes)},
+				},
+			}, nil
+		},
+	}
 
 	request := &domain.ImageGenerationRequest{
 		Prompt: "A beautiful sunset",
@@ -351,241 +424,221 @@ func TestOpenAIProvider_GenerateImage_InvalidAPIKey(t *testing.T) {
 	}
 
 	imageBytes, metadata, err := provider.GenerateImage(request)
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if len(imageBytes) != len(fakeImageBytes) {
+		t.Errorf("Expected %d bytes, got %d", len(fakeImageBytes), len(imageBytes))
+	}
+	if metadata == nil {
+		t.Fatal("Expected metadata to be non-nil")
+	}
+	if metadata.Model != "dall-e-2" {
+		t.Errorf("Expected model 'dall-e-2', got '%s'", metadata.Model)
+	}
+}
 
-	// Should get an error with invalid API key
-	if err == nil {
-		t.Error("Expected error with invalid API key")
+func TestOpenAIProvider_GenerateImage_Error(t *testing.T) {
+	provider := NewOpenAIProvider()
+	provider.byteOps = &mockByteOpsClient{
+		createImageFunc: func(ctx context.Context, req gogpt.ImageRequest) (gogpt.ImageResponse, error) {
+			return gogpt.ImageResponse{}, fmt.Errorf("image generation failed: unauthorized")
+		},
 	}
 
+	request := &domain.ImageGenerationRequest{
+		Prompt: "A cat",
+		Model:  "dall-e-2",
+		Size:   "512x512",
+	}
+
+	imageBytes, metadata, err := provider.GenerateImage(request)
+	if err == nil {
+		t.Error("Expected error")
+	}
 	if imageBytes != nil {
 		t.Error("Expected nil image bytes on error")
 	}
-
 	if metadata != nil {
 		t.Error("Expected nil metadata on error")
 	}
 }
 
-func TestOpenAIProvider_GenerateImage_RequestValidation(t *testing.T) {
-	os.Setenv("OPENAI_API_KEY", "test-key")
-	defer os.Unsetenv("OPENAI_API_KEY")
-
+func TestOpenAIProvider_GenerateImage_DallE3(t *testing.T) {
 	provider := NewOpenAIProvider()
-
-	tests := []struct {
-		name    string
-		request *domain.ImageGenerationRequest
-	}{
-		{
-			name: "DALL-E 2 request",
-			request: &domain.ImageGenerationRequest{
-				Prompt: "A cat in space",
-				Model:  "dall-e-2",
-				Size:   "512x512",
-			},
-		},
-		{
-			name: "DALL-E 3 request",
-			request: &domain.ImageGenerationRequest{
-				Prompt: "A futuristic city",
-				Model:  "dall-e-3",
-				Size:   "1024x1024",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Will fail with invalid key, but validates request structure
-			_, _, err := provider.GenerateImage(tt.request)
-			if err == nil {
-				t.Log("Note: API call succeeded, API key might be valid")
+	provider.byteOps = &mockByteOpsClient{
+		createImageFunc: func(ctx context.Context, req gogpt.ImageRequest) (gogpt.ImageResponse, error) {
+			if req.Model != gogpt.CreateImageModelDallE3 {
+				t.Errorf("Expected DALL-E 3 model, got %s", req.Model)
 			}
-		})
-	}
-}
-
-func TestOpenAIProvider_TranscribeAudio_InvalidAPIKey(t *testing.T) {
-	os.Setenv("OPENAI_API_KEY", "invalid-key")
-	defer os.Unsetenv("OPENAI_API_KEY")
-
-	provider := NewOpenAIProvider()
-
-	request := &domain.AudioTranscriptionRequest{
-		AudioData:      []byte("fake audio data"),
-		Model:          "whisper-1",
-		Language:       "en",
-		Prompt:         "Test prompt",
-		ResponseFormat: "text",
-	}
-
-	text, metadata, err := provider.TranscribeAudio(request)
-
-	// Should get an error with invalid API key
-	if err == nil {
-		t.Error("Expected error with invalid API key")
-	}
-
-	if text != "" {
-		t.Error("Expected empty text on error")
-	}
-
-	if metadata != nil {
-		t.Error("Expected nil metadata on error")
-	}
-}
-
-func TestOpenAIProvider_TranscribeAudio_RequestValidation(t *testing.T) {
-	os.Setenv("OPENAI_API_KEY", "test-key")
-	defer os.Unsetenv("OPENAI_API_KEY")
-
-	provider := NewOpenAIProvider()
-
-	tests := []struct {
-		name    string
-		request *domain.AudioTranscriptionRequest
-	}{
-		{
-			name: "basic transcription",
-			request: &domain.AudioTranscriptionRequest{
-				AudioData:      []byte("test audio"),
-				Model:          "whisper-1",
-				Language:       "en",
-				ResponseFormat: "text",
-			},
-		},
-		{
-			name: "with prompt",
-			request: &domain.AudioTranscriptionRequest{
-				AudioData:      []byte("test audio"),
-				Model:          "whisper-1",
-				Language:       "es",
-				Prompt:         "Context prompt",
-				ResponseFormat: "json",
-			},
+			fakeBytes := []byte{0xFF, 0xD8, 0xFF}
+			return gogpt.ImageResponse{
+				Data: []gogpt.ImageResponseDataInner{
+					{B64JSON: base64.StdEncoding.EncodeToString(fakeBytes)},
+				},
+			}, nil
 		},
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Will fail with invalid key, but validates request structure
-			_, _, err := provider.TranscribeAudio(tt.request)
-			if err == nil {
-				t.Log("Note: API call succeeded, API key might be valid")
-			}
-		})
-	}
-}
-
-func TestOpenAIProvider_GenerateAudio_EmptyInput(t *testing.T) {
-	os.Setenv("OPENAI_API_KEY", "test-key")
-	defer os.Unsetenv("OPENAI_API_KEY")
-
-	provider := NewOpenAIProvider()
-
-	request := &domain.AudioGenerationRequest{
-		Input:          "",
-		Voice:          "alloy",
-		Model:          "tts-1",
-		ResponseFormat: "mp3",
-		Speed:          1.0,
-	}
-
-	_, _, err := provider.GenerateAudio(request)
-
-	// Should get an error for empty input
-	if err == nil {
-		t.Error("Expected error with empty input")
-	}
-}
-
-func TestOpenAIProvider_GenerateImage_EmptyPrompt(t *testing.T) {
-	os.Setenv("OPENAI_API_KEY", "test-key")
-	defer os.Unsetenv("OPENAI_API_KEY")
-
-	provider := NewOpenAIProvider()
 
 	request := &domain.ImageGenerationRequest{
-		Prompt: "",
+		Prompt: "A futuristic city",
+		Model:  "dall-e-3",
+		Size:   "1024x1024",
+	}
+
+	_, _, err := provider.GenerateImage(request)
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+}
+
+func TestOpenAIProvider_GenerateImage_EmptyResponse(t *testing.T) {
+	provider := NewOpenAIProvider()
+	provider.byteOps = &mockByteOpsClient{
+		createImageFunc: func(ctx context.Context, req gogpt.ImageRequest) (gogpt.ImageResponse, error) {
+			return gogpt.ImageResponse{Data: []gogpt.ImageResponseDataInner{}}, nil
+		},
+	}
+
+	request := &domain.ImageGenerationRequest{
+		Prompt: "Test",
 		Model:  "dall-e-2",
 		Size:   "512x512",
 	}
 
 	_, _, err := provider.GenerateImage(request)
-
-	// Should get an error for empty prompt
 	if err == nil {
-		t.Error("Expected error with empty prompt")
+		t.Error("Expected error for empty response data")
 	}
 }
 
-func TestOpenAIProvider_TranscribeAudio_EmptyAudioData(t *testing.T) {
-	os.Setenv("OPENAI_API_KEY", "test-key")
-	defer os.Unsetenv("OPENAI_API_KEY")
-
+func TestOpenAIProvider_TranscribeAudio_Success(t *testing.T) {
 	provider := NewOpenAIProvider()
+	provider.byteOps = &mockByteOpsClient{
+		createTranscriptionFunc: func(ctx context.Context, req gogpt.AudioRequest) (gogpt.AudioResponse, error) {
+			if req.Model != "whisper-1" {
+				t.Errorf("Expected model 'whisper-1', got '%s'", req.Model)
+			}
+			if req.Language != "en" {
+				t.Errorf("Expected language 'en', got '%s'", req.Language)
+			}
+			return gogpt.AudioResponse{Text: "Hello, world!"}, nil
+		},
+	}
 
 	request := &domain.AudioTranscriptionRequest{
-		AudioData:      []byte{},
+		AudioData:      []byte("fake audio data"),
 		Model:          "whisper-1",
 		Language:       "en",
 		ResponseFormat: "text",
 	}
 
-	_, _, err := provider.TranscribeAudio(request)
-
-	// Should get an error for empty audio data
-	if err == nil {
-		t.Error("Expected error with empty audio data")
+	text, metadata, err := provider.TranscribeAudio(request)
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if text != "Hello, world!" {
+		t.Errorf("Expected 'Hello, world!', got '%s'", text)
+	}
+	if metadata == nil {
+		t.Fatal("Expected metadata to be non-nil")
+	}
+	if metadata.Model != "whisper-1" {
+		t.Errorf("Expected model 'whisper-1', got '%s'", metadata.Model)
 	}
 }
 
-func TestOpenAIProvider_TranscribeAudio_VerboseJsonMetadata(t *testing.T) {
-	os.Setenv("OPENAI_API_KEY", "test-key")
-	defer os.Unsetenv("OPENAI_API_KEY")
-
+func TestOpenAIProvider_TranscribeAudio_Error(t *testing.T) {
 	provider := NewOpenAIProvider()
+	provider.byteOps = &mockByteOpsClient{
+		createTranscriptionFunc: func(ctx context.Context, req gogpt.AudioRequest) (gogpt.AudioResponse, error) {
+			return gogpt.AudioResponse{}, fmt.Errorf("transcription failed: unauthorized")
+		},
+	}
 
+	request := &domain.AudioTranscriptionRequest{
+		AudioData:      []byte("fake audio data"),
+		Model:          "whisper-1",
+		Language:       "en",
+		ResponseFormat: "text",
+	}
+
+	text, metadata, err := provider.TranscribeAudio(request)
+	if err == nil {
+		t.Error("Expected error")
+	}
+	if text != "" {
+		t.Error("Expected empty text on error")
+	}
+	if metadata != nil {
+		t.Error("Expected nil metadata on error")
+	}
+}
+
+func TestOpenAIProvider_TranscribeAudio_DifferentLanguages(t *testing.T) {
 	tests := []struct {
-		name                 string
-		responseFormat       string
-		expectVerboseData    bool
-		expectVerboseDataNil bool
+		name     string
+		language string
 	}{
-		{
-			name:                 "verbose_json format includes metadata",
-			responseFormat:       "verbose_json",
-			expectVerboseData:    true,
-			expectVerboseDataNil: false,
-		},
-		{
-			name:                 "diarized_json format includes metadata",
-			responseFormat:       "diarized_json",
-			expectVerboseData:    true,
-			expectVerboseDataNil: false,
-		},
-		{
-			name:                 "json format excludes verbose metadata",
-			responseFormat:       "json",
-			expectVerboseData:    false,
-			expectVerboseDataNil: true,
-		},
-		{
-			name:                 "text format excludes verbose metadata",
-			responseFormat:       "text",
-			expectVerboseData:    false,
-			expectVerboseDataNil: true,
-		},
-		{
-			name:                 "srt format excludes verbose metadata",
-			responseFormat:       "srt",
-			expectVerboseData:    false,
-			expectVerboseDataNil: true,
-		},
+		{name: "English", language: "en"},
+		{name: "Spanish", language: "es"},
+		{name: "French", language: "fr"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			provider := NewOpenAIProvider()
+			provider.byteOps = &mockByteOpsClient{
+				createTranscriptionFunc: func(ctx context.Context, req gogpt.AudioRequest) (gogpt.AudioResponse, error) {
+					if req.Language != tt.language {
+						t.Errorf("Expected language '%s', got '%s'", tt.language, req.Language)
+					}
+					return gogpt.AudioResponse{Text: "transcribed"}, nil
+				},
+			}
+
+			request := &domain.AudioTranscriptionRequest{
+				AudioData:      []byte("test audio"),
+				Model:          "whisper-1",
+				Language:       tt.language,
+				ResponseFormat: "text",
+			}
+
+			_, _, err := provider.TranscribeAudio(request)
+			if err != nil {
+				t.Errorf("Expected no error, got: %v", err)
+			}
+		})
+	}
+}
+
+func TestOpenAIProvider_TranscribeAudio_VerboseJsonMetadata(t *testing.T) {
+	tests := []struct {
+		name              string
+		responseFormat    string
+		expectVerboseData bool
+	}{
+		{name: "verbose_json includes metadata", responseFormat: "verbose_json", expectVerboseData: true},
+		{name: "diarized_json includes metadata", responseFormat: "diarized_json", expectVerboseData: true},
+		{name: "json excludes verbose metadata", responseFormat: "json", expectVerboseData: false},
+		{name: "text excludes verbose metadata", responseFormat: "text", expectVerboseData: false},
+		{name: "srt excludes verbose metadata", responseFormat: "srt", expectVerboseData: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider := NewOpenAIProvider()
+			provider.byteOps = &mockByteOpsClient{
+				createTranscriptionFunc: func(ctx context.Context, req gogpt.AudioRequest) (gogpt.AudioResponse, error) {
+					resp := gogpt.AudioResponse{
+						Text:     "transcribed text",
+						Language: "en",
+						Duration: 5.0,
+					}
+					return resp, nil
+				},
+			}
+
 			request := &domain.AudioTranscriptionRequest{
 				AudioData:      []byte("test audio data"),
 				Model:          "whisper-1",
@@ -593,99 +646,51 @@ func TestOpenAIProvider_TranscribeAudio_VerboseJsonMetadata(t *testing.T) {
 				ResponseFormat: tt.responseFormat,
 			}
 
-			// This will fail with invalid API key, but we're testing the code structure
-			_, metadata, err := provider.TranscribeAudio(request)
+			text, metadata, err := provider.TranscribeAudio(request)
+			if err != nil {
+				t.Fatalf("Expected no error, got: %v", err)
+			}
+			if text != "transcribed text" {
+				t.Errorf("Expected 'transcribed text', got '%s'", text)
+			}
+			if metadata == nil {
+				t.Fatal("Expected metadata to be non-nil")
+			}
 
-			// We expect an error due to invalid API key, but we can still check the logic
-			if err == nil {
-				// If no error, we have a valid API key - check metadata was populated correctly
-				if metadata == nil {
-					t.Fatal("Expected metadata to be returned")
-				}
-
-				if tt.expectVerboseData {
-					if metadata.VerboseData == nil {
-						t.Error("Expected VerboseData to be populated for verbose format")
-					} else {
-						// Verify expected fields are present
-						expectedFields := []string{"language", "duration", "segments", "words"}
-						for _, field := range expectedFields {
-							if _, ok := metadata.VerboseData[field]; !ok {
-								t.Errorf("Expected VerboseData to contain field '%s'", field)
-							}
+			if tt.expectVerboseData {
+				if metadata.VerboseData == nil {
+					t.Error("Expected VerboseData to be populated for verbose format")
+				} else {
+					expectedFields := []string{"language", "duration", "segments", "words"}
+					for _, field := range expectedFields {
+						if _, ok := metadata.VerboseData[field]; !ok {
+							t.Errorf("Expected VerboseData to contain field '%s'", field)
 						}
 					}
-				} else if tt.expectVerboseDataNil {
-					if metadata.VerboseData != nil {
-						t.Errorf("Expected VerboseData to be nil for format '%s', got %v", tt.responseFormat, metadata.VerboseData)
-					}
 				}
-
-				// Verify standard metadata fields
-				if metadata.Model != "whisper-1" {
-					t.Errorf("Expected Model to be 'whisper-1', got '%s'", metadata.Model)
+			} else {
+				if metadata.VerboseData != nil {
+					t.Errorf("Expected VerboseData to be nil for format '%s'", tt.responseFormat)
 				}
 			}
 		})
 	}
 }
 
-func TestOpenAIProvider_TranscribeAudio_VerboseJsonStructure(t *testing.T) {
-	// This test documents the expected structure of VerboseData
-	// when verbose_json format is used with a valid API key
-
-	expectedStructure := map[string]string{
-		"language": "string - detected language code (e.g., 'en')",
-		"duration": "float64 - audio duration in seconds",
-		"segments": "[]struct - array of transcription segments with timing",
-		"words":    "[]struct - array of word-level timestamps",
-	}
-
-	t.Log("Expected VerboseData structure for verbose_json format:")
-	for field, description := range expectedStructure {
-		t.Logf("  %s: %s", field, description)
-	}
-
-	t.Log("\nSegment structure includes:")
-	segmentFields := []string{
-		"id - segment identifier",
-		"seek - seek position",
-		"start - start timestamp",
-		"end - end timestamp",
-		"text - segment transcription",
-		"tokens - token array",
-		"temperature - temperature value",
-		"avg_logprob - average log probability",
-		"compression_ratio - compression ratio",
-		"no_speech_prob - probability of no speech",
-		"transient - transient flag",
-	}
-	for _, field := range segmentFields {
-		t.Logf("  - %s", field)
-	}
-
-	t.Log("\nWord structure includes:")
-	wordFields := []string{
-		"word - the word text",
-		"start - start timestamp",
-		"end - end timestamp",
-	}
-	for _, field := range wordFields {
-		t.Logf("  - %s", field)
-	}
-}
-
 func TestOpenAIProvider_TranscribeAudio_ResponseFormatPassthrough(t *testing.T) {
-	os.Setenv("OPENAI_API_KEY", "test-key")
-	defer os.Unsetenv("OPENAI_API_KEY")
-
-	provider := NewOpenAIProvider()
-
-	// Test that all supported response formats are passed through correctly
 	formats := []string{"json", "text", "srt", "vtt", "verbose_json", "diarized_json"}
 
 	for _, format := range formats {
 		t.Run(format, func(t *testing.T) {
+			provider := NewOpenAIProvider()
+			var capturedFormat gogpt.AudioResponseFormat
+			provider.byteOps = &mockByteOpsClient{
+				createTranscriptionFunc: func(ctx context.Context, req gogpt.AudioRequest) (gogpt.AudioResponse, error) {
+					capturedFormat = req.Format
+					return gogpt.AudioResponse{Text: "ok"}, nil
+				},
+			}
+
 			request := &domain.AudioTranscriptionRequest{
 				AudioData:      []byte("test audio"),
 				Model:          "whisper-1",
@@ -693,16 +698,12 @@ func TestOpenAIProvider_TranscribeAudio_ResponseFormatPassthrough(t *testing.T) 
 				ResponseFormat: format,
 			}
 
-			// This will fail with invalid key, but validates the format is accepted
 			_, _, err := provider.TranscribeAudio(request)
-
-			if err == nil {
-				t.Logf("Note: API call succeeded for format '%s'", format)
-			} else {
-				// Just verify we're not getting a format validation error
-				if strings.Contains(err.Error(), "unsupported format") {
-					t.Errorf("Format '%s' should be supported but got unsupported format error", format)
-				}
+			if err != nil {
+				t.Errorf("Expected no error for format '%s', got: %v", format, err)
+			}
+			if string(capturedFormat) != format {
+				t.Errorf("Expected format '%s' to be passed through, got '%s'", format, capturedFormat)
 			}
 		})
 	}

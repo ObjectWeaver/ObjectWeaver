@@ -9,7 +9,8 @@ import (
 	"objectweaver/llmManagement/domain"
 	"objectweaver/llmManagement/requestManagement"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
+
 	"github.com/sashabaranov/go-openai"
 )
 

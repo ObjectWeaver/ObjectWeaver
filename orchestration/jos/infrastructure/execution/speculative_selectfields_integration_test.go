@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // TestSpeculativeProcessing_WithSelectFieldsDependencies tests that speculative processing

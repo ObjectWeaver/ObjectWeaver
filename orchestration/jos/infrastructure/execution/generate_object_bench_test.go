@@ -8,7 +8,7 @@ import (
 	"objectweaver/orchestration/jos/infrastructure/prompt"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // BenchmarkProcessFields tests the concurrent processing of fields

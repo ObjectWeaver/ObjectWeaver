@@ -7,7 +7,7 @@ import (
 	"objectweaver/orchestration/jos/domain"
 	"os"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // RecursiveLoopProcessor handles iterative refinement of field generation

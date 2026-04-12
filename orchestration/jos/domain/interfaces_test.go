@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 func TestNewExecutionContext(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // GenerationRequest - Immutable value object representing a generation request

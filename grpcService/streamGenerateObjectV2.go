@@ -2,12 +2,14 @@ package grpcService
 
 import (
 	"errors"
+	"log"
 	"objectweaver/logger"
 
-	"github.com/objectweaver/go-sdk/client"
-	"github.com/objectweaver/go-sdk/converison"
-	pb "github.com/objectweaver/go-sdk/grpc"
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
+
+	"objectweaver/converison"
+	pb "objectweaver/grpc"
+
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"objectweaver/checks"
@@ -18,7 +20,7 @@ import (
 // StreamGeneratedObjectsV2 - Uses V2 architecture for streaming object generation
 func (s *Server) StreamGeneratedObjectsV2(req *pb.RequestBody, stream pb.JSONSchemaService_StreamGeneratedObjectsServer) error {
 	// Convert protobuf request to internal format
-	body := client.RequestBody{
+	body := jsonSchema.RequestBody{
 		Prompt:     req.Prompt,
 		Definition: converison.ConvertProtoToModel(req.Definition),
 	}
@@ -52,6 +54,7 @@ func (s *Server) StreamGeneratedObjectsV2(req *pb.RequestBody, stream pb.JSONSch
 
 	// Determine which streaming method to use
 	if config.Mode == factory.ModeStreamingProgressive {
+		log.Print("the the stream progressively mode")
 		return s.streamProgressively(generator, request, stream)
 	} else {
 		return s.streamComplete(generator, request, stream)
@@ -148,6 +151,7 @@ func (s *Server) streamProgressively(generator domain.Generator, request *domain
 		if chunk == nil {
 			continue
 		}
+		log.Print("The chunk", *chunk)
 
 		// Update accumulated data with new token
 		if chunk.NewToken != nil {
@@ -164,6 +168,7 @@ func (s *Server) streamProgressively(generator domain.Generator, request *domain
 		if chunk.CurrentMap != nil {
 			accumulatedData = chunk.CurrentMap
 		}
+		logger.Println("The accumulated data", accumulatedData)
 
 		// Convert to protobuf struct
 		protoStruct, err := structpb.NewStruct(accumulatedData)

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 func TestNewMockProvider(t *testing.T) {

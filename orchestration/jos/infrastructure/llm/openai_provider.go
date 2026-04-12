@@ -2,25 +2,34 @@ package llm
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
+	"net/http"
 	"objectweaver/logger"
 	"os"
 	"strings"
 	"time"
 
-	byteoperations "objectweaver/llmManagement/byteOperations"
 	"objectweaver/orchestration/jobSubmitter"
 	"objectweaver/orchestration/jos/domain"
 
 	gogpt "github.com/sashabaranov/go-openai"
 )
 
+// byteOpsClient abstracts the OpenAI client methods used for byte operations (TTS, image, STT)
+// so they can be mocked in unit tests without making real API calls.
+type byteOpsClient interface {
+	CreateSpeech(ctx context.Context, request gogpt.CreateSpeechRequest) (gogpt.RawResponse, error)
+	CreateImage(ctx context.Context, request gogpt.ImageRequest) (gogpt.ImageResponse, error)
+	CreateTranscription(ctx context.Context, request gogpt.AudioRequest) (gogpt.AudioResponse, error)
+}
+
 // OpenAIProvider adapts the existing job submitter to the LLMProvider interface
 type OpenAIProvider struct {
 	submitter         jobSubmitter.JobEntryPoint
 	defaultModel      string
-	client            *gogpt.Client
+	byteOps           byteOpsClient
 	throughputManager *DefaultThroughputManager
 	maxRetries        int
 }
@@ -51,7 +60,7 @@ func NewOpenAIProvider() *OpenAIProvider {
 	return &OpenAIProvider{
 		submitter:         jobSubmitter.NewDefaultJobEntryPoint(),
 		defaultModel:      getDefaultModelForProvider(),
-		client:            gogpt.NewClientWithConfig(config),
+		byteOps:           gogpt.NewClientWithConfig(config),
 		throughputManager: StandardThroughputManager,
 		maxRetries:        3,
 	}
@@ -63,23 +72,23 @@ func getDefaultModelForProvider() string {
 
 	switch provider {
 	case "gemini":
-		return "gemini-2.5-flash"
+		return "gemini-2.5-flash-lite"
 	case "openai":
-		return "gpt-4o-mini"
+		return "gpt-4.1-nano-2025-04-14"
 	case "local":
 		// For local, try to detect from URL or default to a common model
-		return "gpt-4o-mini"
+		return "gpt-4.1-nano-2025-04-14"
 	default:
 		// If provider not set or unknown, check if we have an API URL (local)
 		if os.Getenv("LLM_API_URL") != "" {
-			return "gpt-4o-mini"
+			return "gpt-4.1-nano-2025-04-14"
 		}
-		// Default to Gemini Flash if using Gemini keys
+		// Default to Gemini Flash Lite if using Gemini keys
 		if os.Getenv("GEMINI_API_KEY") != "" {
-			return "gemini-2.5-flash"
+			return "gemini-2.5-flash-lite"
 		}
 		// Final fallback
-		return "gpt-4o-mini"
+		return "gpt-4.1-nano-2025-04-14"
 	}
 }
 
@@ -147,6 +156,9 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 
 		if err != nil {
 			logger.Printf("[LLM ERROR] Job submission failed after %d retries: %v", p.maxRetries, err)
+			if strings.Contains(err.Error(), "reasoning_effort") {
+				logger.Printf("[LLM ERROR] The request includes a reasoning_effort parameter but model %q does not support it. Remove reasoning_effort from ModelConfig or use a reasoning model (e.g. o1, o3, o4 series).", model)
+			}
 			return "", nil, fmt.Errorf("job submission failed: %w", err)
 		}
 	}
@@ -265,7 +277,7 @@ func (p *OpenAIProvider) GenerateAudio(request *domain.AudioGenerationRequest) (
 
 	// Call OpenAI CreateSpeech API
 	ctx := context.Background()
-	response, err := p.client.CreateSpeech(ctx, ttsReq)
+	response, err := p.byteOps.CreateSpeech(ctx, ttsReq)
 	if err != nil {
 		logger.Printf("[OpenAIProvider ERROR] TTS generation failed: %v", err)
 		return nil, nil, fmt.Errorf("TTS generation failed: %w", err)
@@ -299,15 +311,52 @@ func (p *OpenAIProvider) GenerateImage(request *domain.ImageGenerationRequest) (
 	logger.Printf("[OpenAIProvider] Model: %s", request.Model)
 	logger.Printf("[OpenAIProvider] Size: %s", request.Size)
 
-	// Convert string model to string
-	modelType := string(request.Model)
+	// Build image request
+	req := gogpt.ImageRequest{
+		Prompt:         request.Prompt,
+		Size:           request.Size,
+		ResponseFormat: gogpt.CreateImageResponseFormatB64JSON,
+		N:              1,
+	}
 
-	// Use the byteoperations package to generate the image with our client
-	byteops := byteoperations.NewImageGenerator(p.client)
-	imageBytes, err := byteops.GenerateImage(request.Prompt, modelType, request.Size)
+	modelStr := string(request.Model)
+	switch modelStr {
+	case "dall-e-3":
+		req.Model = gogpt.CreateImageModelDallE3
+	default:
+		req.Model = gogpt.CreateImageModelDallE2
+	}
+
+	resp, err := p.byteOps.CreateImage(context.Background(), req)
 	if err != nil {
 		logger.Printf("[OpenAIProvider ERROR] Image generation failed: %v", err)
 		return nil, nil, fmt.Errorf("image generation failed: %w", err)
+	}
+
+	if len(resp.Data) == 0 {
+		return nil, nil, fmt.Errorf("no image data returned from API")
+	}
+
+	imageData := resp.Data[0]
+	var imageBytes []byte
+
+	if imageData.B64JSON != "" {
+		imageBytes, err = base64.StdEncoding.DecodeString(imageData.B64JSON)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode base64 image: %w", err)
+		}
+	} else if imageData.URL != "" {
+		httpResp, err := http.Get(imageData.URL)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to download image from URL: %w", err)
+		}
+		defer httpResp.Body.Close()
+		imageBytes, err = io.ReadAll(httpResp.Body)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to read image data: %w", err)
+		}
+	} else {
+		return nil, nil, fmt.Errorf("no image data in response")
 	}
 
 	logger.Printf("[OpenAIProvider] Image generated successfully: %d bytes", len(imageBytes))
@@ -345,7 +394,7 @@ func (p *OpenAIProvider) TranscribeAudio(request *domain.AudioTranscriptionReque
 
 	// Call OpenAI CreateTranscription API
 	ctx := context.Background()
-	response, err := p.client.CreateTranscription(ctx, whisperReq)
+	response, err := p.byteOps.CreateTranscription(ctx, whisperReq)
 	if err != nil {
 		logger.Printf("[OpenAIProvider ERROR] Audio transcription failed: %v", err)
 		return "", nil, fmt.Errorf("audio transcription failed: %w", err)

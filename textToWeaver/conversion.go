@@ -5,7 +5,7 @@ import (
 	"objectweaver/logger"
 	"strings"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // ConvertRawOutputToDefinition transforms the LLM output into a proper jsonSchema.Definition

@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // LLMProvider - Abstract LLM interaction for generating content
@@ -77,7 +77,7 @@ type ProviderMetadata struct {
 	FinishReason string
 	Prompt       string
 	Choices      []Choice
-	VerboseData map[string]any
+	VerboseData  map[string]any
 }
 
 type Choice struct {

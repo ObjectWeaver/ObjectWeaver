@@ -9,7 +9,7 @@ import (
 
 	"objectweaver/orchestration/jos/domain"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // testContext returns a test context with cancellation support

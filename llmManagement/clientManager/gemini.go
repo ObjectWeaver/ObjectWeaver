@@ -14,7 +14,8 @@ import (
 	"objectweaver/llmManagement/requestManagement"
 	"objectweaver/logger"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
+
 	"github.com/sashabaranov/go-openai"
 )
 

@@ -5,7 +5,7 @@ import (
 	"objectweaver/orchestration/jos/domain"
 	"sync"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // StreamingPrimitiveProcessor handles primitives with token-level streaming

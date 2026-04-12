@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // DecisionProcessor wraps task results and evaluates decision points

@@ -5,8 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	pb "github.com/objectweaver/go-sdk/grpc"
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
+
+	pb "objectweaver/grpc"
 	"google.golang.org/grpc/metadata"
 
 	"objectweaver/orchestration/jos/domain"

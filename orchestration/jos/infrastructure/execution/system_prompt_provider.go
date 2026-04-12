@@ -1,7 +1,7 @@
 package execution
 
 import (
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // SystemPromptProvider provides type-specific system prompts

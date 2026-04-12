@@ -3,7 +3,7 @@ package execution
 import (
 	"testing"
 
-	"github.com/objectweaver/go-sdk/jsonSchema"
+	"objectweaver/jsonSchema"
 )
 
 // TestAnalyzeFieldDependencies_WithSelectFields tests that SelectFields dependencies are respected
