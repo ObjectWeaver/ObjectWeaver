@@ -2,10 +2,10 @@ package execution
 
 import (
 	"fmt"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 	"sync"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // StreamingPrimitiveProcessor handles primitives with token-level streaming

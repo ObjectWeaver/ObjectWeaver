@@ -3,7 +3,7 @@ package checks
 import (
 	"testing"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 func TestCheckCircularDefinitions_NoCycle(t *testing.T) {

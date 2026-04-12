@@ -2,10 +2,10 @@ package LLM
 
 import (
 	"errors"
-	"objectweaver/llmManagement/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/domain"
 	"sync"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
 	gogpt "github.com/sashabaranov/go-openai"
 )

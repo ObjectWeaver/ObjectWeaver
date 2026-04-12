@@ -3,9 +3,9 @@ package LLM
 import (
 	"context"
 	"errors"
-	"objectweaver/llmManagement/backoff"
-	"objectweaver/llmManagement/clientManager"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/backoff"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/clientManager"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"sync"
 	"time"
 

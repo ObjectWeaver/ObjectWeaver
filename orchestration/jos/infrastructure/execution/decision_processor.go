@@ -3,12 +3,12 @@ package execution
 import (
 	"context"
 	"fmt"
-	"objectweaver/logger"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 	"sort"
 	"strings"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // DecisionProcessor wraps task results and evaluates decision points

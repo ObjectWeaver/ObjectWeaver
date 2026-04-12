@@ -2,12 +2,12 @@ package grpcService
 
 import (
 	"context"
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
-	pb "objectweaver/grpc"
+	pb "github.com/ObjectWeaver/ObjectWeaver/grpc"
 
-	"objectweaver/orchestration/jos/domain"
-	"objectweaver/orchestration/jos/factory"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/factory"
 )
 
 // RequestConverter converts protobuf requests to internal request format

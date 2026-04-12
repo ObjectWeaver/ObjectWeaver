@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"objectweaver/llmManagement/client"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/client"
 )
 
 func TestNewBatchWebhookNotifierFromEnv_Disabled(t *testing.T) {

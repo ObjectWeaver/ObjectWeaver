@@ -1,8 +1,8 @@
 package epstimic
 
 import (
-	"objectweaver/logger"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 	"os"
 	"strconv"
 )

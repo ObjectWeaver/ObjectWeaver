@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // LLMProvider - Abstract LLM interaction for generating content

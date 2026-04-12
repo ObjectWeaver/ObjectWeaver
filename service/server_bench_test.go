@@ -6,14 +6,14 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"objectweaver/orchestration/jos/factory"
-	"objectweaver/orchestration/jos/infrastructure/llm"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/factory"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/infrastructure/llm"
 	"os"
 	"sync"
 	"testing"
 	"time"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // setupMockBenchServer creates an HTTP test server with a MockProvider injected

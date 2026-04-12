@@ -1,9 +1,9 @@
 package converison
 
 import (
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
-	pb "objectweaver/grpc"
+	pb "github.com/ObjectWeaver/ObjectWeaver/grpc"
 )
 
 // ConvertProtoToFocus converts a protobuf Focus to the Go model Focus

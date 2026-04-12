@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // ByteProcessor handles byte data type for TTS, Image Generation, and STT

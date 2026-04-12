@@ -2,10 +2,10 @@ package texttoweaver
 
 import (
 	"fmt"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"strings"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // ConvertRawOutputToDefinition transforms the LLM output into a proper jsonSchema.Definition

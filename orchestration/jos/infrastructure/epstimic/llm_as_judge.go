@@ -3,10 +3,10 @@ package epstimic
 import (
 	"encoding/json"
 	"fmt"
-	"objectweaver/orchestration/jos/domain"
-	"objectweaver/orchestration/jos/infrastructure"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/infrastructure"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 //this will process the list of temp results and return the best one along with the updated metadata containing the information from all results

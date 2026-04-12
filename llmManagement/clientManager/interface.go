@@ -1,8 +1,8 @@
 package clientManager
 
 import (
-	"objectweaver/llmManagement"
-	"objectweaver/llmManagement/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/domain"
 
 	"github.com/sashabaranov/go-openai"
 )

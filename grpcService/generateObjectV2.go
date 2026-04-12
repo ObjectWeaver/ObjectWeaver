@@ -6,9 +6,9 @@ import (
 	"errors"
 	"os"
 
-	pb "objectweaver/grpc"
+	pb "github.com/ObjectWeaver/ObjectWeaver/grpc"
 
-	"objectweaver/service"
+	"github.com/ObjectWeaver/ObjectWeaver/service"
 )
 
 // GenerateObjectV2 - Uses V2 architecture for synchronous object generation

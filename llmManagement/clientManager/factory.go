@@ -3,9 +3,9 @@ package clientManager
 import (
 	"fmt"
 	"net/http"
-	"objectweaver/llmManagement/client"
-	"objectweaver/llmManagement/modelConverter"
-	"objectweaver/llmManagement/requestManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/client"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/modelConverter"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/requestManagement"
 	"os"
 	"strings"
 )

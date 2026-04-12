@@ -2,10 +2,10 @@ package execution
 
 import (
 	"context"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 	"testing"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // TestSelectFields_NestedObjectAccess tests that SelectFields can access nested object fields

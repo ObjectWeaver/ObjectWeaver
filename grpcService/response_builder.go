@@ -2,13 +2,13 @@ package grpcService
 
 import (
 	"errors"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 
-	"objectweaver/converison"
-	pb "objectweaver/grpc"
+	"github.com/ObjectWeaver/ObjectWeaver/converison"
+	pb "github.com/ObjectWeaver/ObjectWeaver/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 )
 
 // DefaultResponseBuilder is the default implementation of ResponseBuilder

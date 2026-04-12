@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // TypeProcessor - Handles generation for specific JSON schema types

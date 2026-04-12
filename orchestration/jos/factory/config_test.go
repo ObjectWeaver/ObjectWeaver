@@ -1,7 +1,7 @@
 package factory
 
 import (
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 	"testing"
 )
 

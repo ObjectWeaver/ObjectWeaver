@@ -2,14 +2,14 @@ package LLM
 
 import (
 	"fmt"
-	"objectweaver/llmManagement"
-	"objectweaver/llmManagement/backoff"
-	"objectweaver/llmManagement/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/backoff"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/domain"
 	"sync"
 	"testing"
 	"time"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
 	"github.com/sashabaranov/go-openai"
 )

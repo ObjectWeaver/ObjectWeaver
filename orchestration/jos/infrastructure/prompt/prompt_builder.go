@@ -2,10 +2,10 @@ package prompt
 
 import (
 	"fmt"
-	"objectweaver/orchestration/extractor"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/extractor"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // DefaultPromptBuilder builds prompts for field generation

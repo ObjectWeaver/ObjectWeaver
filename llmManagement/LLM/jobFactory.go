@@ -2,7 +2,7 @@ package LLM
 
 import (
 	"log"
-	"objectweaver/llmManagement/clientManager"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/clientManager"
 	"os"
 	"strconv"
 	"strings"

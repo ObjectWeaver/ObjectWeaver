@@ -3,14 +3,14 @@ package execution
 import (
 	"context"
 	"fmt"
-	"objectweaver/logger"
-	"objectweaver/orchestration/extractor"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/extractor"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 	"os"
 	"strings"
 	"time"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // PrimitiveProcessor handles primitive types (string, number, boolean, byte)

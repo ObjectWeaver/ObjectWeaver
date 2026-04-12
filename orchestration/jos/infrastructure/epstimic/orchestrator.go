@@ -1,10 +1,10 @@
 package epstimic
 
 import (
-	"objectweaver/orchestration/jos/domain"
-	"objectweaver/orchestration/jos/infrastructure"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/infrastructure"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // orchestrator will handle the overall tasks of processing

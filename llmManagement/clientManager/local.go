@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"objectweaver/llmManagement"
-	"objectweaver/llmManagement/domain"
-	"objectweaver/llmManagement/requestManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/requestManagement"
 
 	"github.com/sashabaranov/go-openai"
 )

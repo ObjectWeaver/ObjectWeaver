@@ -2,7 +2,7 @@ package backoff
 
 import (
 	"math/rand"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"sync"
 	"time"
 )

@@ -3,9 +3,9 @@ package application
 import (
 	"context"
 	"fmt"
-	"objectweaver/orchestration/jos/domain"
-	"objectweaver/orchestration/jos/infrastructure/epstimic"
-	"objectweaver/orchestration/jos/infrastructure/execution"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/infrastructure/epstimic"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/infrastructure/execution"
 )
 
 // StreamingGenerator - Generator with field-level streaming support

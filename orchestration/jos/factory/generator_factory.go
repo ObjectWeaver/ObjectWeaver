@@ -2,10 +2,10 @@ package factory
 
 import (
 	"fmt"
-	"objectweaver/orchestration/jos/application"
-	"objectweaver/orchestration/jos/domain"
-	"objectweaver/orchestration/jos/infrastructure/llm"
-	"objectweaver/orchestration/jos/infrastructure/prompt"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/application"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/infrastructure/llm"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/infrastructure/prompt"
 )
 
 // GeneratorFactory creates configured generators

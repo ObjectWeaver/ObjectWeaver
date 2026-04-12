@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"objectweaver/cache"
-	"objectweaver/jsonSchema"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/cache"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"os"
 
 	"github.com/google/uuid"

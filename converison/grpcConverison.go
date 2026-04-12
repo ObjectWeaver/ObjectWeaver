@@ -3,9 +3,9 @@ package converison
 import (
 	"fmt"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
-	pb "objectweaver/grpc"
+	pb "github.com/ObjectWeaver/ObjectWeaver/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 

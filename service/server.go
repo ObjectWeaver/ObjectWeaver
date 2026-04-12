@@ -4,7 +4,7 @@ import (
 	"compress/gzip"
 	"net/http"
 	"net/http/pprof"
-	"objectweaver/cors"
+	"github.com/ObjectWeaver/ObjectWeaver/cors"
 	"os"
 	"time"
 

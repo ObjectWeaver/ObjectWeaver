@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"objectweaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
 
 	"github.com/sashabaranov/go-openai"
 )

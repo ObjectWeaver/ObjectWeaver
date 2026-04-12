@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 )
 
 func TestDefaultResponseBuilder_BuildResponse(t *testing.T) {

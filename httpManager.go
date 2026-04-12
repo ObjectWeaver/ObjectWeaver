@@ -3,7 +3,7 @@ package main
 import (
 	"net"
 	"net/http"
-	"objectweaver/service"
+	"github.com/ObjectWeaver/ObjectWeaver/service"
 	"time"
 )
 

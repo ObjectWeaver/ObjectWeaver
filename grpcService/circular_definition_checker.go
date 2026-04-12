@@ -1,9 +1,9 @@
 package grpcService
 
 import (
-	"objectweaver/checks"
+	"github.com/ObjectWeaver/ObjectWeaver/checks"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // DefaultCircularDefinitionChecker is the default implementation

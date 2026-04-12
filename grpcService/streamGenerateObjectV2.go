@@ -3,18 +3,18 @@ package grpcService
 import (
 	"errors"
 	"log"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
-	"objectweaver/converison"
-	pb "objectweaver/grpc"
+	"github.com/ObjectWeaver/ObjectWeaver/converison"
+	pb "github.com/ObjectWeaver/ObjectWeaver/grpc"
 
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"objectweaver/checks"
-	"objectweaver/orchestration/jos/domain"
-	"objectweaver/orchestration/jos/factory"
+	"github.com/ObjectWeaver/ObjectWeaver/checks"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/factory"
 )
 
 // StreamGeneratedObjectsV2 - Uses V2 architecture for streaming object generation

@@ -5,13 +5,13 @@ import (
 	"errors"
 	"testing"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
-	pb "objectweaver/grpc"
+	pb "github.com/ObjectWeaver/ObjectWeaver/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"objectweaver/orchestration/jos/domain"
-	"objectweaver/orchestration/jos/factory"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/factory"
 )
 
 // Mock stream for testing

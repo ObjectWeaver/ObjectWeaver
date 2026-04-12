@@ -2,7 +2,7 @@ package execution
 
 import (
 	"fmt"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 )
 
 // TTSRequestBuilder constructs audio generation requests from field tasks

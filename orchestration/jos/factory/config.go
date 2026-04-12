@@ -1,6 +1,6 @@
 package factory
 
-import "objectweaver/orchestration/jos/domain"
+import "github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 
 // ProcessingMode defines the operational mode
 type ProcessingMode int

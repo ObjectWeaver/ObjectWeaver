@@ -1,7 +1,7 @@
 package converison
 
 import (
-	pb "objectweaver/grpc"
+	pb "github.com/ObjectWeaver/ObjectWeaver/grpc"
 )
 
 // ConvertDetailedFieldValue converts the DetailedField's value from structpb.Struct to map[string]any

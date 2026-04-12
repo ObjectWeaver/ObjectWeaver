@@ -1,11 +1,11 @@
 package grpcService
 
 import (
-	"objectweaver/converison"
-	"objectweaver/jsonSchema"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/converison"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 
-	pb "objectweaver/grpc"
+	pb "github.com/ObjectWeaver/ObjectWeaver/grpc"
 )
 
 // DefaultRequestConverter is the default implementation of RequestConverter

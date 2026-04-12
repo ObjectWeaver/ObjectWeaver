@@ -3,11 +3,11 @@ package execution
 import (
 	"context"
 	"fmt"
-	"objectweaver/logger"
-	"objectweaver/orchestration/jos/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 	"os"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 // RecursiveLoopProcessor handles iterative refinement of field generation

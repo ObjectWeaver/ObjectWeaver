@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"objectweaver/orchestration/jos/factory"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/factory"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
 
 func TestDefaultGeneratorService_CreateGenerator(t *testing.T) {

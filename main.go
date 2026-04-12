@@ -8,8 +8,8 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof"
-	"objectweaver/grpcService"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/grpcService"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 	"os"
 	"runtime"
 

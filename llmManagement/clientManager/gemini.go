@@ -8,13 +8,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"objectweaver/llmManagement"
-	"objectweaver/llmManagement/domain"
-	"objectweaver/llmManagement/modelConverter"
-	"objectweaver/llmManagement/requestManagement"
-	"objectweaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/domain"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/modelConverter"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/requestManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
 
-	"objectweaver/jsonSchema"
+	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 
 	"github.com/sashabaranov/go-openai"
 )
