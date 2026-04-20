@@ -122,7 +122,7 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 	}
 
 	// Submit job with Definition (includes SendImage if present)
-	completion, _, err := p.submitter.SubmitJob(ctx, model, config.Definition, prompt, config.SystemPrompt, nil)
+	completion, usage, err := p.submitter.SubmitJob(ctx, model, config.Definition, prompt, config.SystemPrompt, nil)
 
 	if err != nil {
 		if strings.Contains(err.Error(), "429") && os.Getenv("THROUGHPUT_MANAGER") == "true" {
@@ -145,7 +145,7 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 				}
 			}
 
-			completion, _, err = p.submitter.SubmitJob(ctx, model, config.Definition, prompt, config.SystemPrompt, nil)
+			completion, usage, err = p.submitter.SubmitJob(ctx, model, config.Definition, prompt, config.SystemPrompt, nil)
 			if err == nil {
 				break
 			}
@@ -165,6 +165,12 @@ func (p *OpenAIProvider) Generate(prompt string, config *domain.GenerationConfig
 
 	metadata := &domain.ProviderMetadata{
 		Model: string(model),
+	}
+
+	if usage != nil {
+		metadata.TokensUsed = usage.TotalTokens
+		metadata.PromptTokens = usage.PromptTokens
+		metadata.CompletionTokens = usage.CompletionTokens
 	}
 
 	return completion, metadata, nil

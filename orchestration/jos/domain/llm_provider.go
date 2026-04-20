@@ -71,13 +71,15 @@ type AudioTranscriptionRequest struct {
 
 // ProviderMetadata contains metadata from LLM provider
 type ProviderMetadata struct {
-	TokensUsed   int
-	Cost         float64
-	Model        string
-	FinishReason string
-	Prompt       string
-	Choices      []Choice
-	VerboseData  map[string]any
+	TokensUsed       int
+	PromptTokens     int
+	CompletionTokens int
+	Cost             float64
+	Model            string
+	FinishReason     string
+	Prompt           string
+	Choices          []Choice
+	VerboseData      map[string]any
 }
 
 type Choice struct {
@@ -101,6 +103,17 @@ type GenerationConfig struct {
 	BufferSize    int
 	StopSequences []string
 	Definition    *jsonSchema.Definition // Schema definition for this generation (includes SendImage, etc.)
+
+	// ResponseFormat when set, instructs the LLM to return structured JSON
+	// conforming to the provided schema. Uses OpenAI-standard response_format.
+	ResponseFormat *ResponseFormatConfig
+}
+
+// ResponseFormatConfig configures structured output response format.
+// Follows the OpenAI response_format standard which is accepted by most providers.
+type ResponseFormatConfig struct {
+	Name   string         // Schema name for the response format
+	Schema map[string]any // JSON Schema that the response must conform to
 }
 
 func DefaultGenerationConfig() *GenerationConfig {
