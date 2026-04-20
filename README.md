@@ -8,7 +8,7 @@
 
 </div>
 
-ObjectWeaver is the schema-first LLM orchestration engine that turns chaos into structure. It allows you to define your data model, route to the best models, and get guaranteed JSON back every time. By decomposing schemas into field-level tasks and processing them in parallel, ObjectWeaver ensures 100% valid output, reduces costs through model specialization, and improves performance.
+ObjectWeaver is a schema-first orchestration engine that sits between your application and your LLM providers. You describe a pipeline of tasks as a JSON schema: each field is a node in a task network with its own model, instructions, and dependencies. ObjectWeaver routes each field to the right model, processes independent fields in parallel, and wires the results together into a single JSON response.
 
 For complete documentation, examples, and guides, visit [our documentation](https://objectweaver.dev/docs).
 
@@ -18,13 +18,13 @@ For complete documentation, examples, and guides, visit [our documentation](http
 
 ## Why ObjectWeaver?
 
-Traditional JSON generation with LLMs often fails, with success rates as low as [35-65%](https://composio.dev/blog/gpt-4-function-calling-example). While grammar-constrained alternatives can guarantee syntax, they force a one-size-fits-all approach, using a single model and prompt for all fields. ObjectWeaver solves this by providing field-level orchestration that offers several key advantages:
+Traditional LLM pipelines treat generation as a single monolithic call — one model, one prompt, all fields at once. Grammar-constrained alternatives guarantee syntax but force a one-size-fits-all approach. ObjectWeaver takes a different path: field-level orchestration where each part of your output is independently routed, validated, and assembled into a coherent result. With naive JSON generation success rates as low as [35-65%](https://composio.dev/blog/gpt-4-function-calling-example), that guarantee matters — but it's a natural outcome of the network model, not what defines it. The key advantages are:
 
-- <img src="https://api.iconify.design/lucide/circle-check-big.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Guaranteed JSON Output**: Field-level type validation and compositional assembly ensure 100% valid JSON every time.
-- <img src="https://api.iconify.design/lucide/zap.svg?color=%23006329" width="16" height="16" style="vertical-align: text-bottom;" /> **Parallel Generation**: Independent fields are generated concurrently, leading to significantly faster processing times.
+- <img src="https://api.iconify.design/lucide/circle-check-big.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Guaranteed JSON Output**: Compositional assembly validates each field independently, so the final response is always structurally sound — without inference-time constraints that degrade model reasoning.
+- <img src="https://api.iconify.design/lucide/zap.svg?color=%23006329" width="16" height="16" style="vertical-align: text-bottom;" /> **Parallel Generation**: Independent nodes in the task network are processed concurrently, leading to significantly faster generation across production schemas with many fields.
 - <img src="https://api.iconify.design/lucide/sparkles.svg?color=%23007431" width="16" height="16" style="vertical-align: text-bottom;" /> **Model Specialization**: Route simple tasks to efficient models and complex reasoning to more powerful ones, reducing costs by 10-20x.
 - <img src="https://api.iconify.design/lucide/expand.svg?color=%2300943d" width="16" height="16" style="vertical-align: text-bottom;" /> **Break Context Limits**: Generate massive datasets and comprehensive documents that exceed the context window of a single model.
-- <img src="https://api.iconify.design/lucide/bot.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Composable Intelligence**: Move beyond simple prompts by treating your schema as a system of composable agents. Chain fields together to fetch data, make decisions, and pass context, allowing you to build complex applications with the simplicity of a JSON definition.
+- <img src="https://api.iconify.design/lucide/bot.svg?color=%23005221" width="16" height="16" style="vertical-align: text-bottom;" /> **Composable Intelligence**: Treat your schema as a network of interrelated tasks. Fields feed context to downstream fields, branch on generated values, fetch external data, and wire results together — expressing complex multi-step workflows as a single JSON definition.
 
 ## Getting Started
 
@@ -52,7 +52,7 @@ That's it! The server will be running on `localhost:2008`.
 
 ## Making Your First Request
 
-Here’s how to make a basic API call to generate a structured JSON object. The `definition` field uses standard JSON Schema syntax to specify the desired output structure.
+Here's how to make a basic API call. The `definition` field describes a task network: each property is a node with its own model, instruction, and optional dependencies on other fields.
 
 ### cURL
 
@@ -84,7 +84,7 @@ Find more different language examples [here](https://objectweaver.dev/docs/api-r
 
 ## Features
 
-ObjectWeaver is designed for production use and includes several powerful features to handle real-world complexity:
+ObjectWeaver's task-network model unlocks capabilities that go beyond what any single LLM call can provide:
 
 -   <img src="https://api.iconify.design/lucide/git-branch.svg?color=%23006329" width="16" height="16" style="vertical-align: text-bottom;" /> **Decision Points**: Embed adaptive intelligence in your schemas to dynamically alter the generation process based on the output of other fields.
 -   <img src="https://api.iconify.design/lucide/shield-check.svg?color=%2300943d" width="16" height="16" style="vertical-align: text-bottom;" /> **Epistemic Validation**: Implement validation and retry logic to ensure the quality and accuracy of the generated data.
