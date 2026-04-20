@@ -105,6 +105,8 @@ func (p *ByteProcessor) processTextToSpeech(task *domain.FieldTask, context *dom
 	resultMetadata.ModelUsed = metadata.Model
 	resultMetadata.Cost = metadata.Cost
 	resultMetadata.TokensUsed = metadata.TokensUsed
+	resultMetadata.PromptTokens = metadata.PromptTokens
+	resultMetadata.CompletionTokens = metadata.CompletionTokens
 
 	result := domain.NewTaskResult(task.ID(), task.Key(), base64Audio, resultMetadata)
 	return result.WithPath(task.Path()), nil
@@ -132,6 +134,8 @@ func (p *ByteProcessor) processImageGeneration(task *domain.FieldTask, context *
 	resultMetadata.ModelUsed = metadata.Model
 	resultMetadata.Cost = metadata.Cost
 	resultMetadata.TokensUsed = metadata.TokensUsed
+	resultMetadata.PromptTokens = metadata.PromptTokens
+	resultMetadata.CompletionTokens = metadata.CompletionTokens
 
 	result := domain.NewTaskResult(task.ID(), task.Key(), base64Image, resultMetadata)
 	return result.WithPath(task.Path()), nil
@@ -156,6 +160,8 @@ func (p *ByteProcessor) processSpeechToText(task *domain.FieldTask, context *dom
 	resultMetadata.ModelUsed = metadata.Model
 	resultMetadata.Cost = metadata.Cost
 	resultMetadata.TokensUsed = metadata.TokensUsed
+	resultMetadata.PromptTokens = metadata.PromptTokens
+	resultMetadata.CompletionTokens = metadata.CompletionTokens
 	resultMetadata.VerboseData = metadata.VerboseData // Preserve verbose data from provider
 
 	result := domain.NewTaskResult(task.ID(), task.Key(), transcriptionText, resultMetadata)

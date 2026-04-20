@@ -3,10 +3,11 @@ package execution
 import (
 	"context"
 	"fmt"
-	"github.com/ObjectWeaver/ObjectWeaver/logger"
-	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 	"sync"
 	"time"
+
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 
 	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
@@ -184,18 +185,38 @@ func (fp *FieldProcessor) processField(ctx context.Context, task *domain.FieldTa
 	}
 
 	var result *domain.TaskResult
-	if task.Definition().Type == jsonSchema.Object {
-		results := fp.processObjectField(ctx, task, execContext)
-		if len(results) > 0 {
-			result = results[0]
-		}
-	} else {
-		processor := fp.getProcessorForType(task.Definition())
+	// Check if this field should use structured output (single native API call)
+	if task.Definition().StructuredOutput && (task.Definition().Type == jsonSchema.Object || task.Definition().Type == jsonSchema.Array) {
+		structProcessor := NewStructuredOutputProcessor(fp.llmProvider, fp.promptBuilder)
 		var err error
-		result, err = processor.Process(ctx, task, execContext)
+		result, err = structProcessor.Process(ctx, task, execContext)
 		if err != nil {
-			logger.Printf("Error processing field %s: %v", task.Key(), err)
-			return nil
+			// On context size errors, fall back to normal OW decomposition
+			if _, ok := err.(*ContextSizeError); ok {
+				logger.Printf("[FieldProcessor] Structured output context size error for '%s', falling back to OW decomposition", task.Key())
+				result = nil // Reset so we fall through to normal processing below
+			} else {
+				logger.Printf("[FieldProcessor] Structured output error for '%s': %v, falling back to OW decomposition", task.Key(), err)
+				result = nil
+			}
+		}
+	}
+
+	// Normal OW decomposition (or fallback from structured output failure)
+	if result == nil {
+		if task.Definition().Type == jsonSchema.Object {
+			results := fp.processObjectField(ctx, task, execContext)
+			if len(results) > 0 {
+				result = results[0]
+			}
+		} else {
+			processor := fp.getProcessorForType(task.Definition())
+			var err error
+			result, err = processor.Process(ctx, task, execContext)
+			if err != nil {
+				logger.Printf("Error processing field %s: %v", task.Key(), err)
+				return nil
+			}
 		}
 	}
 

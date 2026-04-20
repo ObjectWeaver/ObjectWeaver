@@ -305,7 +305,7 @@ func TestGetDefaultModelForProvider(t *testing.T) {
 		{
 			name:          "Gemini provider",
 			llmProvider:   "gemini",
-			expectedModel: "gemini-2.0-flash",
+			expectedModel: "gemini-2.5-flash-lite",
 		},
 		{
 			name:          "OpenAI provider",
@@ -320,7 +320,7 @@ func TestGetDefaultModelForProvider(t *testing.T) {
 		{
 			name:          "Gemini provider uppercase",
 			llmProvider:   "GEMINI",
-			expectedModel: "gemini-2.0-flash",
+			expectedModel: "gemini-2.5-flash-lite",
 		},
 		{
 			name:          "Auto-detect with LLM_API_URL",
@@ -330,12 +330,12 @@ func TestGetDefaultModelForProvider(t *testing.T) {
 		{
 			name:          "Auto-detect with GEMINI_API_KEY",
 			geminiAPIKey:  "test-key",
-			expectedModel: "gemini-2.0-flash",
+			expectedModel: "gemini-2.5-flash-lite",
 		},
 		{
 			name:          "Auto-detect with LLM_API_KEY",
 			llmAPIKey:     "test-key",
-			expectedModel: "gemini-2.0-flash",
+			expectedModel: "gemini-2.5-flash-lite",
 		},
 		{
 			name:          "Default fallback",

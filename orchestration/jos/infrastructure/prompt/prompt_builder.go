@@ -2,6 +2,7 @@ package prompt
 
 import (
 	"fmt"
+
 	"github.com/ObjectWeaver/ObjectWeaver/orchestration/extractor"
 	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 
@@ -51,7 +52,10 @@ func (b *DefaultPromptBuilder) Build(task *domain.FieldTask, context *domain.Pro
 	}
 
 	// Standard prompt template
-	return fmt.Sprintf(`
+	// Adjustment: "User information" (the large input text) is placed FIRST so that repeated calls for sibling fields share the same prompt prefix. LLM providers (Gemini, OpenAI) automatically cache matching prefixes, meaning the second, third, … sibling field only pay for the (small) suffix that differs — the field-specific instruction and any
+	return fmt.Sprintf(`User information:
+%s
+
 Task:
 Please return information just about the "%s" using the below instructions and context:
 
@@ -60,16 +64,13 @@ Please return information just about the "%s" using the below instructions and c
 Direct Instruction for the %s:
 %s
 
-User information:
-%s
-
 %s
 `,
+		basePrompt,
 		task.Key(),
 		parentInstruction,
 		task.Key(),
 		def.Instruction,
-		basePrompt,
 		currentGen,
 	), nil
 }

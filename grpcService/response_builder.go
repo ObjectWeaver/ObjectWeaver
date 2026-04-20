@@ -91,10 +91,12 @@ func (b *DefaultResponseBuilder) BuildResponse(result *domain.GenerationResult) 
 				}
 
 				fieldMeta = &pb.FieldMetadata{
-					TokensUsed: int32(fieldResult.Metadata.TokensUsed),
-					Cost:       fieldResult.Metadata.Cost,
-					ModelUsed:  fieldResult.Metadata.ModelUsed,
-					Choices:    choices,
+					TokensUsed:       int32(fieldResult.Metadata.TokensUsed),
+					Cost:             fieldResult.Metadata.Cost,
+					ModelUsed:        fieldResult.Metadata.ModelUsed,
+					Choices:          choices,
+					PromptTokens:     int32(fieldResult.Metadata.PromptTokens),
+					CompletionTokens: int32(fieldResult.Metadata.CompletionTokens),
 				}
 			}
 

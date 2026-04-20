@@ -368,6 +368,8 @@ message FieldMetadata {
   double cost = 2;
   string modelUsed = 3;
   repeated Choice choices = 4;
+  int32 promptTokens = 5;
+  int32 completionTokens = 6;
 }
 
 // DetailedField contains both the value and metadata for a field

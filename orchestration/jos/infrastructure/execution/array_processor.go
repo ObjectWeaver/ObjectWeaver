@@ -59,6 +59,10 @@ func (p *ArrayProcessor) Process(ctx context.Context, task *domain.FieldTask, ex
 	}
 
 	totalCost := 0.0
+	totalPromptTokens := 0
+	totalCompletionTokens := 0
+	totalTokens := 0
+	modelUsed := ""
 
 	enhancedContext := execContext
 	if listString != "" {
@@ -66,10 +70,14 @@ func (p *ArrayProcessor) Process(ctx context.Context, task *domain.FieldTask, ex
 	}
 
 	type itemResult struct {
-		index int
-		value interface{}
-		cost  float64
-		err   error
+		index            int
+		value            interface{}
+		cost             float64
+		promptTokens     int
+		completionTokens int
+		tokensUsed       int
+		modelUsed        string
+		err              error
 	}
 
 	resultCh := make(chan *itemResult, arraySize)
@@ -113,6 +121,11 @@ func (p *ArrayProcessor) Process(ctx context.Context, task *domain.FieldTask, ex
 								if r.Metadata() != nil {
 									aggregatedMetadata.AddCost(r.Metadata().Cost)
 									aggregatedMetadata.AddTokens(r.Metadata().TokensUsed)
+									aggregatedMetadata.AddPromptTokens(r.Metadata().PromptTokens)
+									aggregatedMetadata.AddCompletionTokens(r.Metadata().CompletionTokens)
+									if r.Metadata().ModelUsed != "" {
+										aggregatedMetadata.ModelUsed = r.Metadata().ModelUsed
+									}
 								}
 							}
 						}
@@ -138,10 +151,14 @@ func (p *ArrayProcessor) Process(ctx context.Context, task *domain.FieldTask, ex
 
 				select {
 				case resultCh <- &itemResult{
-					index: idx,
-					value: result.Value(),
-					cost:  result.Metadata().Cost,
-					err:   nil,
+					index:            idx,
+					value:            result.Value(),
+					cost:             result.Metadata().Cost,
+					promptTokens:     result.Metadata().PromptTokens,
+					completionTokens: result.Metadata().CompletionTokens,
+					tokensUsed:       result.Metadata().TokensUsed,
+					modelUsed:        result.Metadata().ModelUsed,
+					err:              nil,
 				}:
 				case <-ctx.Done():
 				}
@@ -177,12 +194,22 @@ func (p *ArrayProcessor) Process(ctx context.Context, task *domain.FieldTask, ex
 			}
 			collectedResults[item.index] = item.value
 			totalCost += item.cost
+			totalPromptTokens += item.promptTokens
+			totalCompletionTokens += item.completionTokens
+			totalTokens += item.tokensUsed
+			if item.modelUsed != "" {
+				modelUsed = item.modelUsed
+			}
 		}
 	}
 	close(resultCh)
 
 	metadata := domain.NewResultMetadata()
 	metadata.Cost = totalCost
+	metadata.TokensUsed = totalTokens
+	metadata.PromptTokens = totalPromptTokens
+	metadata.CompletionTokens = totalCompletionTokens
+	metadata.ModelUsed = modelUsed
 
 	result := domain.NewTaskResult(task.ID(), task.Key(), collectedResults, metadata)
 	return result.WithPath(task.Path()), nil

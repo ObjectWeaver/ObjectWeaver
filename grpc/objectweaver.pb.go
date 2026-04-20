@@ -24,32 +24,34 @@ const (
 
 // Definition message
 type Definition struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Type            string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Instruction     string                 `protobuf:"bytes,2,opt,name=instruction,proto3" json:"instruction,omitempty"`
-	Properties      map[string]*Definition `protobuf:"bytes,3,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Items           *Definition            `protobuf:"bytes,4,opt,name=items,proto3" json:"items,omitempty"`
-	Model           string                 `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`
-	ProcessingOrder []string               `protobuf:"bytes,6,rep,name=processingOrder,proto3" json:"processingOrder,omitempty"`
-	SystemPrompt    string                 `protobuf:"bytes,7,opt,name=systemPrompt,proto3" json:"systemPrompt,omitempty"`
-	HashMap         *HashMap               `protobuf:"bytes,8,opt,name=hashMap,proto3" json:"hashMap,omitempty"`
-	TextToSpeech    *TextToSpeech          `protobuf:"bytes,9,opt,name=textToSpeech,proto3" json:"textToSpeech,omitempty"`
-	SpeechToText    *SpeechToText          `protobuf:"bytes,10,opt,name=speechToText,proto3" json:"speechToText,omitempty"`
-	Image           *Image                 `protobuf:"bytes,11,opt,name=image,proto3" json:"image,omitempty"`
-	Req             *RequestFormat         `protobuf:"bytes,12,opt,name=req,proto3" json:"req,omitempty"`
-	NarrowFocus     *Focus                 `protobuf:"bytes,13,opt,name=narrowFocus,proto3" json:"narrowFocus,omitempty"`
-	SelectFields    []string               `protobuf:"bytes,14,rep,name=selectFields,proto3" json:"selectFields,omitempty"`
-	SendImage       *SendImage             `protobuf:"bytes,15,opt,name=sendImage,proto3" json:"sendImage,omitempty"`
-	Stream          bool                   `protobuf:"varint,16,opt,name=stream,proto3" json:"stream,omitempty"`
-	OverridePrompt  string                 `protobuf:"bytes,17,opt,name=overridePrompt,proto3" json:"overridePrompt,omitempty"`
-	Priority        int32                  `protobuf:"varint,18,opt,name=priority,proto3" json:"priority,omitempty"`
-	DecisionPoint   *DecisionPoint         `protobuf:"bytes,19,opt,name=decisionPoint,proto3" json:"decisionPoint,omitempty"`
-	ScoringCriteria *ScoringCriteria       `protobuf:"bytes,20,opt,name=scoringCriteria,proto3" json:"scoringCriteria,omitempty"`
-	RecursiveLoop   *RecursiveLoop         `protobuf:"bytes,21,opt,name=recursiveLoop,proto3" json:"recursiveLoop,omitempty"`
-	Epistemic       *EpistemicValidation   `protobuf:"bytes,22,opt,name=epistemic,proto3" json:"epistemic,omitempty"`
-	ModelConfig     *ModelConfig           `protobuf:"bytes,23,opt,name=modelConfig,proto3" json:"modelConfig,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Type             string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Instruction      string                 `protobuf:"bytes,2,opt,name=instruction,proto3" json:"instruction,omitempty"`
+	Properties       map[string]*Definition `protobuf:"bytes,3,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Items            *Definition            `protobuf:"bytes,4,opt,name=items,proto3" json:"items,omitempty"`
+	Model            string                 `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`
+	ProcessingOrder  []string               `protobuf:"bytes,6,rep,name=processingOrder,proto3" json:"processingOrder,omitempty"`
+	SystemPrompt     string                 `protobuf:"bytes,7,opt,name=systemPrompt,proto3" json:"systemPrompt,omitempty"`
+	HashMap          *HashMap               `protobuf:"bytes,8,opt,name=hashMap,proto3" json:"hashMap,omitempty"`
+	TextToSpeech     *TextToSpeech          `protobuf:"bytes,9,opt,name=textToSpeech,proto3" json:"textToSpeech,omitempty"`
+	SpeechToText     *SpeechToText          `protobuf:"bytes,10,opt,name=speechToText,proto3" json:"speechToText,omitempty"`
+	Image            *Image                 `protobuf:"bytes,11,opt,name=image,proto3" json:"image,omitempty"`
+	Req              *RequestFormat         `protobuf:"bytes,12,opt,name=req,proto3" json:"req,omitempty"`
+	NarrowFocus      *Focus                 `protobuf:"bytes,13,opt,name=narrowFocus,proto3" json:"narrowFocus,omitempty"`
+	SelectFields     []string               `protobuf:"bytes,14,rep,name=selectFields,proto3" json:"selectFields,omitempty"`
+	SendImage        *SendImage             `protobuf:"bytes,15,opt,name=sendImage,proto3" json:"sendImage,omitempty"`
+	Stream           bool                   `protobuf:"varint,16,opt,name=stream,proto3" json:"stream,omitempty"`
+	OverridePrompt   string                 `protobuf:"bytes,17,opt,name=overridePrompt,proto3" json:"overridePrompt,omitempty"`
+	Priority         int32                  `protobuf:"varint,18,opt,name=priority,proto3" json:"priority,omitempty"`
+	DecisionPoint    *DecisionPoint         `protobuf:"bytes,19,opt,name=decisionPoint,proto3" json:"decisionPoint,omitempty"`
+	ScoringCriteria  *ScoringCriteria       `protobuf:"bytes,20,opt,name=scoringCriteria,proto3" json:"scoringCriteria,omitempty"`
+	RecursiveLoop    *RecursiveLoop         `protobuf:"bytes,21,opt,name=recursiveLoop,proto3" json:"recursiveLoop,omitempty"`
+	Epistemic        *EpistemicValidation   `protobuf:"bytes,22,opt,name=epistemic,proto3" json:"epistemic,omitempty"`
+	ModelConfig      *ModelConfig           `protobuf:"bytes,23,opt,name=modelConfig,proto3" json:"modelConfig,omitempty"`
+	StructuredOutput bool                   `protobuf:"varint,24,opt,name=structuredOutput,proto3" json:"structuredOutput,omitempty"`
+	ResponseSchema   *structpb.Struct       `protobuf:"bytes,25,opt,name=responseSchema,proto3" json:"responseSchema,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *Definition) Reset() {
@@ -239,6 +241,20 @@ func (x *Definition) GetEpistemic() *EpistemicValidation {
 func (x *Definition) GetModelConfig() *ModelConfig {
 	if x != nil {
 		return x.ModelConfig
+	}
+	return nil
+}
+
+func (x *Definition) GetStructuredOutput() bool {
+	if x != nil {
+		return x.StructuredOutput
+	}
+	return false
+}
+
+func (x *Definition) GetResponseSchema() *structpb.Struct {
+	if x != nil {
+		return x.ResponseSchema
 	}
 	return nil
 }
@@ -1703,13 +1719,15 @@ func (x *Choice) GetEmbedding() []float64 {
 
 // FieldMetadata contains metadata for a single field
 type FieldMetadata struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	TokensUsed    int32                  `protobuf:"varint,1,opt,name=tokensUsed,proto3" json:"tokensUsed,omitempty"`
-	Cost          float64                `protobuf:"fixed64,2,opt,name=cost,proto3" json:"cost,omitempty"`
-	ModelUsed     string                 `protobuf:"bytes,3,opt,name=modelUsed,proto3" json:"modelUsed,omitempty"`
-	Choices       []*Choice              `protobuf:"bytes,4,rep,name=choices,proto3" json:"choices,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	TokensUsed       int32                  `protobuf:"varint,1,opt,name=tokensUsed,proto3" json:"tokensUsed,omitempty"`
+	Cost             float64                `protobuf:"fixed64,2,opt,name=cost,proto3" json:"cost,omitempty"`
+	ModelUsed        string                 `protobuf:"bytes,3,opt,name=modelUsed,proto3" json:"modelUsed,omitempty"`
+	Choices          []*Choice              `protobuf:"bytes,4,rep,name=choices,proto3" json:"choices,omitempty"`
+	PromptTokens     int32                  `protobuf:"varint,5,opt,name=promptTokens,proto3" json:"promptTokens,omitempty"`
+	CompletionTokens int32                  `protobuf:"varint,6,opt,name=completionTokens,proto3" json:"completionTokens,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *FieldMetadata) Reset() {
@@ -1768,6 +1786,20 @@ func (x *FieldMetadata) GetChoices() []*Choice {
 		return x.Choices
 	}
 	return nil
+}
+
+func (x *FieldMetadata) GetPromptTokens() int32 {
+	if x != nil {
+		return x.PromptTokens
+	}
+	return 0
+}
+
+func (x *FieldMetadata) GetCompletionTokens() int32 {
+	if x != nil {
+		return x.CompletionTokens
+	}
+	return 0
 }
 
 // DetailedField contains both the value and metadata for a field
@@ -1897,7 +1929,8 @@ var File_objectweaver_proto protoreflect.FileDescriptor
 const file_objectweaver_proto_rawDesc = "" +
 	"\n" +
 	"\x12objectweaver.proto\x12\n" +
-	"jsonSchema\x1a\x1cgoogle/protobuf/struct.proto\"\xa1\t\n" +
+	"jsonSchema\x1a\x1cgoogle/protobuf/struct.proto\"\x8e\n" +
+	"\n" +
 	"\n" +
 	"Definition\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12 \n" +
@@ -1925,7 +1958,9 @@ const file_objectweaver_proto_rawDesc = "" +
 	"\x0fscoringCriteria\x18\x14 \x01(\v2\x1b.jsonSchema.ScoringCriteriaR\x0fscoringCriteria\x12?\n" +
 	"\rrecursiveLoop\x18\x15 \x01(\v2\x19.jsonSchema.RecursiveLoopR\rrecursiveLoop\x12=\n" +
 	"\tepistemic\x18\x16 \x01(\v2\x1f.jsonSchema.EpistemicValidationR\tepistemic\x129\n" +
-	"\vmodelConfig\x18\x17 \x01(\v2\x17.jsonSchema.ModelConfigR\vmodelConfig\x1aU\n" +
+	"\vmodelConfig\x18\x17 \x01(\v2\x17.jsonSchema.ModelConfigR\vmodelConfig\x12*\n" +
+	"\x10structuredOutput\x18\x18 \x01(\bR\x10structuredOutput\x12?\n" +
+	"\x0eresponseSchema\x18\x19 \x01(\v2\x17.google.protobuf.StructR\x0eresponseSchema\x1aU\n" +
 	"\x0fPropertiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
 	"\x05value\x18\x02 \x01(\v2\x16.jsonSchema.DefinitionR\x05value:\x028\x01\"\xcf\x01\n" +
@@ -2066,14 +2101,16 @@ const file_objectweaver_proto_rawDesc = "" +
 	"confidence\x18\x02 \x01(\x01R\n" +
 	"confidence\x12-\n" +
 	"\x05value\x18\x03 \x01(\v2\x17.google.protobuf.StructR\x05value\x12\x1c\n" +
-	"\tembedding\x18\x04 \x03(\x01R\tembedding\"\x8f\x01\n" +
+	"\tembedding\x18\x04 \x03(\x01R\tembedding\"\xdf\x01\n" +
 	"\rFieldMetadata\x12\x1e\n" +
 	"\n" +
 	"tokensUsed\x18\x01 \x01(\x05R\n" +
 	"tokensUsed\x12\x12\n" +
 	"\x04cost\x18\x02 \x01(\x01R\x04cost\x12\x1c\n" +
 	"\tmodelUsed\x18\x03 \x01(\tR\tmodelUsed\x12,\n" +
-	"\achoices\x18\x04 \x03(\v2\x12.jsonSchema.ChoiceR\achoices\"u\n" +
+	"\achoices\x18\x04 \x03(\v2\x12.jsonSchema.ChoiceR\achoices\x12\"\n" +
+	"\fpromptTokens\x18\x05 \x01(\x05R\fpromptTokens\x12*\n" +
+	"\x10completionTokens\x18\x06 \x01(\x05R\x10completionTokens\"u\n" +
 	"\rDetailedField\x12-\n" +
 	"\x05value\x18\x01 \x01(\v2\x17.google.protobuf.StructR\x05value\x125\n" +
 	"\bmetadata\x18\x02 \x01(\v2\x19.jsonSchema.FieldMetadataR\bmetadata\"\xa3\x02\n" +
@@ -2151,43 +2188,44 @@ var file_objectweaver_proto_depIdxs = []int32{
 	9,  // 11: jsonSchema.Definition.recursiveLoop:type_name -> jsonSchema.RecursiveLoop
 	4,  // 12: jsonSchema.Definition.epistemic:type_name -> jsonSchema.EpistemicValidation
 	8,  // 13: jsonSchema.Definition.modelConfig:type_name -> jsonSchema.ModelConfig
-	1,  // 14: jsonSchema.ConditionalBranch.conditions:type_name -> jsonSchema.Condition
-	0,  // 15: jsonSchema.ConditionalBranch.logic:type_name -> jsonSchema.Definition
-	0,  // 16: jsonSchema.ConditionalBranch.then:type_name -> jsonSchema.Definition
-	2,  // 17: jsonSchema.DecisionPoint.branches:type_name -> jsonSchema.ConditionalBranch
-	0,  // 18: jsonSchema.HashMap.fieldDefinition:type_name -> jsonSchema.Definition
-	25, // 19: jsonSchema.ModelConfig.logitBias:type_name -> jsonSchema.ModelConfig.LogitBiasEntry
-	26, // 20: jsonSchema.ModelConfig.metadata:type_name -> jsonSchema.ModelConfig.MetadataEntry
-	31, // 21: jsonSchema.ModelConfig.chatTemplateKwargs:type_name -> google.protobuf.Struct
-	3,  // 22: jsonSchema.RecursiveLoop.terminationPoint:type_name -> jsonSchema.DecisionPoint
-	0,  // 23: jsonSchema.RequestBody.definition:type_name -> jsonSchema.Definition
-	27, // 24: jsonSchema.RequestFormat.headers:type_name -> jsonSchema.RequestFormat.HeadersEntry
-	31, // 25: jsonSchema.RequestFormat.body:type_name -> google.protobuf.Struct
-	31, // 26: jsonSchema.Response.data:type_name -> google.protobuf.Struct
-	28, // 27: jsonSchema.Response.detailedData:type_name -> jsonSchema.Response.DetailedDataEntry
-	29, // 28: jsonSchema.ScoringCriteria.dimensions:type_name -> jsonSchema.ScoringCriteria.DimensionsEntry
-	13, // 29: jsonSchema.ScoringDimension.scale:type_name -> jsonSchema.ScoreScale
-	31, // 30: jsonSchema.SpeechToText.extraBody:type_name -> google.protobuf.Struct
-	0,  // 31: jsonSchema.SubordinateFunction.definition:type_name -> jsonSchema.Definition
-	31, // 32: jsonSchema.Choice.value:type_name -> google.protobuf.Struct
-	20, // 33: jsonSchema.FieldMetadata.choices:type_name -> jsonSchema.Choice
-	31, // 34: jsonSchema.DetailedField.value:type_name -> google.protobuf.Struct
-	21, // 35: jsonSchema.DetailedField.metadata:type_name -> jsonSchema.FieldMetadata
-	31, // 36: jsonSchema.StreamingResponse.data:type_name -> google.protobuf.Struct
-	30, // 37: jsonSchema.StreamingResponse.detailedData:type_name -> jsonSchema.StreamingResponse.DetailedDataEntry
-	0,  // 38: jsonSchema.Definition.PropertiesEntry.value:type_name -> jsonSchema.Definition
-	22, // 39: jsonSchema.Response.DetailedDataEntry.value:type_name -> jsonSchema.DetailedField
-	15, // 40: jsonSchema.ScoringCriteria.DimensionsEntry.value:type_name -> jsonSchema.ScoringDimension
-	22, // 41: jsonSchema.StreamingResponse.DetailedDataEntry.value:type_name -> jsonSchema.DetailedField
-	10, // 42: jsonSchema.JSONSchemaService.GenerateObject:input_type -> jsonSchema.RequestBody
-	10, // 43: jsonSchema.JSONSchemaService.StreamGeneratedObjects:input_type -> jsonSchema.RequestBody
-	12, // 44: jsonSchema.JSONSchemaService.GenerateObject:output_type -> jsonSchema.Response
-	23, // 45: jsonSchema.JSONSchemaService.StreamGeneratedObjects:output_type -> jsonSchema.StreamingResponse
-	44, // [44:46] is the sub-list for method output_type
-	42, // [42:44] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	31, // 14: jsonSchema.Definition.responseSchema:type_name -> google.protobuf.Struct
+	1,  // 15: jsonSchema.ConditionalBranch.conditions:type_name -> jsonSchema.Condition
+	0,  // 16: jsonSchema.ConditionalBranch.logic:type_name -> jsonSchema.Definition
+	0,  // 17: jsonSchema.ConditionalBranch.then:type_name -> jsonSchema.Definition
+	2,  // 18: jsonSchema.DecisionPoint.branches:type_name -> jsonSchema.ConditionalBranch
+	0,  // 19: jsonSchema.HashMap.fieldDefinition:type_name -> jsonSchema.Definition
+	25, // 20: jsonSchema.ModelConfig.logitBias:type_name -> jsonSchema.ModelConfig.LogitBiasEntry
+	26, // 21: jsonSchema.ModelConfig.metadata:type_name -> jsonSchema.ModelConfig.MetadataEntry
+	31, // 22: jsonSchema.ModelConfig.chatTemplateKwargs:type_name -> google.protobuf.Struct
+	3,  // 23: jsonSchema.RecursiveLoop.terminationPoint:type_name -> jsonSchema.DecisionPoint
+	0,  // 24: jsonSchema.RequestBody.definition:type_name -> jsonSchema.Definition
+	27, // 25: jsonSchema.RequestFormat.headers:type_name -> jsonSchema.RequestFormat.HeadersEntry
+	31, // 26: jsonSchema.RequestFormat.body:type_name -> google.protobuf.Struct
+	31, // 27: jsonSchema.Response.data:type_name -> google.protobuf.Struct
+	28, // 28: jsonSchema.Response.detailedData:type_name -> jsonSchema.Response.DetailedDataEntry
+	29, // 29: jsonSchema.ScoringCriteria.dimensions:type_name -> jsonSchema.ScoringCriteria.DimensionsEntry
+	13, // 30: jsonSchema.ScoringDimension.scale:type_name -> jsonSchema.ScoreScale
+	31, // 31: jsonSchema.SpeechToText.extraBody:type_name -> google.protobuf.Struct
+	0,  // 32: jsonSchema.SubordinateFunction.definition:type_name -> jsonSchema.Definition
+	31, // 33: jsonSchema.Choice.value:type_name -> google.protobuf.Struct
+	20, // 34: jsonSchema.FieldMetadata.choices:type_name -> jsonSchema.Choice
+	31, // 35: jsonSchema.DetailedField.value:type_name -> google.protobuf.Struct
+	21, // 36: jsonSchema.DetailedField.metadata:type_name -> jsonSchema.FieldMetadata
+	31, // 37: jsonSchema.StreamingResponse.data:type_name -> google.protobuf.Struct
+	30, // 38: jsonSchema.StreamingResponse.detailedData:type_name -> jsonSchema.StreamingResponse.DetailedDataEntry
+	0,  // 39: jsonSchema.Definition.PropertiesEntry.value:type_name -> jsonSchema.Definition
+	22, // 40: jsonSchema.Response.DetailedDataEntry.value:type_name -> jsonSchema.DetailedField
+	15, // 41: jsonSchema.ScoringCriteria.DimensionsEntry.value:type_name -> jsonSchema.ScoringDimension
+	22, // 42: jsonSchema.StreamingResponse.DetailedDataEntry.value:type_name -> jsonSchema.DetailedField
+	10, // 43: jsonSchema.JSONSchemaService.GenerateObject:input_type -> jsonSchema.RequestBody
+	10, // 44: jsonSchema.JSONSchemaService.StreamGeneratedObjects:input_type -> jsonSchema.RequestBody
+	12, // 45: jsonSchema.JSONSchemaService.GenerateObject:output_type -> jsonSchema.Response
+	23, // 46: jsonSchema.JSONSchemaService.StreamGeneratedObjects:output_type -> jsonSchema.StreamingResponse
+	45, // [45:47] is the sub-list for method output_type
+	43, // [43:45] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_objectweaver_proto_init() }
