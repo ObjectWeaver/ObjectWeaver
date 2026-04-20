@@ -27,6 +27,8 @@ func (a *PathBasedAssembler) Assemble(results []*domain.TaskResult) (*domain.Gen
 		// Aggregate metadata
 		if result.Metadata() != nil {
 			metadata.AddTokens(result.Metadata().TokensUsed)
+			metadata.AddPromptTokens(result.Metadata().PromptTokens)
+			metadata.AddCompletionTokens(result.Metadata().CompletionTokens)
 			metadata.AddCost(result.Metadata().Cost)
 			metadata.IncrementFieldCount()
 		}

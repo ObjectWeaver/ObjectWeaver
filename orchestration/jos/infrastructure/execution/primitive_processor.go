@@ -3,12 +3,13 @@ package execution
 import (
 	"context"
 	"fmt"
-	"github.com/ObjectWeaver/ObjectWeaver/logger"
-	"github.com/ObjectWeaver/ObjectWeaver/orchestration/extractor"
-	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/ObjectWeaver/ObjectWeaver/logger"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/extractor"
+	"github.com/ObjectWeaver/ObjectWeaver/orchestration/jos/domain"
 
 	"github.com/ObjectWeaver/ObjectWeaver/jsonSchema"
 )
@@ -90,6 +91,8 @@ func (p *PrimitiveProcessor) Process(ctx context.Context, task *domain.FieldTask
 	resultMetadata := domain.NewResultMetadata()
 	resultMetadata.Cost = metadata.Cost
 	resultMetadata.TokensUsed = metadata.TokensUsed
+	resultMetadata.PromptTokens = metadata.PromptTokens
+	resultMetadata.CompletionTokens = metadata.CompletionTokens
 	resultMetadata.ModelUsed = metadata.Model
 
 	result := domain.NewTaskResult(task.ID(), task.Key(), value, resultMetadata)
@@ -296,7 +299,7 @@ func getDefaultModelForProvider() string {
 
 	switch provider {
 	case "gemini":
-		return "gemini-2.0-flash"
+		return "gemini-2.5-flash-lite"
 	case "openai":
 		return "gpt-4o-mini"
 	case "local":
@@ -307,7 +310,7 @@ func getDefaultModelForProvider() string {
 			return "gpt-4o-mini"
 		}
 		if os.Getenv("GEMINI_API_KEY") != "" || os.Getenv("LLM_API_KEY") != "" {
-			return "gemini-2.0-flash"
+			return "gemini-2.5-flash-lite"
 		}
 		// Final fallback
 		return "gpt-4o-mini"

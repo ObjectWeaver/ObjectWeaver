@@ -2,13 +2,15 @@ package requestManagement
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
-	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/modelConverter"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
+	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/modelConverter"
 
 	gogpt "github.com/sashabaranov/go-openai"
 )
@@ -176,6 +178,21 @@ func (b *defaultOpenAIReqBuilder) BuildRequest(inputs *llmManagement.Inputs) (go
 
 	if reasoningEffort != "" {
 		req.ReasoningEffort = reasoningEffort
+	}
+
+	// Set structured output response_format if ResponseSchema is present on the definition
+	if inputs.Def.ResponseSchema != nil {
+		schemaBytes, err := json.Marshal(inputs.Def.ResponseSchema)
+		if err == nil {
+			req.ResponseFormat = &gogpt.ChatCompletionResponseFormat{
+				Type: gogpt.ChatCompletionResponseFormatTypeJSONSchema,
+				JSONSchema: &gogpt.ChatCompletionResponseFormatJSONSchema{
+					Name:   "structured_output",
+					Schema: json.RawMessage(schemaBytes),
+					Strict: true,
+				},
+			}
+		}
 	}
 
 	return req, nil

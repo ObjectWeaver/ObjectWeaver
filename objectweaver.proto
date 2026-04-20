@@ -31,6 +31,8 @@ message Definition {
   RecursiveLoop recursiveLoop = 21;
   EpistemicValidation epistemic = 22;
   ModelConfig modelConfig = 23;
+  bool structuredOutput = 24;
+  google.protobuf.Struct responseSchema = 25;
 }
 
 // Condition message
@@ -206,6 +208,8 @@ message FieldMetadata {
   double cost = 2;
   string modelUsed = 3;
   repeated Choice choices = 4;
+  int32 promptTokens = 5;
+  int32 completionTokens = 6;
 }
 
 // DetailedField contains both the value and metadata for a field

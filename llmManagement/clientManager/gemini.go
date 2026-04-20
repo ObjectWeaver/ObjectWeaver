@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
 	"github.com/ObjectWeaver/ObjectWeaver/llmManagement"
 	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/domain"
 	"github.com/ObjectWeaver/ObjectWeaver/llmManagement/modelConverter"
@@ -280,6 +281,23 @@ func (a *GeminiClientAdapter) convertToGeminiFormat(req openai.ChatCompletionReq
 	}
 
 	if len(generationConfig) > 0 {
+		geminiReq["generationConfig"] = generationConfig
+	}
+
+	// Handle structured output response_format
+	if req.ResponseFormat != nil && req.ResponseFormat.Type == openai.ChatCompletionResponseFormatTypeJSONSchema {
+		generationConfig["responseMimeType"] = "application/json"
+		if req.ResponseFormat.JSONSchema != nil {
+			// The Schema field implements json.Marshaler, so marshal/unmarshal to get the raw map
+			schemaBytes, err := json.Marshal(req.ResponseFormat.JSONSchema.Schema)
+			if err == nil {
+				var schemaMap map[string]interface{}
+				if json.Unmarshal(schemaBytes, &schemaMap) == nil {
+					generationConfig["responseSchema"] = schemaMap
+				}
+			}
+		}
+		// Ensure generationConfig is set on the request
 		geminiReq["generationConfig"] = generationConfig
 	}
 

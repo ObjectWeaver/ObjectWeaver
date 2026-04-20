@@ -153,13 +153,15 @@ func (r *GenerationResult) HasDetailedData() bool {
 
 // ResultMetadata contains metrics about the generation
 type ResultMetadata struct {
-	TokensUsed  int            `json:"tokensUsed"`
-	Cost        float64        `json:"cost"`
-	Duration    time.Duration  `json:"duration,omitempty"`
-	ModelUsed   string         `json:"modelUsed,omitempty"`
-	FieldCount  int            `json:"fieldCount,omitempty"`
-	Choices     []Choice       `json:"choices,omitempty"`
-	VerboseData map[string]any `json:"verboseData,omitempty"` // Optional verbose data from providers (e.g., STT segments, timestamps)
+	TokensUsed       int            `json:"tokensUsed"`
+	PromptTokens     int            `json:"promptTokens"`
+	CompletionTokens int            `json:"completionTokens"`
+	Cost             float64        `json:"cost"`
+	Duration         time.Duration  `json:"duration,omitempty"`
+	ModelUsed        string         `json:"modelUsed,omitempty"`
+	FieldCount       int            `json:"fieldCount,omitempty"`
+	Choices          []Choice       `json:"choices,omitempty"`
+	VerboseData      map[string]any `json:"verboseData,omitempty"` // Optional verbose data from providers (e.g., STT segments, timestamps)
 }
 
 func NewResultMetadata() *ResultMetadata {
@@ -176,6 +178,14 @@ func (m *ResultMetadata) AddCost(cost float64) {
 
 func (m *ResultMetadata) AddTokens(tokens int) {
 	m.TokensUsed += tokens
+}
+
+func (m *ResultMetadata) AddPromptTokens(tokens int) {
+	m.PromptTokens += tokens
+}
+
+func (m *ResultMetadata) AddCompletionTokens(tokens int) {
+	m.CompletionTokens += tokens
 }
 
 func (m *ResultMetadata) IncrementFieldCount() {

@@ -75,6 +75,17 @@ type Definition struct {
 	Epistemic EpistemicValidation `json:"epistemic,omitempty"`
 
 	ModelConfig *ModelConfig `json:"modelConfig,omitempty"` //the model configuration for the LLM model being used
+
+	// StructuredOutput when true, routes this entire subtree (Object or Array) to a single
+	// native structured output API call using JSON Schema response_format, instead of
+	// decomposing into per-field LLM calls. On context size errors, falls back to normal
+	// OW decomposition automatically.
+	StructuredOutput bool `json:"structuredOutput,omitempty"`
+
+	// ResponseSchema is a transient field set at runtime by the StructuredOutputProcessor.
+	// It holds the JSON Schema map that will be sent as response_format to the LLM provider.
+	// Not intended to be set by users in definition JSON.
+	ResponseSchema map[string]any `json:"-"`
 }
 
 type EpistemicValidation struct {
